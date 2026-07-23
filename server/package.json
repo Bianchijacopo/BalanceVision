@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "seed:test": "node seed-test-data.js"
   },
   "dependencies": {
     "express": "^4.21.0",

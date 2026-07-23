@@ -68,16 +68,6 @@ export default function Dashboard() {
   const balanceHistory = buildBalanceHistory(transactions, balance?.initial_balance || 0);
   const projectionData = buildProjection(transactions, balance);
 
-  const expenseByCategory = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((acc, t) => {
-      const existing = acc.find(c => c.name === t.category);
-      if (existing) existing.value += t.amount;
-      else acc.push({ name: t.category, value: t.amount });
-      return acc;
-    }, []);
-
-  const topExpenses = [...expenseByCategory].sort((a, b) => b.value - a.value).slice(0, 8);
   const categoryColors = getCategoryColors();
 
   const [monthOffset, setMonthOffset] = useState(0);
@@ -90,6 +80,17 @@ export default function Dashboard() {
   const monthlyExpenses = monthlyTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const hasMonthlyIncome = monthlyTransactions.some(t => t.type === 'income');
   const hasMonthlyExpense = monthlyTransactions.some(t => t.type === 'expense');
+
+  const monthlyExpenseByCategory = monthlyTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((acc, t) => {
+      const existing = acc.find(c => c.name === t.category);
+      if (existing) existing.value += t.amount;
+      else acc.push({ name: t.category, value: t.amount });
+      return acc;
+    }, []);
+
+  const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value - a.value).slice(0, 8);
 
   const incomeTransactions = transactions.filter(t => t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
   const expenseTransactions = transactions.filter(t => t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -166,18 +167,18 @@ export default function Dashboard() {
 
           <div className="card-chart clickable" onClick={() => setModal('chart-pie')}>
             <h3 className="chart-title">Spese per categoria</h3>
-            {topExpenses.length > 0 ? (
+            {monthlyTopExpenses.length > 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 250 }}>
                 <div style={{ flex: '0 0 180px', height: '100%' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={topExpenses}
+                        data={monthlyTopExpenses}
                         cx="50%" cy="50%" outerRadius={80}
                         dataKey="value"
                         animationDuration={800}
                       >
-                        {topExpenses.map(entry => (
+                        {monthlyTopExpenses.map(entry => (
                           <Cell key={entry.name} fill={categoryColors[entry.name] || '#6366F1'} />
                         ))}
                       </Pie>
@@ -186,7 +187,7 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {topExpenses.map(entry => (
+                  {monthlyTopExpenses.map(entry => (
                     <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
                       <div style={{
                         width: 10,
@@ -261,6 +262,39 @@ export default function Dashboard() {
 
         <div className="section">
           <div className="section-header">
+            <h3 className="section-title">Transazioni di {monthName}</h3>
+          </div>
+          <div className="table-wrapper">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Titolo</th>
+                  <th>Categoria</th>
+                  <th>Importo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyTransactions.map(t => (
+                  <tr key={t.id}>
+                    <td className="text-sm">{t.date}</td>
+                    <td>{t.title}</td>
+                    <td><span className="badge">{t.category}</span></td>
+                    <td className={t.type === 'income' ? 'text-success' : 'text-danger'}>
+                      {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+                {monthlyTransactions.length === 0 && (
+                  <tr><td colSpan={4} className="text-center text-secondary">Nessuna transazione in questo mese</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="section">
+          <div className="section-header">
             <h3 className="section-title">Transazioni recenti</h3>
             <button onClick={() => navigate('/transactions/new')} className="btn btn-primary btn-sm">
               Nuova transazione
@@ -313,8 +347,8 @@ export default function Dashboard() {
         expenseTransactions={expenseTransactions}
         balanceHistory={balanceHistory}
         projectionData={projectionData}
-        topExpenses={topExpenses}
-        categoryColors={categoryColors}
+          topExpenses={monthlyTopExpenses}
+          categoryColors={categoryColors}
         balanceStats={balanceStats}
         projStats={projStats}
       />
