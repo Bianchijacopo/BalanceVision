@@ -429,6 +429,11 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                         <span style={{ fontWeight: 600 }}>{b.category}</span>
                         <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
                           €{b.spent.toFixed(0)} / €{b.amount.toFixed(0)}
+                          <span style={{ marginLeft: 6, fontWeight: 700, fontSize: 11,
+                            color: b.spent > b.amount ? 'var(--danger)' : bRem >= 40 ? 'var(--success)' : bRem >= 20 ? 'var(--warning)' : 'var(--danger)'
+                          }}>
+                            {b.spent > b.amount ? '+' + (bPct - 100) + '%' : bRem + '%'}
+                          </span>
                         </span>
                       </div>
                       <div style={{ height: 5, borderRadius: 3, background: 'var(--bg-muted)', overflow: 'hidden' }}>
