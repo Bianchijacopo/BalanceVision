@@ -1619,7 +1619,22 @@ textarea.form-input {
   box-shadow: 0 0 16px rgba(212, 175, 55, 0.15);
 }
 
-.focus-mode .topbar,
+.focus-mode .topbar {
+  background: transparent !important;
+  border-bottom: none !important;
+  justify-content: flex-end !important;
+  padding: 0 24px !important;
+}
+
+.focus-mode .topbar-left,
+.focus-mode .user-menu {
+  display: none !important;
+}
+
+.focus-mode .topbar .theme-toggle {
+  display: flex !important;
+}
+
 .focus-mode .monthly-summary,
 .focus-mode .section,
 .focus-mode .balance-card,
