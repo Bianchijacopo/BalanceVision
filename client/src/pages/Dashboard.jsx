@@ -96,6 +96,7 @@ export default function Dashboard() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterType, setFilterType] = useState('');
   const [manageCats, setManageCats] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
   const [, forceUpdate] = useState(0);
   const { addToast } = useToast();
   const prevBalanceRef = useRef(null);
@@ -246,6 +247,10 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     monthStartBalance += t.type === 'income' ? t.amount : -t.amount;
   });
 
+  const monthlyHistory = balanceHistory.filter(h => h.date.startsWith(displayMonth));
+  const peak = monthlyHistory.length > 0 ? monthlyHistory.reduce((a, b) => a.balance > b.balance ? a : b) : null;
+  const low = monthlyHistory.length > 0 ? monthlyHistory.reduce((a, b) => a.balance < b.balance ? a : b) : null;
+
   function downloadPDF() {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
@@ -299,23 +304,63 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
     doc.text('€' + formatCurrency(balance?.current_balance || 0), pageW - 20, y, { align: 'right' });
-    y += 16;
+    y += 6;
 
-    if (monthlyTransactions.filter(t => t.type === 'expense').length > 0) {
+    if (peak || low) {
+      doc.setDrawColor(200);
+      doc.line(20, y, pageW - 20, y);
+      y += 6;
+      doc.setFontSize(11);
+      doc.setTextColor(50);
+      doc.text('Picco massimo:', 20, y);
+      doc.setFontSize(12);
+      doc.setTextColor(0, 180, 90);
+      doc.text('€' + formatCurrency(peak?.balance || 0) + ' (' + (peak?.date || '-') + ')', pageW - 20, y, { align: 'right' });
+      y += 8;
+      doc.setFontSize(11);
+      doc.setTextColor(50);
+      doc.text('Punto minimo:', 20, y);
+      doc.setFontSize(12);
+      doc.setTextColor(220, 0, 50);
+      doc.text('€' + formatCurrency(low?.balance || 0) + ' (' + (low?.date || '-') + ')', pageW - 20, y, { align: 'right' });
+      y += 10;
+    }
+
+    y += 4;
+
+    const expenses = monthlyTransactions.filter(t => t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
+    const incomes = monthlyTransactions.filter(t => t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (expenses.length > 0) {
       doc.setFontSize(13);
       doc.setTextColor(50);
       doc.text('Spese del mese', 20, y);
       y += 6;
 
-      const rows = monthlyTransactions
-        .filter(t => t.type === 'expense')
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]);
+      doc.autoTable({
+        startY: y,
+        head: [['Data', 'Titolo', 'Categoria', 'Importo']],
+        body: expenses.map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]),
+        theme: 'grid',
+        headStyles: { fillColor: [220, 0, 50], textColor: [255, 255, 255], fontSize: 9 },
+        bodyStyles: { fontSize: 9, textColor: [50, 50, 50] },
+        alternateRowStyles: { fillColor: [255, 240, 240] },
+        styles: { cellPadding: 3 },
+        margin: { left: 20, right: 20 },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+
+    if (incomes.length > 0) {
+      doc.setFontSize(13);
+      doc.setTextColor(50);
+      doc.text('Entrate del mese', 20, y);
+      y += 6;
 
       doc.autoTable({
         startY: y,
         head: [['Data', 'Titolo', 'Categoria', 'Importo']],
-        body: rows,
+        body: incomes.map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]),
         theme: 'grid',
         headStyles: { fillColor: [0, 180, 90], textColor: [255, 255, 255], fontSize: 9 },
         bodyStyles: { fontSize: 9, textColor: [50, 50, 50] },
@@ -620,8 +665,6 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                 Cancella filtri
               </button>
             )}
-            <button className="btn btn-secondary btn-sm" onClick={exportCSV} title="Esporta CSV">CSV</button>
-            <button className="btn btn-secondary btn-sm" onClick={downloadPDF} title="Scarica PDF mensile">PDF</button>
             <button className={`btn btn-ghost btn-sm`}
               onClick={() => setManageCats(!manageCats)}>
               Categorie
@@ -738,9 +781,41 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       </main>
     </div>
 
-    <button className="focus-toggle" onClick={toggleFocus} title="Attiva/disattiva focus mode">
-      {focusMode ? '◉' : '○'}
-    </button>
+    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 100, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+      <div style={{ position: 'relative' }}>
+        <button className="btn btn-secondary" style={{
+          width: 44, height: 44, borderRadius: '50%', padding: 0, fontSize: 18,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--bg-surface)', border: '1px solid var(--border)',
+          backdropFilter: 'blur(8px)', color: 'var(--text-secondary)', cursor: 'pointer',
+        }} onClick={() => setDownloadOpen(!downloadOpen)} title="Scarica report">
+          &#8595;
+        </button>
+        {downloadOpen && (
+          <div style={{
+            position: 'absolute', bottom: '100%', right: 0, marginBottom: 8,
+            minWidth: 240, background: 'var(--bg-surface)', border: '1px solid var(--border)',
+            borderRadius: 12, padding: 8, boxShadow: 'var(--shadow-lg)',
+          }}>
+            <div style={{ padding: '8px 12px', fontSize: 12, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Scarica report
+            </div>
+            <div style={{ padding: '4px 12px', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>
+              Mese: {monthName}
+            </div>
+            <button className="dropdown-item" onClick={() => { setDownloadOpen(false); downloadPDF(); }}>
+              Report PDF (spese + entrate + statistiche)
+            </button>
+            <button className="dropdown-item" onClick={() => { setDownloadOpen(false); exportCSV(); }}>
+              File CSV (tutte le transazioni)
+            </button>
+          </div>
+        )}
+      </div>
+      <button className="focus-toggle" style={{ position: 'static' }} onClick={toggleFocus} title="Attiva/disattiva focus mode">
+        {focusMode ? '◉' : '○'}
+      </button>
+    </div>
 
     {categoryModal && (
       <div className="modal-overlay" onClick={() => setCategoryModal(null)}>
