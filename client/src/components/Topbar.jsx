@@ -77,8 +77,21 @@ export default function Topbar({ title }) {
           </div>
           <span className="text-sm text-secondary">{user?.name || user?.email}</span>
           <div className={`dropdown-menu ${menuOpen ? 'dropdown-visible' : ''}`}>
+            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/dashboard'); }}>
+              Dashboard
+            </button>
+            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/analytics'); }}>
+              Analisi Avanzata
+            </button>
+            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/budgets'); }}>
+              Budget
+            </button>
+            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/advice'); }}>
+              Consigli finanziari
+            </button>
+            <div className="dropdown-divider" />
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/profile'); }}>
-              Entra nel profilo
+              Profilo
             </button>
             <div className="dropdown-divider" />
             <button className="dropdown-item" onClick={handleLogout}>
