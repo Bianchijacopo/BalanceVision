@@ -86,6 +86,10 @@ export default function Dashboard() {
   const [focusMode, setFocusMode] = useState(false);
   const [categoryModal, setCategoryModal] = useState(null);
   const [budgetData, setBudgetData] = useState(null);
+  const [goalData, setGoalData] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterType, setFilterType] = useState('');
   const { addToast } = useToast();
   const prevBalanceRef = useRef(null);
   const [animClass, setAnimClass] = useState('');
@@ -105,6 +109,7 @@ export default function Dashboard() {
     apiGet('/balance', token).then(setBalance).catch(console.error);
     apiGet('/transactions', token).then(setTransactions).catch(console.error);
     apiGet('/budgets', token).then(setBudgetData).catch(console.error);
+    apiGet('/goals', token).then(setGoalData).catch(console.error);
   }, [token]);
 
   useEffect(() => {
@@ -197,6 +202,36 @@ export default function Dashboard() {
     addToast('Transazione eliminata', 'success');
   }
 
+  const allCategories = [...new Set(transactions.map(t => t.category))];
+  const filteredTransactions = transactions.filter(t => {
+    if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterCategory && t.category !== filterCategory) return false;
+    if (filterType && t.type !== filterType) return false;
+    return true;
+  });
+  const filteredMonthly = monthlyTransactions.filter(t => {
+    if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterCategory && t.category !== filterCategory) return false;
+    if (filterType && t.type !== filterType) return false;
+    return true;
+  });
+
+  function exportCSV() {
+    const list = (searchQuery || filterCategory || filterType) ? filteredTransactions : transactions;
+    const headers = 'Data,Titolo,Categoria,Tipo,Importo,Note';
+    const rows = list.map(t =>
+      `"${t.date}","${t.title}","${t.category}","${t.type}",${t.amount},"${(t.note || '').replace(/"/g, '""')}"`
+    ).join('\n');
+    const csv = '\uFEFF' + headers + '\n' + rows;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `transazioni_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    addToast('CSV esportato con successo', 'success');
+  }
+
   return (
     <>
     <div className={`layout ${focusMode ? 'focus-mode' : ''}`}>
@@ -267,6 +302,47 @@ export default function Dashboard() {
                   <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontWeight: 600, cursor: 'pointer' }}
                     onClick={() => navigate('/budgets')}>
                     +{budgetData.budgets.length - 4} altri budget
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {goalData?.goals?.length > 0 && (
+            <div className="card-chart" style={{ marginBottom: 24 }}>
+              <div className="section-header">
+                <h3 className="chart-title" style={{ margin: 0 }}>Obiettivi di risparmio</h3>
+                <button className="btn btn-secondary btn-sm" onClick={() => navigate('/goals')}>Gestisci</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {goalData.goals.slice(0, 3).map(g => {
+                  const pct = Math.round(g.progress);
+                  const achieved = pct >= 100;
+                  return (
+                    <div key={g.id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                        <span style={{ fontWeight: 600 }}>{g.name}</span>
+                        <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                          €{g.current_amount.toFixed(0)} / €{g.target_amount.toFixed(0)}
+                          <span style={{ marginLeft: 6, fontWeight: 700, color: achieved ? 'var(--success)' : 'var(--brand)' }}>
+                            {pct}%
+                          </span>
+                        </span>
+                      </div>
+                      <div style={{ height: 5, borderRadius: 3, background: 'var(--bg-muted)', overflow: 'hidden' }}>
+                        <div style={{
+                          width: Math.min(pct, 100) + '%', height: '100%', borderRadius: 3,
+                          background: achieved ? 'var(--success)' : 'var(--brand)',
+                          transition: 'width 0.6s ease'
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                {goalData.goals.length > 3 && (
+                  <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => navigate('/goals')}>
+                    +{goalData.goals.length - 3} altri obiettivi
                   </div>
                 )}
               </div>
@@ -425,12 +501,44 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="card-chart" style={{ marginBottom: 16, padding: '12px 16px' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <input className="form-input" style={{ flex: 1, minWidth: 140, padding: '6px 10px', fontSize: 12 }}
+              placeholder="Cerca transazioni..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            <select className="form-input" style={{ width: 120, padding: '6px 10px', fontSize: 12 }}
+              value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+              <option value="">Tutte le categorie</option>
+              {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select className="form-input" style={{ width: 100, padding: '6px 10px', fontSize: 12 }}
+              value={filterType} onChange={e => setFilterType(e.target.value)}>
+              <option value="">Tutti</option>
+              <option value="income">Entrate</option>
+              <option value="expense">Spese</option>
+            </select>
+            {(searchQuery || filterCategory || filterType) && (
+              <button className="btn btn-ghost btn-sm"
+                onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterType(''); }}>
+                Cancella filtri
+              </button>
+            )}
+            <button className="btn btn-secondary btn-sm" onClick={exportCSV} title="Esporta CSV">
+              CSV
+            </button>
+          </div>
+        </div>
+
         <div className="section">
           <div className="section-header">
             <h3 className="section-title">Transazioni di {monthName}</h3>
+            {(searchQuery || filterCategory || filterType) && (
+              <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 600 }}>
+                {filteredMonthly.length} risultati
+              </span>
+            )}
           </div>
           <div className="timeline">
-            {monthlyTransactions.map(t => (
+            {filteredMonthly.map(t => (
               <div key={t.id} className="timeline-item">
                 <div className="timeline-dot" style={{ borderColor: t.type === 'income' ? 'var(--success)' : 'var(--danger)' }} />
                 <div className="timeline-content">
@@ -445,8 +553,10 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-            {monthlyTransactions.length === 0 && (
-              <p className="text-secondary text-center" style={{ padding: 24 }}>Nessuna transazione in questo mese</p>
+            {(searchQuery || filterCategory || filterType ? filteredMonthly.length === 0 : monthlyTransactions.length === 0) && (
+              <p className="text-secondary text-center" style={{ padding: 24 }}>
+                {searchQuery || filterCategory || filterType ? 'Nessuna transazione corrisponde ai filtri' : 'Nessuna transazione in questo mese'}
+              </p>
             )}
           </div>
         </div>
@@ -470,7 +580,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.slice(0, 10).map(t => (
+                {filteredTransactions.slice(0, 10).map(t => (
                   <tr key={t.id}>
                     <td className="text-sm">{t.date}</td>
                     <td>{t.title}</td>
@@ -486,8 +596,10 @@ export default function Dashboard() {
                     </td>
                   </tr>
                 ))}
-                {transactions.length === 0 && (
-                  <tr><td colSpan={6} className="text-center text-secondary">Nessuna transazione</td></tr>
+                {filteredTransactions.length === 0 && (
+                  <tr><td colSpan={6} className="text-center text-secondary">
+                    {searchQuery || filterCategory || filterType ? 'Nessuna transazione corrisponde ai filtri' : 'Nessuna transazione'}
+                  </td></tr>
                 )}
               </tbody>
             </table>
@@ -495,9 +607,12 @@ export default function Dashboard() {
         </div>
 
         <div className="section" style={{ textAlign: 'center' }}>
-          <button onClick={() => navigate('/analytics')} className="btn btn-secondary">
-            Analisi Avanzata
-          </button>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button onClick={() => navigate('/analytics')} className="btn btn-secondary">Analisi Avanzata</button>
+            <button onClick={() => navigate('/budgets')} className="btn btn-secondary">Budget</button>
+            <button onClick={() => navigate('/goals')} className="btn btn-secondary">Obiettivi</button>
+            <button onClick={() => navigate('/advice')} className="btn btn-secondary">Consigli</button>
+          </div>
         </div>
       </main>
     </div>

@@ -86,6 +86,9 @@ export default function Topbar({ title }) {
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/budgets'); }}>
               Budget
             </button>
+            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/goals'); }}>
+              Obiettivi
+            </button>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/advice'); }}>
               Consigli finanziari
             </button>
