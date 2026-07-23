@@ -375,8 +375,9 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {budgetData.budgets.slice(0, 4).map(b => {
-                  const pct = Math.round(b.progress);
-                  const isOver = b.spent > b.amount;
+                  const bPct = Math.round(b.progress);
+                  const bRem = 100 - bPct;
+                  const bColor = b.spent > b.amount ? 'var(--danger)' : bRem >= 40 ? 'var(--brand)' : bRem >= 20 ? 'var(--warning)' : 'var(--danger)';
                   return (
                     <div key={b.id}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
@@ -387,8 +388,8 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                       </div>
                       <div style={{ height: 5, borderRadius: 3, background: 'var(--bg-muted)', overflow: 'hidden' }}>
                         <div style={{
-                          width: Math.min(pct, 100) + '%', height: '100%', borderRadius: 3,
-                          background: isOver ? 'var(--danger)' : 'var(--brand)',
+                          width: Math.min(bPct, 100) + '%', height: '100%', borderRadius: 3,
+                          background: bColor,
                           transition: 'width 0.6s ease'
                         }} />
                       </div>

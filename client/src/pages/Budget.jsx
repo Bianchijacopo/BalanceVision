@@ -84,8 +84,9 @@ export default function Budget() {
         {!loading && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {(data?.budgets || []).map(b => {
-              const pct = Math.round(b.progress);
-              const isOver = b.spent > b.amount;
+              const bPct = Math.round(b.progress);
+              const bRem = 100 - bPct;
+              const bColor = b.spent > b.amount ? 'var(--danger)' : bRem >= 40 ? 'var(--brand)' : bRem >= 20 ? 'var(--warning)' : 'var(--danger)';
               return (
                 <div key={b.id} className="card-chart" style={{ padding: '16px 20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
@@ -102,9 +103,9 @@ export default function Budget() {
                     </span>
                     <span style={{
                       fontSize: 12, fontWeight: 700, minWidth: 48, textAlign: 'right',
-                      color: isOver ? 'var(--danger)' : 'var(--success)'
+                      color: b.spent > b.amount ? 'var(--danger)' : bRem >= 40 ? 'var(--success)' : bRem >= 20 ? 'var(--warning)' : 'var(--danger)'
                     }}>
-                      {isOver ? '+' + (pct - 100) + '%' : (100 - pct) + '% rimasto'}
+                      {b.spent > b.amount ? '+' + (bPct - 100) + '%' : bRem + '% rimasto'}
                     </span>
                     <button className="btn-icon" onClick={() => { setEditCategory(b); setEditAmount(String(b.amount)); }} title="Modifica budget">&#9998;</button>
                     <button className="btn-delete" onClick={() => handleDelete(b.id)} title="Elimina budget">&times;</button>
@@ -114,11 +115,10 @@ export default function Budget() {
                     overflow: 'hidden', border: '1px solid var(--border-light)'
                   }}>
                     <div style={{
-                      width: Math.min(pct, 100) + '%', height: '100%',
+                      width: Math.min(bPct, 100) + '%', height: '100%',
                       borderRadius: 3,
-                      background: isOver ? 'var(--danger)' : 'var(--brand)',
+                      background: bColor,
                       transition: 'width 0.6s ease',
-                      opacity: isOver ? 0.8 : 1
                     }} />
                   </div>
                   {editCategory?.id === b.id && (

@@ -161,9 +161,10 @@ export default function AnalisiAvanzata() {
                 {categoryData.map(cat => {
                   const budget = budgetData?.budgets?.find(b => b.category === cat.category);
                   const hasBudget = budget && budget.amount > 0;
-                  const pct = hasBudget ? Math.round((cat.total / budget.amount) * 100) : null;
-                  const remaining = hasBudget ? Math.max(0, budget.amount - cat.total) : null;
-                  const isOver = hasBudget && cat.total > budget.amount;
+                  const aPct = hasBudget ? Math.round((cat.total / budget.amount) * 100) : null;
+                  const aRem = hasBudget ? 100 - aPct : null;
+                  const aIsOver = hasBudget && cat.total > budget.amount;
+                  const aColor = aIsOver ? 'var(--danger)' : aRem >= 40 ? 'var(--brand)' : aRem >= 20 ? 'var(--warning)' : 'var(--danger)';
                   return (
                     <div key={cat.category}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -175,9 +176,9 @@ export default function AnalisiAvanzata() {
                               {' / '}€{formatCurrency(budget.amount)}
                               <span style={{
                                 marginLeft: 6, fontWeight: 700, fontSize: 12,
-                                color: isOver ? 'var(--danger)' : 'var(--success)'
+                                color: aIsOver ? 'var(--danger)' : aRem >= 40 ? 'var(--success)' : aRem >= 20 ? 'var(--warning)' : 'var(--danger)'
                               }}>
-                                {isOver ? '+' + (pct - 100) + '%' : (remaining > 0 ? (100 - pct) + '% rimasto' : 'Completato')}
+                                {aIsOver ? '+' + (aPct - 100) + '%' : aRem + '% rimasto'}
                               </span>
                             </span>
                           )}
@@ -191,8 +192,8 @@ export default function AnalisiAvanzata() {
                       {hasBudget && (
                         <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-muted)', overflow: 'hidden' }}>
                           <div style={{
-                            width: Math.min(pct, 100) + '%', height: '100%', borderRadius: 3,
-                            background: isOver ? 'var(--danger)' : 'var(--brand)',
+                            width: Math.min(aPct, 100) + '%', height: '100%', borderRadius: 3,
+                            background: aColor,
                             transition: 'width 0.6s ease'
                           }} />
                         </div>
