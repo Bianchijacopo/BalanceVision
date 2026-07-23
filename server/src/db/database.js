@@ -103,6 +103,20 @@ function migrate() {
   }
 
   try {
+    db.run(`CREATE TABLE IF NOT EXISTS goals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      target_amount REAL NOT NULL CHECK(target_amount > 0),
+      current_amount REAL NOT NULL DEFAULT 0,
+      deadline TEXT DEFAULT '',
+      category TEXT DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+  } catch(e) {}
+
+  try {
     db.run(`CREATE TABLE IF NOT EXISTS budgets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,

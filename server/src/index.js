@@ -9,6 +9,7 @@ import transactionRoutes from './routes/transactions.js';
 import balanceRoutes from './routes/balance.js';
 import adviceRoutes from './routes/advice.js';
 import budgetRoutes from './routes/budgets.js';
+import goalRoutes from './routes/goals.js';
 
 const REQUIRED_ENV = ['JWT_SECRET', 'GMAIL_USER', 'GMAIL_APP_PASSWORD'];
 for (const key of REQUIRED_ENV) {
@@ -46,6 +47,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/balance', balanceRoutes);
 app.use('/api/advice', adviceRoutes);
 app.use('/api/budgets', budgetRoutes);
+app.use('/api/goals', goalRoutes);
 
 getDb().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
