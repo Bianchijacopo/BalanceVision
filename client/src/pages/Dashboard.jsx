@@ -781,41 +781,13 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       </main>
     </div>
 
-    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 100, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-      <div style={{ position: 'relative' }}>
-        <button className="btn btn-secondary" style={{
-          width: 44, height: 44, borderRadius: '50%', padding: 0, fontSize: 18,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'var(--bg-surface)', border: '1px solid var(--border)',
-          backdropFilter: 'blur(8px)', color: 'var(--text-secondary)', cursor: 'pointer',
-        }} onClick={() => setDownloadOpen(!downloadOpen)} title="Scarica report">
-          &#8595;
-        </button>
-        {downloadOpen && (
-          <div style={{
-            position: 'absolute', bottom: '100%', right: 0, marginBottom: 8,
-            minWidth: 240, background: 'var(--bg-surface)', border: '1px solid var(--border)',
-            borderRadius: 12, padding: 8, boxShadow: 'var(--shadow-lg)',
-          }}>
-            <div style={{ padding: '8px 12px', fontSize: 12, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Scarica report
-            </div>
-            <div style={{ padding: '4px 12px', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              Mese: {monthName}
-            </div>
-            <button className="dropdown-item" onClick={() => { setDownloadOpen(false); downloadPDF(); }}>
-              Report PDF (spese + entrate + statistiche)
-            </button>
-            <button className="dropdown-item" onClick={() => { setDownloadOpen(false); exportCSV(); }}>
-              File CSV (tutte le transazioni)
-            </button>
-          </div>
-        )}
-      </div>
-      <button className="focus-toggle" style={{ position: 'static' }} onClick={toggleFocus} title="Attiva/disattiva focus mode">
-        {focusMode ? '◉' : '○'}
-      </button>
-    </div>
+    <button className="focus-toggle" style={{ left: 24, right: 'auto' }} onClick={toggleFocus} title="Attiva/disattiva focus mode">
+      {focusMode ? '◉' : '○'}
+    </button>
+
+    <button className="focus-toggle" style={{ background: 'var(--brand)', color: 'var(--btn-primary-text)', borderColor: 'var(--brand)' }} onClick={downloadPDF} title="Scarica report PDF">
+      &#8595;
+    </button>
 
     {categoryModal && (
       <div className="modal-overlay" onClick={() => setCategoryModal(null)}>
