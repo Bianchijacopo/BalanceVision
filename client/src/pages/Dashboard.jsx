@@ -400,6 +400,7 @@ export default function Dashboard() {
                   <span className={`timeline-amount ${t.type === 'income' ? 'text-success' : 'text-danger'}`}>
                     {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
                   </span>
+                  <button className="btn-icon" onClick={() => navigate('/transactions/edit/' + t.id)} title="Modifica">&#9998;</button>
                   <button className="btn-delete" onClick={() => handleDeleteWithToast(t.id)} title="Elimina">&times;</button>
                 </div>
               </div>
@@ -425,7 +426,7 @@ export default function Dashboard() {
                   <th>Titolo</th>
                   <th>Categoria</th>
                   <th>Importo</th>
-                  <th className="delete-cell"></th>
+                  <th className="actions-cell" colSpan={2}></th>
                 </tr>
               </thead>
               <tbody>
@@ -437,13 +438,16 @@ export default function Dashboard() {
                     <td className={t.type === 'income' ? 'text-success' : 'text-danger'}>
                       {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
                     </td>
-                    <td className="delete-cell">
+                    <td className="actions-cell">
+                      <button className="btn-icon" onClick={() => navigate('/transactions/edit/' + t.id)} title="Modifica">&#9998;</button>
+                    </td>
+                    <td className="actions-cell">
                       <button className="btn-delete" onClick={() => handleDeleteWithToast(t.id)} title="Elimina">&times;</button>
                     </td>
                   </tr>
                 ))}
                 {transactions.length === 0 && (
-                  <tr><td colSpan={5} className="text-center text-secondary">Nessuna transazione</td></tr>
+                  <tr><td colSpan={6} className="text-center text-secondary">Nessuna transazione</td></tr>
                 )}
               </tbody>
             </table>

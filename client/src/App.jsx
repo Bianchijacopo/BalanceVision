@@ -45,6 +45,7 @@ export default function App() {
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
             <Route path="/dashboard" element={<VerifiedRoute><Dashboard /></VerifiedRoute>} />
             <Route path="/transactions/new" element={<VerifiedRoute><TransactionForm /></VerifiedRoute>} />
+            <Route path="/transactions/edit/:id" element={<VerifiedRoute><TransactionForm /></VerifiedRoute>} />
             <Route path="/analytics" element={<VerifiedRoute><AnalisiAvanzata /></VerifiedRoute>} />
             <Route path="/advice" element={<VerifiedRoute><Advice /></VerifiedRoute>} />
             <Route path="/profile" element={<VerifiedRoute><Profile /></VerifiedRoute>} />

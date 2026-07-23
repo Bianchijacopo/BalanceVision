@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { apiPost } from '../context/ApiContext';
-import { useNavigate } from 'react-router-dom';
+import { apiGet, apiPost, apiPut } from '../context/ApiContext';
+import { useNavigate, useParams } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { DEFAULT_COLORS, getCategoryColors, setCategoryColor, getUnusedColor } from '../utils/categoryColors';
 
@@ -10,6 +10,9 @@ const CATEGORIES = ['Cibo', 'Casa', 'Trasporti', 'Salute', 'Svago', 'Abbigliamen
 export default function TransactionForm() {
   const { token } = useAuth();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEdit = Boolean(id);
+
   const [type, setType] = useState('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -20,8 +23,24 @@ export default function TransactionForm() {
   const [customCategory, setCustomCategory] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLORS[0]);
+  const [loading, setLoading] = useState(isEdit);
 
   const showColorPicker = customCategory.trim().length > 0;
+
+  useEffect(() => {
+    if (!isEdit) return;
+    apiGet('/transactions/' + id, token)
+      .then(t => {
+        setType(t.type);
+        setTitle(t.title);
+        setAmount(String(t.amount));
+        setCategory(t.category);
+        setDate(t.date);
+        setNote(t.note || '');
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [id, token]);
 
   useEffect(() => {
     if (showColorPicker) {
@@ -43,15 +62,14 @@ export default function TransactionForm() {
       if (customCategory.trim()) {
         setCategoryColor(customCategory.trim(), selectedColor);
       }
-      await apiPost('/transactions', {
-        type,
-        title,
-        amount: parseFloat(amount),
-        category: finalCategory,
-        date,
-        note
-      }, token);
-      setSuccess('Transazione salvata con successo.');
+      const payload = { type, title, amount: parseFloat(amount), category: finalCategory, date, note };
+      if (isEdit) {
+        await apiPut('/transactions/' + id, payload, token);
+        setSuccess('Transazione aggiornata con successo.');
+      } else {
+        await apiPost('/transactions', payload, token);
+        setSuccess('Transazione salvata con successo.');
+      }
       setTitle('');
       setAmount('');
       setNote('');
@@ -61,9 +79,16 @@ export default function TransactionForm() {
     }
   }
 
+  if (loading) return (
+    <div className="layout">
+      <Topbar title="Modifica transazione" />
+      <main className="main-content narrow"><div className="loading">Caricamento...</div></main>
+    </div>
+  );
+
   return (
     <div className="layout">
-      <Topbar title="Nuova transazione" />
+      <Topbar title={isEdit ? 'Modifica transazione' : 'Nuova transazione'} />
 
       <main className="main-content narrow">
         <div className="card">
@@ -192,7 +217,7 @@ export default function TransactionForm() {
             </div>
 
             <button type="submit" className="btn btn-primary btn-full">
-              Salva transazione
+              {isEdit ? 'Aggiorna transazione' : 'Salva transazione'}
             </button>
           </form>
         </div>

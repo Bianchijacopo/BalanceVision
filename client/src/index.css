@@ -744,6 +744,33 @@ textarea.form-input {
   border-color: var(--danger);
 }
 
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+.btn-icon:hover {
+  color: var(--brand);
+  background: var(--brand-light);
+  border-color: var(--brand);
+}
+
+.actions-cell {
+  text-align: center;
+  width: 40px;
+}
+
 /* ============================
    BADGE
    ============================ */
@@ -1526,7 +1553,7 @@ textarea.form-input {
 
 .timeline-content {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto auto;
   gap: 10px;
   align-items: center;
 }

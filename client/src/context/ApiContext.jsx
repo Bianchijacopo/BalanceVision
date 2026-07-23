@@ -39,3 +39,7 @@ export async function apiGet(path, token, refresh) {
 export async function apiPost(path, body, token, refresh) {
   return request('POST', path, body, token, refresh);
 }
+
+export async function apiPut(path, body, token, refresh) {
+  return request('PUT', path, body, token, refresh);
+}
