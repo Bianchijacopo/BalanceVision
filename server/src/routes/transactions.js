@@ -34,6 +34,36 @@ router.post('/', (req, res) => {
   res.status(201).json(transaction);
 });
 
+router.get('/:id', (req, res) => {
+  const t = get('SELECT * FROM transactions WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
+  if (!t) return res.status(404).json({ error: 'Transazione non trovata' });
+  res.json(t);
+});
+
+router.put('/:id', (req, res) => {
+  const t = get('SELECT * FROM transactions WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
+  if (!t) return res.status(404).json({ error: 'Transazione non trovata' });
+
+  const { type, title, amount, category, date, note } = req.body;
+  if (!type || !title || !amount || !category || !date) {
+    return res.status(400).json({ error: 'Campi obbligatori: type, title, amount, category, date' });
+  }
+  if (!['income', 'expense'].includes(type)) {
+    return res.status(400).json({ error: 'type deve essere "income" o "expense"' });
+  }
+  if (amount <= 0) {
+    return res.status(400).json({ error: 'amount deve essere positivo' });
+  }
+
+  run(
+    'UPDATE transactions SET type = ?, title = ?, amount = ?, category = ?, date = ?, note = ? WHERE id = ? AND user_id = ?',
+    [type, title, amount, category, date, note || '', req.params.id, req.userId]
+  );
+
+  const updated = get('SELECT * FROM transactions WHERE id = ?', [req.params.id]);
+  res.json(updated);
+});
+
 router.delete('/:id', (req, res) => {
   const t = get('SELECT * FROM transactions WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
   if (!t) return res.status(404).json({ error: 'Transazione non trovata' });
