@@ -7,12 +7,14 @@ const API = 'http://localhost:3001/api';
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const [justRegistered, setJustRegistered] = useState(false);
 
   useEffect(() => {
     if (token) {
       localStorage.setItem('token', token);
     } else {
       localStorage.removeItem('token');
+      setJustRegistered(false);
     }
   }, [token]);
 
@@ -26,6 +28,7 @@ export function AuthProvider({ children }) {
     if (!res.ok) throw new Error(data.error || 'Login fallito');
     setToken(data.token);
     setUser(data.user);
+    setJustRegistered(false);
     return data;
   }
 
@@ -39,16 +42,18 @@ export function AuthProvider({ children }) {
     if (!res.ok) throw new Error(data.error || 'Registrazione fallita');
     setToken(data.token);
     setUser(data.user);
+    setJustRegistered(true);
     return data;
   }
 
   function logout() {
     setToken(null);
     setUser(null);
+    setJustRegistered(false);
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, setUser }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, setUser, justRegistered, setJustRegistered }}>
       {children}
     </AuthContext.Provider>
   );

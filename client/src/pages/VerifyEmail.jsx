@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function VerifyEmail() {
-  const { token, user, setUser } = useAuth();
+  const { token, user, setUser, setJustRegistered } = useAuth();
   const navigate = useNavigate();
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
@@ -28,6 +28,7 @@ export default function VerifyEmail() {
       if (!res.ok) throw new Error(data.error);
       setSuccess('Email verificata con successo');
       if (data.user) setUser(data.user);
+      setJustRegistered(false);
       setTimeout(() => navigate('/dashboard'), 800);
     } catch (err) {
       setError(err.message);
@@ -81,7 +82,6 @@ export default function VerifyEmail() {
           <button onClick={handleResend} className="link" style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer', fontSize: 13 }}>
             Invia di nuovo il codice
           </button>
-          <Link to="/dashboard" className="text-secondary" style={{ fontSize: 12 }}>Continua senza verificare</Link>
         </div>
       </div>
     </div>
