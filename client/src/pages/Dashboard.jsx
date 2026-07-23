@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
 import { getAllCategories, isDefaultCategory, removeCustomCategory } from '../utils/categoryManager';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 const RADIAN = Math.PI / 180;
 
@@ -233,6 +235,95 @@ export default function Dashboard() {
     link.click();
     URL.revokeObjectURL(link.href);
     addToast('CSV esportato con successo', 'success');
+  }
+
+  const transactionsBeforeMonth = transactions.filter(t => t.date < displayMonth);
+  let monthStartBalance = balance?.initial_balance || 0;
+  transactionsBeforeMonth.forEach(t => {
+    monthStartBalance += t.type === 'income' ? t.amount : -t.amount;
+  });
+
+  function downloadPDF() {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    doc.setFontSize(18);
+    doc.setTextColor(0, 180, 90);
+    doc.text('BalanceVision', pageW / 2, y, { align: 'center' });
+    y += 8;
+
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text('Report mensile - ' + monthName, pageW / 2, y, { align: 'center' });
+    y += 12;
+
+    doc.setDrawColor(0, 180, 90);
+    doc.line(20, y, pageW - 20, y);
+    y += 8;
+
+    doc.setFontSize(11);
+    doc.setTextColor(50);
+    doc.text('Saldo iniziale mese:', 20, y);
+    doc.setFontSize(13);
+    doc.setTextColor(0, 180, 90);
+    doc.text('€' + formatCurrency(monthStartBalance), pageW - 20, y, { align: 'right' });
+    y += 10;
+
+    doc.setFontSize(11);
+    doc.setTextColor(50);
+    doc.text('Totale entrate:', 20, y);
+    doc.setFontSize(13);
+    doc.setTextColor(0, 180, 90);
+    doc.text('€' + formatCurrency(monthlyIncome), pageW - 20, y, { align: 'right' });
+    y += 10;
+
+    doc.setFontSize(11);
+    doc.setTextColor(50);
+    doc.text('Totale spese:', 20, y);
+    doc.setFontSize(13);
+    doc.setTextColor(220, 0, 50);
+    doc.text('-€' + formatCurrency(monthlyExpenses), pageW - 20, y, { align: 'right' });
+    y += 10;
+
+    doc.setDrawColor(200);
+    doc.line(20, y, pageW - 20, y);
+    y += 6;
+
+    doc.setFontSize(11);
+    doc.setTextColor(50);
+    doc.text('Saldo finale:', 20, y);
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text('€' + formatCurrency(balance?.current_balance || 0), pageW - 20, y, { align: 'right' });
+    y += 16;
+
+    if (monthlyTransactions.filter(t => t.type === 'expense').length > 0) {
+      doc.setFontSize(13);
+      doc.setTextColor(50);
+      doc.text('Spese del mese', 20, y);
+      y += 6;
+
+      const rows = monthlyTransactions
+        .filter(t => t.type === 'expense')
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]);
+
+      doc.autoTable({
+        startY: y,
+        head: [['Data', 'Titolo', 'Categoria', 'Importo']],
+        body: rows,
+        theme: 'grid',
+        headStyles: { fillColor: [0, 180, 90], textColor: [255, 255, 255], fontSize: 9 },
+        bodyStyles: { fontSize: 9, textColor: [50, 50, 50] },
+        alternateRowStyles: { fillColor: [240, 255, 245] },
+        styles: { cellPadding: 3 },
+        margin: { left: 20, right: 20 },
+      });
+    }
+
+    doc.save('report_' + displayMonth + '.pdf');
+    addToast('PDF scaricato con successo', 'success');
   }
 
   return (
@@ -525,9 +616,8 @@ export default function Dashboard() {
                 Cancella filtri
               </button>
             )}
-            <button className="btn btn-secondary btn-sm" onClick={exportCSV} title="Esporta CSV">
-              CSV
-            </button>
+            <button className="btn btn-secondary btn-sm" onClick={exportCSV} title="Esporta CSV">CSV</button>
+            <button className="btn btn-secondary btn-sm" onClick={downloadPDF} title="Scarica PDF mensile">PDF</button>
             <button className={`btn btn-ghost btn-sm`}
               onClick={() => setManageCats(!manageCats)}>
               Categorie
