@@ -148,10 +148,10 @@ export default function EditProfile() {
               <input
                 type="text"
                 className="form-input"
-                placeholder="Codice OTP a 6 cifre"
+                placeholder="_ _ _ _ _ _"
                 value={otp}
-                onChange={e => setOtp(e.target.value)}
-                style={{ textAlign: 'center', letterSpacing: 4, fontSize: 18 }}
+                onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                style={{ textAlign: 'center', letterSpacing: 8, fontSize: 22, fontWeight: 700, fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace" }}
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <button onClick={() => setOtpSent(false)} className="btn btn-secondary" style={{ flex: 1 }}>

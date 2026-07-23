@@ -69,10 +69,10 @@ export default function VerifyEmail() {
           <input
             type="text"
             className="form-input"
-            placeholder="Codice a 6 cifre"
+            placeholder="_ _ _ _ _ _"
             value={otp}
             onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            style={{ textAlign: 'center', letterSpacing: 6, fontSize: 20, fontWeight: 700 }}
+            style={{ textAlign: 'center', letterSpacing: 8, fontSize: 22, fontWeight: 700, fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace" }}
           />
         </div>
         <button onClick={handleVerify} className="btn btn-primary btn-full" disabled={loading || otp.length < 6}>

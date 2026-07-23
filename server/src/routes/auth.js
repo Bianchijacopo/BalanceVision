@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { get, run } from '../db/database.js';
 import { generateToken, authMiddleware } from '../middleware/auth.js';
-import { sendEmail } from '../email.js';
+import { sendEmail, buildOtpEmail } from '../email.js';
 
 const router = Router();
 
@@ -28,7 +28,8 @@ router.post('/register', async (req, res) => {
 
   console.log('OTP per', email, ':', otp);
   try {
-    await sendEmail(email, 'Verifica email BalanceVision', 'Benvenuto!\n\nIl tuo codice di verifica e: ' + otp + '\n\nValido per 10 minuti.\n\nBalanceVision Team');
+    const { text, html } = buildOtpEmail(name || 'Utente', otp);
+    await sendEmail(email, 'Codice di verifica BalanceVision', text, html);
   } catch (err) {
     console.error('Errore invio email:', err);
   }
@@ -93,7 +94,8 @@ router.post('/send-otp', authMiddleware, async (req, res) => {
 
   console.log('OTP per', user.email, ':', otp);
   try {
-    await sendEmail(user.email, 'Codice di verifica BalanceVision', 'Ciao ' + user.name + ',\n\nIl tuo codice di verifica e: ' + otp + '\n\nValido per 10 minuti.\n\nBalanceVision Team');
+    const { text, html } = buildOtpEmail(user.name || 'Utente', otp);
+    await sendEmail(user.email, 'Codice di verifica BalanceVision', text, html);
     res.json({ message: 'Codice inviato alla tua email' });
   } catch (err) {
     console.error('Errore invio email:', err);
