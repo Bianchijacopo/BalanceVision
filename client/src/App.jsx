@@ -8,6 +8,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import TransactionForm from './pages/TransactionForm';
 import AnalisiAvanzata from './pages/AnalisiAvanzata';
+import Budget from './pages/Budget';
 import Advice from './pages/Advice';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/transactions/new" element={<VerifiedRoute><TransactionForm /></VerifiedRoute>} />
             <Route path="/transactions/edit/:id" element={<VerifiedRoute><TransactionForm /></VerifiedRoute>} />
             <Route path="/analytics" element={<VerifiedRoute><AnalisiAvanzata /></VerifiedRoute>} />
+            <Route path="/budgets" element={<VerifiedRoute><Budget /></VerifiedRoute>} />
             <Route path="/advice" element={<VerifiedRoute><Advice /></VerifiedRoute>} />
             <Route path="/profile" element={<VerifiedRoute><Profile /></VerifiedRoute>} />
             <Route path="/profile/edit" element={<VerifiedRoute><EditProfile /></VerifiedRoute>} />

@@ -85,6 +85,7 @@ export default function Dashboard() {
   const [hoveredPoint, setHoveredPoint] = useState(null);
   const [focusMode, setFocusMode] = useState(false);
   const [categoryModal, setCategoryModal] = useState(null);
+  const [budgetData, setBudgetData] = useState(null);
   const { addToast } = useToast();
   const prevBalanceRef = useRef(null);
   const [animClass, setAnimClass] = useState('');
@@ -103,6 +104,7 @@ export default function Dashboard() {
   useEffect(() => {
     apiGet('/balance', token).then(setBalance).catch(console.error);
     apiGet('/transactions', token).then(setTransactions).catch(console.error);
+    apiGet('/budgets', token).then(setBudgetData).catch(console.error);
   }, [token]);
 
   useEffect(() => {
@@ -232,6 +234,44 @@ export default function Dashboard() {
               </>
             )}
           </div>
+
+          {budgetData?.budgets?.length > 0 && (
+            <div className="card-chart" style={{ marginBottom: 24 }}>
+              <div className="section-header">
+                <h3 className="chart-title" style={{ margin: 0 }}>Budget {monthName}</h3>
+                <button className="btn btn-secondary btn-sm" onClick={() => navigate('/budgets')}>Gestisci</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {budgetData.budgets.slice(0, 4).map(b => {
+                  const pct = Math.round(b.progress);
+                  const isOver = b.spent > b.amount;
+                  return (
+                    <div key={b.id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                        <span style={{ fontWeight: 600 }}>{b.category}</span>
+                        <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                          €{b.spent.toFixed(0)} / €{b.amount.toFixed(0)}
+                        </span>
+                      </div>
+                      <div style={{ height: 5, borderRadius: 3, background: 'var(--bg-muted)', overflow: 'hidden' }}>
+                        <div style={{
+                          width: Math.min(pct, 100) + '%', height: '100%', borderRadius: 3,
+                          background: isOver ? 'var(--danger)' : 'var(--brand)',
+                          transition: 'width 0.6s ease'
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                {budgetData.budgets.length > 4 && (
+                  <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => navigate('/budgets')}>
+                    +{budgetData.budgets.length - 4} altri budget
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="monthly-summary">
             <div className="monthly-header">

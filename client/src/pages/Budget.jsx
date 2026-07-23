@@ -1,0 +1,188 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { apiGet } from '../context/ApiContext';
+import { useNavigate } from 'react-router-dom';
+import Topbar from '../components/Topbar';
+import { getCategoryColors } from '../utils/categoryColors';
+
+const CATEGORIES = ['Cibo', 'Casa', 'Trasporti', 'Salute', 'Svago', 'Abbigliamento', 'Bolle', 'Stipendi', 'Extra'];
+
+function formatCurrency(v) {
+  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export default function Budget() {
+  const { token } = useAuth();
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editCategory, setEditCategory] = useState(null);
+  const [editAmount, setEditAmount] = useState('');
+  const categoryColors = getCategoryColors();
+
+  const now = new Date();
+  const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const monthName = now.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+
+  async function loadBudgets() {
+    setLoading(true);
+    try {
+      const res = await apiGet('/budgets?month=' + currentMonth, token);
+      setData(res);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => { loadBudgets(); }, [token]);
+
+  const existingCategories = new Set((data?.budgets || []).map(b => b.category));
+
+  async function handleSave(category) {
+    try {
+      const res = await fetch('http://localhost:3001/api/budgets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ category, month: currentMonth, amount: parseFloat(editAmount) })
+      });
+      if (res.ok) {
+        setEditCategory(null);
+        setEditAmount('');
+        loadBudgets();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function handleDelete(id) {
+    try {
+      await fetch('http://localhost:3001/api/budgets/' + id, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      loadBudgets();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  return (
+    <div className="layout">
+      <Topbar title="Budget mensili" />
+
+      <main className="main-content">
+        <div className="section-header" style={{ marginBottom: 20 }}>
+          <h3 className="section-title">{monthName}</h3>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>
+            {data ? '€' + formatCurrency(data.totalBudget) + ' budget totale' : ''}
+          </span>
+        </div>
+
+        {loading && <div className="loading">Caricamento...</div>}
+
+        {!loading && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(data?.budgets || []).map(b => {
+              const pct = Math.round(b.progress);
+              const isOver = b.spent > b.amount;
+              return (
+                <div key={b.id} className="card-chart" style={{ padding: '16px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <div style={{
+                      width: 10, height: 10, borderRadius: '50%',
+                      background: categoryColors[b.category] || '#6366F1', flexShrink: 0
+                    }} />
+                    <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>{b.category}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                      €{formatCurrency(b.spent)}
+                      <span style={{ color: 'var(--text-tertiary)', fontWeight: 500, fontSize: 12 }}>
+                        {' / '}€{formatCurrency(b.amount)}
+                      </span>
+                    </span>
+                    <span style={{
+                      fontSize: 12, fontWeight: 700, minWidth: 48, textAlign: 'right',
+                      color: isOver ? 'var(--danger)' : 'var(--success)'
+                    }}>
+                      {isOver ? '+' + (pct - 100) + '%' : (100 - pct) + '% rimasto'}
+                    </span>
+                    <button className="btn-icon" onClick={() => { setEditCategory(b); setEditAmount(String(b.amount)); }} title="Modifica budget">&#9998;</button>
+                    <button className="btn-delete" onClick={() => handleDelete(b.id)} title="Elimina budget">&times;</button>
+                  </div>
+                  <div style={{
+                    height: 6, borderRadius: 3, background: 'var(--bg-muted)',
+                    overflow: 'hidden', border: '1px solid var(--border-light)'
+                  }}>
+                    <div style={{
+                      width: Math.min(pct, 100) + '%', height: '100%',
+                      borderRadius: 3,
+                      background: isOver ? 'var(--danger)' : 'var(--brand)',
+                      transition: 'width 0.6s ease',
+                      opacity: isOver ? 0.8 : 1
+                    }} />
+                  </div>
+                  {editCategory?.id === b.id && (
+                    <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        className="form-input"
+                        style={{ width: 160, padding: '6px 10px', fontSize: 13 }}
+                        value={editAmount}
+                        onChange={e => setEditAmount(e.target.value)}
+                        autoFocus
+                      />
+                      <button className="btn btn-primary btn-sm" onClick={() => handleSave(b.category)}>Salva</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setEditCategory(null)}>Annulla</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="card-chart" style={{ padding: '16px 20px' }}>
+              <h3 className="chart-title" style={{ marginBottom: 12 }}>Aggiungi budget</h3>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {CATEGORIES.filter(c => !existingCategories.has(c)).map(cat => (
+                  <button
+                    key={cat}
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => { setEditCategory(cat); setEditAmount(''); }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              {typeof editCategory === 'string' && (
+                <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, minWidth: 80 }}>{editCategory}</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    className="form-input"
+                    style={{ width: 160, padding: '6px 10px', fontSize: 13 }}
+                    placeholder="Importo budget"
+                    value={editAmount}
+                    onChange={e => setEditAmount(e.target.value)}
+                    autoFocus
+                  />
+                  <button className="btn btn-primary btn-sm" onClick={() => handleSave(editCategory)}>Crea</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setEditCategory(null)}>Annulla</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="section" style={{ textAlign: 'center', marginTop: 24 }}>
+          <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
+            Torna alla dashboard
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
