@@ -34,4 +34,11 @@ router.post('/', (req, res) => {
   res.status(201).json(transaction);
 });
 
+router.delete('/:id', (req, res) => {
+  const t = get('SELECT * FROM transactions WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
+  if (!t) return res.status(404).json({ error: 'Transazione non trovata' });
+  run('DELETE FROM transactions WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
+  res.json({ message: 'Transazione eliminata' });
+});
+
 export default router;

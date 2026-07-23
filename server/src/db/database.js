@@ -65,6 +65,26 @@ function initSchema() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      action TEXT NOT NULL,
+      ip TEXT DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token_hash TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
   save();
 }
 
@@ -75,10 +95,27 @@ function migrate() {
     "ALTER TABLE users ADD COLUMN otp TEXT DEFAULT NULL",
     "ALTER TABLE users ADD COLUMN otp_expiry TEXT DEFAULT NULL",
     "ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT NULL",
+    "ALTER TABLE users ADD COLUMN last_login_ip TEXT DEFAULT NULL",
+    "ALTER TABLE users ADD COLUMN last_login_at TEXT DEFAULT NULL",
   ];
   for (const sql of migrations) {
     try { db.run(sql); } catch (e) {}
   }
+
+  try {
+    db.run("ALTER TABLE audit_log RENAME TO audit_log_old");
+    db.run(`CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      action TEXT NOT NULL,
+      ip TEXT DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    )`);
+    db.run("INSERT INTO audit_log SELECT * FROM audit_log_old");
+    db.run("DROP TABLE audit_log_old");
+  } catch(e) {}
+
   save();
 }
 

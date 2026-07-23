@@ -60,6 +60,17 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [modal, setModal] = useState(null);
 
+  async function deleteTransaction(id) {
+    const res = await fetch('http://localhost:3001/api/transactions/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (res.ok) {
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      apiGet('/balance', token).then(setBalance).catch(console.error);
+    }
+  }
+
   useEffect(() => {
     apiGet('/balance', token).then(setBalance).catch(console.error);
     apiGet('/transactions', token).then(setTransactions).catch(console.error);
@@ -272,6 +283,7 @@ export default function Dashboard() {
                   <th>Titolo</th>
                   <th>Categoria</th>
                   <th>Importo</th>
+                  <th className="delete-cell"></th>
                 </tr>
               </thead>
               <tbody>
@@ -283,10 +295,13 @@ export default function Dashboard() {
                     <td className={t.type === 'income' ? 'text-success' : 'text-danger'}>
                       {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
                     </td>
+                    <td className="delete-cell">
+                      <button className="btn-delete" onClick={() => deleteTransaction(t.id)} title="Elimina">&times;</button>
+                    </td>
                   </tr>
                 ))}
                 {monthlyTransactions.length === 0 && (
-                  <tr><td colSpan={4} className="text-center text-secondary">Nessuna transazione in questo mese</td></tr>
+                  <tr><td colSpan={5} className="text-center text-secondary">Nessuna transazione in questo mese</td></tr>
                 )}
               </tbody>
             </table>
@@ -308,6 +323,7 @@ export default function Dashboard() {
                   <th>Titolo</th>
                   <th>Categoria</th>
                   <th>Importo</th>
+                  <th className="delete-cell"></th>
                 </tr>
               </thead>
               <tbody>
@@ -319,10 +335,13 @@ export default function Dashboard() {
                     <td className={t.type === 'income' ? 'text-success' : 'text-danger'}>
                       {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
                     </td>
+                    <td className="delete-cell">
+                      <button className="btn-delete" onClick={() => deleteTransaction(t.id)} title="Elimina">&times;</button>
+                    </td>
                   </tr>
                 ))}
                 {transactions.length === 0 && (
-                  <tr><td colSpan={4} className="text-center text-secondary">Nessuna transazione</td></tr>
+                  <tr><td colSpan={5} className="text-center text-secondary">Nessuna transazione</td></tr>
                 )}
               </tbody>
             </table>

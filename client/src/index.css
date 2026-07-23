@@ -712,6 +712,34 @@ textarea.form-input {
   text-align: right;
 }
 
+.table td.delete-cell,
+.table th.delete-cell {
+  text-align: center;
+  width: 48px;
+}
+
+.btn-delete {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+.btn-delete:hover {
+  color: var(--danger);
+  background: var(--danger-light);
+  border-color: var(--danger);
+}
+
 /* ============================
    BADGE
    ============================ */
