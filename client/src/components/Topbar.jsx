@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +31,7 @@ export default function Topbar({ title }) {
   const { theme, toggle } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const initials = (user?.name || user?.email || '?')
     .split(' ')
@@ -37,6 +39,11 @@ export default function Topbar({ title }) {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+
+  function handleLogout() {
+    logout();
+    navigate('/login');
+  }
 
   return (
     <header className="topbar">
@@ -53,9 +60,23 @@ export default function Topbar({ title }) {
         <button onClick={toggle} className="theme-toggle" title={theme === 'light' ? 'Tema scuro' : 'Tema chiaro'}>
           {theme === 'light' ? <MoonIcon /> : <SunIcon />}
         </button>
-        <div className="avatar">{initials}</div>
-        <span className="text-sm text-secondary">{user?.name || user?.email}</span>
-        <button onClick={() => { logout(); navigate('/login'); }} className="btn btn-ghost btn-sm">Esci</button>
+        <div
+          className="user-menu"
+          onMouseEnter={() => setMenuOpen(true)}
+          onMouseLeave={() => setMenuOpen(false)}
+        >
+          <div className="avatar">{initials}</div>
+          <span className="text-sm text-secondary">{user?.name || user?.email}</span>
+          <div className={`dropdown-menu ${menuOpen ? 'dropdown-visible' : ''}`}>
+            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/profile'); }}>
+              Entra nel profilo
+            </button>
+            <div className="dropdown-divider" />
+            <button className="dropdown-item" onClick={handleLogout}>
+              Disconnetti
+            </button>
+          </div>
+        </div>
       </div>
     </header>
   );

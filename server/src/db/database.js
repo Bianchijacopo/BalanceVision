@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
@@ -27,6 +28,7 @@ export async function getDb() {
   }
 
   initSchema();
+  migrate();
   return db;
 }
 
@@ -63,6 +65,19 @@ function initSchema() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+  save();
+}
+
+function migrate() {
+  const migrations = [
+    "ALTER TABLE users ADD COLUMN surname TEXT DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN otp TEXT DEFAULT NULL",
+    "ALTER TABLE users ADD COLUMN otp_expiry TEXT DEFAULT NULL",
+  ];
+  for (const sql of migrations) {
+    try { db.run(sql); } catch (e) {}
+  }
   save();
 }
 
