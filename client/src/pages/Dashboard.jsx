@@ -58,6 +58,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [modal, setModal] = useState(null);
 
   useEffect(() => {
     apiGet('/balance', token).then(setBalance).catch(console.error);
@@ -79,19 +80,42 @@ export default function Dashboard() {
   const topExpenses = [...expenseByCategory].sort((a, b) => b.value - a.value).slice(0, 8);
   const categoryColors = getCategoryColors();
 
+  const [monthOffset, setMonthOffset] = useState(0);
   const now = new Date();
-  const currentMonth = now.toISOString().slice(0, 7);
-  const monthName = now.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
-  const monthlyTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
+  const targetDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const displayMonth = targetDate.getFullYear() + '-' + String(targetDate.getMonth() + 1).padStart(2, '0');
+  const monthName = targetDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+  const monthlyTransactions = transactions.filter(t => t.date.startsWith(displayMonth));
   const monthlyIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const monthlyExpenses = monthlyTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const hasMonthlyIncome = monthlyTransactions.some(t => t.type === 'income');
+  const hasMonthlyExpense = monthlyTransactions.some(t => t.type === 'expense');
+
+  const incomeTransactions = transactions.filter(t => t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
+  const expenseTransactions = transactions.filter(t => t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  function getChartStats(data, key) {
+    if (!data || data.length === 0) return null;
+    const values = data.filter(d => d[key] != null).map(d => d[key]);
+    return {
+      start: values[0],
+      end: values[values.length - 1],
+      min: Math.min(...values),
+      max: Math.max(...values),
+      count: values.length,
+    };
+  }
+
+  const balanceStats = getChartStats(balanceHistory, 'balance');
+  const projStats = getChartStats(projectionData, 'projected');
 
   return (
+    <>
     <div className="layout">
       <Topbar title="Dashboard" />
 
       <main className="main-content">
-          <div className="balance-card">
+          <div className="balance-card clickable" onClick={() => setModal('balance')}>
             <p className="balance-label">Saldo corrente</p>
             <h2 className="balance-value">
               {balance ? <><span className="dollar-brand">€</span>{formatCurrency(balance.current_balance)}</> : '...'}
@@ -99,27 +123,31 @@ export default function Dashboard() {
           </div>
 
           <div className="monthly-summary">
-            <p className="monthly-label">{monthName}</p>
-            <div className="monthly-grid">
+            <div className="monthly-header">
+              <button className="monthly-arrow" onClick={() => setMonthOffset(prev => prev - 1)}>←</button>
+              <p className="monthly-label">{monthName}</p>
+              <button className="monthly-arrow" onClick={() => setMonthOffset(prev => Math.min(prev + 1, 0))} disabled={monthOffset === 0}>→</button>
+            </div>
+            <div className="monthly-grid" key={displayMonth}>
               <div className="monthly-item">
                 <span className="monthly-item-label">Entrate</span>
-                <span className="monthly-item-value text-success">+€{formatCurrency(monthlyIncome)}</span>
+                <span className="monthly-item-value text-success">{hasMonthlyIncome ? '+€' + formatCurrency(monthlyIncome) : '-'}</span>
               </div>
               <div className="monthly-item">
                 <span className="monthly-item-label">Spese</span>
-                <span className="monthly-item-value text-danger">-€{formatCurrency(monthlyExpenses)}</span>
+                <span className="monthly-item-value text-danger">{hasMonthlyExpense ? '-€' + formatCurrency(monthlyExpenses) : '-'}</span>
               </div>
               <div className="monthly-item">
                 <span className="monthly-item-label">Saldo mese</span>
-                <span className={`monthly-item-value ${monthlyIncome - monthlyExpenses >= 0 ? 'text-success' : 'text-danger'}`}>
-                  €{formatCurrency(monthlyIncome - monthlyExpenses)}
+                <span className={`monthly-item-value ${monthlyIncome >= monthlyExpenses ? 'text-success' : 'text-danger'}`}>
+                  {(hasMonthlyIncome || hasMonthlyExpense) ? '€' + formatCurrency(monthlyIncome - monthlyExpenses) : '-'}
                 </span>
               </div>
             </div>
           </div>
 
         <div className="grid-2">
-          <div className="card-chart">
+          <div className="card-chart clickable" onClick={() => setModal('chart-line')}>
             <h3 className="chart-title">Andamento del saldo</h3>
             {balanceHistory.length > 1 ? (
               <ResponsiveContainer width="100%" height={250}>
@@ -136,7 +164,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="card-chart">
+          <div className="card-chart clickable" onClick={() => setModal('chart-pie')}>
             <h3 className="chart-title">Spese per categoria</h3>
             {topExpenses.length > 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 250 }}>
@@ -184,7 +212,7 @@ export default function Dashboard() {
         </div>
 
         <div className="grid-2">
-          <div className="card-chart">
+          <div className="card-chart clickable" onClick={() => setModal('chart-projection')}>
             <h3 className="chart-title">Proiezione saldo (30 giorni)</h3>
             {projectionData.length > 1 ? (
               <ResponsiveContainer width="100%" height={250}>
@@ -273,6 +301,232 @@ export default function Dashboard() {
           </button>
         </div>
       </main>
+    </div>
+
+    {modal && (
+      <DashboardModal
+        type={modal}
+        onClose={() => setModal(null)}
+        balance={balance}
+        transactions={transactions}
+        incomeTransactions={incomeTransactions}
+        expenseTransactions={expenseTransactions}
+        balanceHistory={balanceHistory}
+        projectionData={projectionData}
+        topExpenses={topExpenses}
+        categoryColors={categoryColors}
+        balanceStats={balanceStats}
+        projStats={projStats}
+      />
+    )}
+    </>
+  );
+}
+
+function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTransactions, balanceHistory, projectionData, topExpenses, categoryColors, balanceStats, projStats }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  function formatCurrency(v) {
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  let title, content;
+
+  if (type === 'balance') {
+    const totalIncome = incomeTransactions.reduce((s, t) => s + t.amount, 0);
+    const totalExpenses = expenseTransactions.reduce((s, t) => s + t.amount, 0);
+    title = 'Dettaglio saldo';
+    content = (
+      <>
+        <div className="modal-balance-total">
+          <span className="modal-balance-label">Saldo totale</span>
+          <span className="modal-balance-value">€{formatCurrency(balance?.current_balance || 0)}</span>
+        </div>
+        <div className="modal-split">
+          <div className="modal-column modal-column-income">
+            <div className="modal-column-header">
+              <span>Entrate</span>
+              <span className="text-success">€{formatCurrency(totalIncome)}</span>
+            </div>
+            <div className="modal-column-list">
+              {incomeTransactions.map(t => (
+                <div className="modal-entry" key={t.id}>
+                  <span className="modal-entry-date">{t.date}</span>
+                  <span className="modal-entry-title">{t.title}</span>
+                  <span className="badge">{t.category}</span>
+                  <span className="text-success">+€{t.amount.toFixed(2)}</span>
+                </div>
+              ))}
+              {incomeTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>Nessuna entrata</p>}
+            </div>
+          </div>
+          <div className="modal-column modal-column-expense">
+            <div className="modal-column-header">
+              <span>Uscite</span>
+              <span className="text-danger">€{formatCurrency(totalExpenses)}</span>
+            </div>
+            <div className="modal-column-list">
+              {expenseTransactions.map(t => (
+                <div className="modal-entry" key={t.id}>
+                  <span className="modal-entry-date">{t.date}</span>
+                  <span className="modal-entry-title">{t.title}</span>
+                  <span className="badge">{t.category}</span>
+                  <span className="text-danger">-€{t.amount.toFixed(2)}</span>
+                </div>
+              ))}
+              {expenseTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>Nessuna uscita</p>}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  } else if (type === 'chart-line') {
+    title = 'Andamento del saldo';
+    content = (
+      <div className="modal-chart-layout">
+        <div className="modal-chart-area">
+          {balanceHistory.length > 1 ? (
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={balanceHistory}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                <Tooltip content={<ChartTooltip />} />
+                <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="chart-empty">Dati insufficienti</p>
+          )}
+        </div>
+        <div className="modal-chart-sidebar">
+          <div className="modal-stat">
+            <span className="modal-stat-label">Saldo iniziale</span>
+            <span className="modal-stat-value">€{formatCurrency(balanceStats?.start || 0)}</span>
+          </div>
+          <div className="modal-stat">
+            <span className="modal-stat-label">Saldo attuale</span>
+            <span className="modal-stat-value">€{formatCurrency(balanceStats?.end || 0)}</span>
+          </div>
+          <div className="modal-stat">
+            <span className="modal-stat-label">Minimo</span>
+            <span className="modal-stat-value text-danger">€{formatCurrency(balanceStats?.min || 0)}</span>
+          </div>
+          <div className="modal-stat">
+            <span className="modal-stat-label">Massimo</span>
+            <span className="modal-stat-value text-success">€{formatCurrency(balanceStats?.max || 0)}</span>
+          </div>
+          <div className="modal-stat">
+            <span className="modal-stat-label">Transazioni</span>
+            <span className="modal-stat-value">{balanceStats?.count || 0}</span>
+          </div>
+        </div>
+      </div>
+    );
+  } else if (type === 'chart-pie') {
+    title = 'Spese per categoria';
+    const totalExpenseAmount = topExpenses.reduce((s, e) => s + e.value, 0);
+    content = (
+      <div className="modal-chart-layout">
+        <div className="modal-chart-area">
+          {topExpenses.length > 0 ? (
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie data={topExpenses} cx="50%" cy="50%" outerRadius={120} dataKey="value" animationDuration={800}>
+                  {topExpenses.map(entry => (
+                    <Cell key={entry.name} fill={categoryColors[entry.name] || '#6366F1'} />
+                  ))}
+                </Pie>
+                <Tooltip content={<PieTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="chart-empty">Nessuna spesa</p>
+          )}
+        </div>
+        <div className="modal-chart-sidebar">
+          <div className="modal-stat">
+            <span className="modal-stat-label">Totale spese</span>
+            <span className="modal-stat-value">€{formatCurrency(totalExpenseAmount)}</span>
+          </div>
+          {topExpenses.map(entry => (
+            <div key={entry.name} className="modal-stat">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: categoryColors[entry.name] || '#6366F1', flexShrink: 0 }} />
+                <span className="modal-stat-label">{entry.name}</span>
+              </div>
+              <span className="modal-stat-value">
+                €{formatCurrency(entry.value)}
+                <span className="text-secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                  ({((entry.value / totalExpenseAmount) * 100).toFixed(1)}%)
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  } else if (type === 'chart-projection') {
+    title = 'Proiezione saldo (30 giorni)';
+    const dailyChange = balanceStats && balanceStats.count > 1
+      ? ((balanceStats.end - balanceStats.start) / balanceStats.count)
+      : 0;
+    content = (
+      <div className="modal-chart-layout">
+        <div className="modal-chart-area">
+          {projectionData.length > 1 ? (
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={projectionData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                <Tooltip content={<ChartTooltip />} />
+                <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
+                <Line type="monotone" dataKey="projected" stroke="var(--brand-deep)" strokeWidth={2} strokeDasharray="5 5" dot={false} animationDuration={800} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="chart-empty">Dati insufficienti</p>
+          )}
+        </div>
+        <div className="modal-chart-sidebar">
+          <div className="modal-stat">
+            <span className="modal-stat-label">Saldo attuale</span>
+            <span className="modal-stat-value">€{formatCurrency(balanceStats?.end || 0)}</span>
+          </div>
+          <div className="modal-stat">
+            <span className="modal-stat-label">Proiettato (30g)</span>
+            <span className="modal-stat-value">€{formatCurrency(projStats?.end || 0)}</span>
+          </div>
+          <div className="modal-stat">
+            <span className="modal-stat-label">Variazione giornaliera</span>
+            <span className={`modal-stat-value ${dailyChange >= 0 ? 'text-success' : 'text-danger'}`}>
+              €{formatCurrency(Math.abs(dailyChange))}/g
+            </span>
+          </div>
+          <div className="modal-stat">
+            <span className="modal-stat-label">Data proiezione</span>
+            <span className="modal-stat-value text-secondary">
+              {projectionData.length > 1 ? projectionData[projectionData.length - 1].date : '-'}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className={`modal-panel ${type === 'balance' ? 'modal-panel-balance' : 'modal-panel-chart'}`} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="chart-title" style={{ margin: 0 }}>{title}</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        {content}
+      </div>
     </div>
   );
 }
