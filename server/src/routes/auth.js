@@ -6,7 +6,7 @@ import { sendEmail } from '../email.js';
 
 const router = Router();
 
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   const { email, password, name } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email e password richieste' });
@@ -21,7 +21,19 @@ router.post('/register', (req, res) => {
   const result = run('INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)', [email, password_hash, name || '']);
 
   const token = generateToken(result.lastInsertRowid);
-  res.status(201).json({ token, user: { id: result.lastInsertRowid, email, name: name || '', surname: '', email_verified: 0, created_at: new Date().toISOString() } });
+
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, result.lastInsertRowid]);
+
+  console.log('OTP per', email, ':', otp);
+  try {
+    await sendEmail(email, 'Verifica email BalanceVision', 'Benvenuto!\n\nIl tuo codice di verifica e: ' + otp + '\n\nValido per 10 minuti.\n\nBalanceVision Team');
+  } catch (err) {
+    console.error('Errore invio email:', err);
+  }
+
+  res.status(201).json({ token, user: { id: result.lastInsertRowid, email, name: name || '', surname: '', email_verified: 0, created_at: new Date().toISOString() }, otp });
 });
 
 router.post('/login', (req, res) => {
@@ -104,7 +116,8 @@ router.post('/verify-otp', authMiddleware, (req, res) => {
     run('UPDATE users SET email_verified = 1, otp = NULL, otp_expiry = NULL WHERE id = ?', [req.userId]);
   }
 
-  res.json({ message: 'Verifica completata' });
+  const updated = get('SELECT id, email, name, surname, email_verified, created_at FROM users WHERE id = ?', [req.userId]);
+  res.json({ message: 'Verifica completata', user: updated });
 });
 
 router.delete('/account', authMiddleware, (req, res) => {

@@ -14,7 +14,7 @@ export default function Register() {
     e.preventDefault();
     try {
       await register(email, password, name);
-      navigate('/dashboard');
+      navigate('/verify-email');
     } catch (err) {
       setError(err.message);
     }

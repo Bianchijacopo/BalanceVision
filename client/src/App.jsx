@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import TransactionForm from './pages/TransactionForm';
 import Advice from './pages/Advice';
+import VerifyEmail from './pages/VerifyEmail';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
 import ChangePassword from './pages/ChangePassword';
@@ -30,6 +31,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/transactions/new" element={<ProtectedRoute><TransactionForm /></ProtectedRoute>} />
             <Route path="/advice" element={<ProtectedRoute><Advice /></ProtectedRoute>} />
