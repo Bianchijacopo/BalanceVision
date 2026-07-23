@@ -36,11 +36,13 @@ export default function AnalisiAvanzata() {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [balance, setBalance] = useState(null);
+  const [budgetData, setBudgetData] = useState(null);
   const [timeRange, setTimeRange] = useState('all');
 
   useEffect(() => {
     apiGet('/transactions', token).then(setTransactions).catch(console.error);
     apiGet('/balance', token).then(setBalance).catch(console.error);
+    apiGet('/budgets', token).then(setBudgetData).catch(console.error);
   }, [token]);
 
   const sorted = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -153,17 +155,67 @@ export default function AnalisiAvanzata() {
 
         <div className="grid-2">
           <div className="card-chart">
-            <h3 className="chart-title">Spese per categoria (totale)</h3>
+            <h3 className="chart-title">Spese per categoria e budget rimasto</h3>
             {categoryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={categoryData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
-                  <XAxis type="number" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
-                  <YAxis type="category" dataKey="category" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} width={80} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="total" name="Totale" fill="var(--brand)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {categoryData.map(cat => {
+                  const budget = budgetData?.budgets?.find(b => b.category === cat.category);
+                  const hasBudget = budget && budget.amount > 0;
+                  const pct = hasBudget ? Math.round((cat.total / budget.amount) * 100) : null;
+                  const remaining = hasBudget ? Math.max(0, budget.amount - cat.total) : null;
+                  const isOver = hasBudget && cat.total > budget.amount;
+                  return (
+                    <div key={cat.category}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <span style={{ fontWeight: 600, fontSize: 13 }}>{cat.category}</span>
+                        <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+                          <span style={{ fontWeight: 700 }}>€{formatCurrency(cat.total)}</span>
+                          {hasBudget && (
+                            <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>
+                              {' / '}€{formatCurrency(budget.amount)}
+                              <span style={{
+                                marginLeft: 6, fontWeight: 700, fontSize: 12,
+                                color: isOver ? 'var(--danger)' : 'var(--success)'
+                              }}>
+                                {isOver ? '+' + (pct - 100) + '%' : (remaining > 0 ? (100 - pct) + '% rimasto' : 'Completato')}
+                              </span>
+                            </span>
+                          )}
+                          {!hasBudget && (
+                            <span style={{ color: 'var(--text-tertiary)', fontSize: 11, marginLeft: 6 }}>
+                              ({((cat.total / categoryData.reduce((s, c) => s + c.total, 0)) * 100).toFixed(1)}% del totale)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {hasBudget && (
+                        <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-muted)', overflow: 'hidden' }}>
+                          <div style={{
+                            width: Math.min(pct, 100) + '%', height: '100%', borderRadius: 3,
+                            background: isOver ? 'var(--danger)' : 'var(--brand)',
+                            transition: 'width 0.6s ease'
+                          }} />
+                        </div>
+                      )}
+                      {!hasBudget && (
+                        <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-muted)', overflow: 'hidden' }}>
+                          <div style={{
+                            width: Math.min((cat.total / Math.max(...categoryData.map(c => c.total))) * 100, 100) + '%',
+                            height: '100%', borderRadius: 3,
+                            background: 'var(--chart-line2)',
+                            opacity: 0.4
+                          }} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {budgetData?.budgets?.length === 0 && (
+                  <p className="text-secondary text-center" style={{ fontSize: 12, padding: 8 }}>
+                    Imposta dei budget in /budgets per vedere la percentuale rimasta
+                  </p>
+                )}
+              </div>
             ) : (
               <p className="chart-empty">Nessuna spesa registrata</p>
             )}
