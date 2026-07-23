@@ -1,11 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import TransactionForm from './pages/TransactionForm';
+import AnalisiAvanzata from './pages/AnalisiAvanzata';
 import Advice from './pages/Advice';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
@@ -36,18 +38,21 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
+          <ToastProvider>
           <Routes>
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
             <Route path="/dashboard" element={<VerifiedRoute><Dashboard /></VerifiedRoute>} />
             <Route path="/transactions/new" element={<VerifiedRoute><TransactionForm /></VerifiedRoute>} />
+            <Route path="/analytics" element={<VerifiedRoute><AnalisiAvanzata /></VerifiedRoute>} />
             <Route path="/advice" element={<VerifiedRoute><Advice /></VerifiedRoute>} />
             <Route path="/profile" element={<VerifiedRoute><Profile /></VerifiedRoute>} />
             <Route path="/profile/edit" element={<VerifiedRoute><EditProfile /></VerifiedRoute>} />
             <Route path="/profile/change-password" element={<VerifiedRoute><ChangePassword /></VerifiedRoute>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
+          </ToastProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

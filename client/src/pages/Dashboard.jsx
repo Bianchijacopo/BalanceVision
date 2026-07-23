@@ -1,11 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { apiGet } from '../context/ApiContext';
-import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useToast } from '../context/ToastContext';
+import { ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, LabelList, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
+
+const RADIAN = Math.PI / 180;
+
+function CustomCursor({ points, height }) {
+  if (!points || points.length === 0) return null;
+  const x = points[0].x;
+  return (
+    <line x1={x} y1={0} x2={x} y2={height} stroke="var(--brand)" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.5} />
+  );
+}
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload) return null;
@@ -21,8 +32,8 @@ function ChartTooltip({ active, payload, label }) {
       letterSpacing: '0.2px'
     }}>
       <div style={{ color: 'var(--text-secondary)', marginBottom: 2, fontSize: 11 }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ fontWeight: 600 }}>
+      {payload.filter(p => p.value != null).map((p, i) => (
+        <div key={i} style={{ fontWeight: 600, color: p.color }}>
           {p.name}: €{typeof p.value === 'number' ? p.value.toFixed(2) : p.value}
         </div>
       ))}
@@ -48,6 +59,18 @@ function PieTooltip({ active, payload }) {
   );
 }
 
+function PiePercentLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
+  if (!percent || percent < 0.05) return null;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} fill="var(--btn-primary-text)" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
+      {(percent * 100).toFixed(0)}%
+    </text>
+  );
+}
+
 function formatCurrency(value) {
   return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -59,6 +82,12 @@ export default function Dashboard() {
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [modal, setModal] = useState(null);
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [focusMode, setFocusMode] = useState(false);
+  const [categoryModal, setCategoryModal] = useState(null);
+  const { addToast } = useToast();
+  const prevBalanceRef = useRef(null);
+  const [animClass, setAnimClass] = useState('');
 
   async function deleteTransaction(id) {
     const res = await fetch('http://localhost:3001/api/transactions/' + id, {
@@ -75,6 +104,15 @@ export default function Dashboard() {
     apiGet('/balance', token).then(setBalance).catch(console.error);
     apiGet('/transactions', token).then(setTransactions).catch(console.error);
   }, [token]);
+
+  useEffect(() => {
+    if (prevBalanceRef.current != null && balance?.current_balance !== prevBalanceRef.current) {
+      setAnimClass('animating');
+      const t = setTimeout(() => setAnimClass(''), 700);
+      return () => clearTimeout(t);
+    }
+    prevBalanceRef.current = balance?.current_balance;
+  }, [balance?.current_balance]);
 
   const balanceHistory = buildBalanceHistory(transactions, balance?.initial_balance || 0);
   const projectionData = buildProjection(transactions, balance);
@@ -121,17 +159,78 @@ export default function Dashboard() {
   const balanceStats = getChartStats(balanceHistory, 'balance');
   const projStats = getChartStats(projectionData, 'projected');
 
+  function handleBalanceHover(data) {
+    if (data?.activePayload) {
+      const point = data.activePayload.find(p => p.value != null);
+      if (point) setHoveredPoint(point.payload);
+    }
+  }
+
+  function handleBalanceLeave() {
+    setHoveredPoint(null);
+  }
+
+  const displayBalance = hoveredPoint ? hoveredPoint.balance : balance?.current_balance;
+  const displayLabel = hoveredPoint ? 'Saldo al ' + hoveredPoint.date : 'Saldo corrente';
+
+  const daysInMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
+  const dailyAvg = monthlyTransactions.length > 0 ? monthlyExpenses / Math.max(1, new Set(monthlyTransactions.map(t => t.date)).size) : 0;
+  const topCat = [...monthlyExpenseByCategory].sort((a, b) => b.value - a.value)[0];
+  const topCategory = topCat?.name || '-';
+  const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100 : 0;
+  const projectedEndBalance = balance ? balance.current_balance + (monthlyIncome - monthlyExpenses) * ((daysInMonth - targetDate.getDate()) / Math.max(1, daysInMonth)) : 0;
+
+  function handleCategoryClick(entry) {
+    const txns = monthlyTransactions.filter(t => t.category === entry.name && t.type === 'expense');
+    setCategoryModal({ category: entry.name, transactions: txns, total: entry.value });
+  }
+
+  function toggleFocus() {
+    setFocusMode(p => !p);
+    addToast(focusMode ? 'Focus mode disattivato' : 'Focus mode attivato', 'info');
+  }
+
+  function handleDeleteWithToast(id) {
+    deleteTransaction(id);
+    addToast('Transazione eliminata', 'success');
+  }
+
   return (
     <>
-    <div className="layout">
+    <div className={`layout ${focusMode ? 'focus-mode' : ''}`}>
       <Topbar title="Dashboard" />
 
       <main className="main-content">
-          <div className="balance-card clickable" onClick={() => setModal('balance')}>
-            <p className="balance-label">Saldo corrente</p>
+          <div className={`balance-card clickable balance-countup ${animClass}`} onClick={() => setModal('balance')}>
+            <p className="balance-label">{displayLabel}</p>
             <h2 className="balance-value">
-              {balance ? <><span className="dollar-brand">€</span>{formatCurrency(balance.current_balance)}</> : '...'}
+              {displayBalance != null ? <><span className="dollar-brand">€</span>{formatCurrency(displayBalance)}</> : '...'}
             </h2>
+          </div>
+
+          <div className="insights-grid">
+            {monthlyTransactions.length > 0 && (
+              <>
+              <div className="insight-card">
+                <div className="insight-label">Spesa media/giorno</div>
+                <div className="insight-value">€{formatCurrency(dailyAvg)}</div>
+              </div>
+              <div className="insight-card">
+                <div className="insight-label">Categoria dominante</div>
+                <div className="insight-value" style={{ fontSize: 14 }}>{topCategory || '-'}</div>
+              </div>
+              <div className="insight-card">
+                <div className="insight-label">Risparmio</div>
+                <div className={`insight-value ${savingsRate >= 0 ? 'text-success' : 'text-danger'}`}>
+                  {savingsRate.toFixed(1)}%
+                </div>
+              </div>
+              <div className="insight-card">
+                <div className="insight-label">Previsione fine mese</div>
+                <div className="insight-value">€{formatCurrency(projectedEndBalance)}</div>
+              </div>
+              </>
+            )}
           </div>
 
           <div className="monthly-summary">
@@ -163,13 +262,20 @@ export default function Dashboard() {
             <h3 className="chart-title">Andamento del saldo</h3>
             {balanceHistory.length > 1 ? (
               <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={balanceHistory}>
+                <ComposedChart data={balanceHistory} onMouseMove={handleBalanceHover} onMouseLeave={handleBalanceLeave}>
+                  <defs>
+                    <linearGradient id="balanceFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--chart-line)" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="var(--chart-line)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
-                </LineChart>
+                  <Tooltip content={<ChartTooltip />} cursor={<CustomCursor />} />
+                  <Area type="monotone" dataKey="balance" fill="url(#balanceFill)" stroke="none" />
+                  <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--chart-line)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             ) : (
               <p className="chart-empty">Aggiungi transazioni per visualizzare il grafico</p>
@@ -188,33 +294,41 @@ export default function Dashboard() {
                         cx="50%" cy="50%" outerRadius={80}
                         dataKey="value"
                         animationDuration={800}
+                        onClick={handleCategoryClick}
                       >
                         {monthlyTopExpenses.map(entry => (
                           <Cell key={entry.name} fill={categoryColors[entry.name] || '#6366F1'} />
                         ))}
+                        <LabelList content={<PiePercentLabel />} />
                       </Pie>
                       <Tooltip content={<PieTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {monthlyTopExpenses.map(entry => (
-                    <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                      <div style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        background: categoryColors[entry.name] || '#6366F1',
-                        flexShrink: 0
-                      }} />
-                      <span style={{ color: 'var(--text-secondary)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {entry.name}
-                      </span>
-                      <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                        €{entry.value.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
+                  {monthlyTopExpenses.map(entry => {
+                    const total = monthlyTopExpenses.reduce((s, e) => s + e.value, 0);
+                    return (
+                      <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                        <div style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          background: categoryColors[entry.name] || '#6366F1',
+                          flexShrink: 0
+                        }} />
+                        <span style={{ color: 'var(--text-secondary)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {entry.name}
+                        </span>
+                        <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                          €{entry.value.toFixed(2)}
+                        </span>
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: 10, fontWeight: 600, minWidth: 32, textAlign: 'right' }}>
+                          {((entry.value / total) * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : (
@@ -232,9 +346,9 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
-                  <Line type="monotone" dataKey="projected" stroke="var(--brand-deep)" strokeWidth={2} strokeDasharray="5 5" dot={false} animationDuration={800} />
+                  <Tooltip content={<ChartTooltip />} cursor={<CustomCursor />} />
+                  <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--chart-line)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
+                  <Line type="monotone" dataKey="projected" stroke="var(--brand-deep)" strokeWidth={2} strokeDasharray="5 5" dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--brand-deep)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -275,36 +389,24 @@ export default function Dashboard() {
           <div className="section-header">
             <h3 className="section-title">Transazioni di {monthName}</h3>
           </div>
-          <div className="table-wrapper">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Titolo</th>
-                  <th>Categoria</th>
-                  <th>Importo</th>
-                  <th className="delete-cell"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {monthlyTransactions.map(t => (
-                  <tr key={t.id}>
-                    <td className="text-sm">{t.date}</td>
-                    <td>{t.title}</td>
-                    <td><span className="badge">{t.category}</span></td>
-                    <td className={t.type === 'income' ? 'text-success' : 'text-danger'}>
-                      {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
-                    </td>
-                    <td className="delete-cell">
-                      <button className="btn-delete" onClick={() => deleteTransaction(t.id)} title="Elimina">&times;</button>
-                    </td>
-                  </tr>
-                ))}
-                {monthlyTransactions.length === 0 && (
-                  <tr><td colSpan={5} className="text-center text-secondary">Nessuna transazione in questo mese</td></tr>
-                )}
-              </tbody>
-            </table>
+          <div className="timeline">
+            {monthlyTransactions.map(t => (
+              <div key={t.id} className="timeline-item">
+                <div className="timeline-dot" style={{ borderColor: t.type === 'income' ? 'var(--success)' : 'var(--danger)' }} />
+                <div className="timeline-content">
+                  <span className="timeline-date">{t.date}</span>
+                  <span className="timeline-title">{t.title}</span>
+                  <span className="timeline-cat"><span className="badge">{t.category}</span></span>
+                  <span className={`timeline-amount ${t.type === 'income' ? 'text-success' : 'text-danger'}`}>
+                    {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
+                  </span>
+                  <button className="btn-delete" onClick={() => handleDeleteWithToast(t.id)} title="Elimina">&times;</button>
+                </div>
+              </div>
+            ))}
+            {monthlyTransactions.length === 0 && (
+              <p className="text-secondary text-center" style={{ padding: 24 }}>Nessuna transazione in questo mese</p>
+            )}
           </div>
         </div>
 
@@ -336,7 +438,7 @@ export default function Dashboard() {
                       {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
                     </td>
                     <td className="delete-cell">
-                      <button className="btn-delete" onClick={() => deleteTransaction(t.id)} title="Elimina">&times;</button>
+                      <button className="btn-delete" onClick={() => handleDeleteWithToast(t.id)} title="Elimina">&times;</button>
                     </td>
                   </tr>
                 ))}
@@ -349,12 +451,39 @@ export default function Dashboard() {
         </div>
 
         <div className="section" style={{ textAlign: 'center' }}>
-          <button onClick={() => navigate('/advice')} className="btn btn-secondary">
-            Consigli finanziari
+          <button onClick={() => navigate('/analytics')} className="btn btn-secondary">
+            Analisi Avanzata
           </button>
         </div>
       </main>
     </div>
+
+    <button className="focus-toggle" onClick={toggleFocus} title="Attiva/disattiva focus mode">
+      {focusMode ? '◉' : '○'}
+    </button>
+
+    {categoryModal && (
+      <div className="modal-overlay" onClick={() => setCategoryModal(null)}>
+        <div className="modal-panel modal-panel-chart" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3 className="chart-title" style={{ margin: 0 }}>{categoryModal.category}</h3>
+            <button className="modal-close" onClick={() => setCategoryModal(null)}>×</button>
+          </div>
+          <div className="category-modal-transactions">
+            {categoryModal.transactions.map(t => (
+              <div key={t.id} className="modal-entry">
+                <span className="modal-entry-date">{t.date}</span>
+                <span className="modal-entry-title">{t.title}</span>
+                <span className="text-danger">-€{t.amount.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', textAlign: 'right' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Totale: €{categoryModal.total.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+    )}
 
     {modal && (
       <DashboardModal
@@ -447,8 +576,8 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                 <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
-                <Tooltip content={<ChartTooltip />} />
-                <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
+                <Tooltip content={<ChartTooltip />} cursor={<CustomCursor />} />
+                <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--chart-line)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -492,6 +621,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                   {topExpenses.map(entry => (
                     <Cell key={entry.name} fill={categoryColors[entry.name] || '#6366F1'} />
                   ))}
+                  <LabelList content={<PiePercentLabel />} />
                 </Pie>
                 <Tooltip content={<PieTooltip />} />
               </PieChart>
@@ -536,9 +666,9 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                 <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
-                <Tooltip content={<ChartTooltip />} />
-                <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
-                <Line type="monotone" dataKey="projected" stroke="var(--brand-deep)" strokeWidth={2} strokeDasharray="5 5" dot={false} animationDuration={800} />
+                <Tooltip content={<ChartTooltip />} cursor={<CustomCursor />} />
+                <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--chart-line)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
+                <Line type="monotone" dataKey="projected" stroke="var(--brand-deep)" strokeWidth={2} strokeDasharray="5 5" dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--brand-deep)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (

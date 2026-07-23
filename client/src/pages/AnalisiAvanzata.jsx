@@ -1,0 +1,219 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { apiGet } from '../context/ApiContext';
+import { useNavigate } from 'react-router-dom';
+import Topbar from '../components/Topbar';
+import { BarChart, Bar, LineChart, Line, ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload) return null;
+  return (
+    <div style={{
+      background: 'var(--chart-tooltip-bg)',
+      border: '1px solid var(--chart-tooltip-border)',
+      borderRadius: 8,
+      padding: '8px 12px',
+      fontSize: 12,
+      color: 'var(--text-primary)',
+      boxShadow: 'var(--shadow-md)'
+    }}>
+      <div style={{ color: 'var(--text-secondary)', marginBottom: 2, fontSize: 11 }}>{label}</div>
+      {payload.filter(p => p.value != null).map((p, i) => (
+        <div key={i} style={{ fontWeight: 600, color: p.color }}>
+          {p.name}: €{typeof p.value === 'number' ? p.value.toFixed(2) : p.value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function formatCurrency(v) {
+  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export default function AnalisiAvanzata() {
+  const { token } = useAuth();
+  const navigate = useNavigate();
+  const [transactions, setTransactions] = useState([]);
+  const [balance, setBalance] = useState(null);
+  const [timeRange, setTimeRange] = useState('all');
+
+  useEffect(() => {
+    apiGet('/transactions', token).then(setTransactions).catch(console.error);
+    apiGet('/balance', token).then(setBalance).catch(console.error);
+  }, [token]);
+
+  const sorted = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  const monthlyAgg = {};
+  sorted.forEach(t => {
+    const month = t.date.slice(0, 7);
+    if (!monthlyAgg[month]) monthlyAgg[month] = { month, income: 0, expense: 0, count: 0 };
+    monthlyAgg[month][t.type] += t.amount;
+    monthlyAgg[month].count++;
+  });
+  const monthlyData = Object.values(monthlyAgg).sort((a, b) => a.month.localeCompare(b.month));
+
+  let running = balance?.initial_balance || 0;
+  const dailyBalanceMap = {};
+  sorted.forEach(t => {
+    running += t.type === 'income' ? t.amount : -t.amount;
+    dailyBalanceMap[t.date] = Math.round(running * 100) / 100;
+  });
+  const dailyBalanceData = Object.entries(dailyBalanceMap)
+    .map(([date, balanceVal]) => ({ date, balance: balanceVal }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const catAgg = {};
+  sorted.filter(t => t.type === 'expense').forEach(t => {
+    if (!catAgg[t.category]) catAgg[t.category] = { category: t.category, total: 0, count: 0 };
+    catAgg[t.category].total += t.amount;
+    catAgg[t.category].count++;
+  });
+  const categoryData = Object.values(catAgg).sort((a, b) => b.total - a.total);
+
+  const topCategory = categoryData[0];
+  const totalIncome = sorted.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const totalExpenses = sorted.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
+  const avgTransaction = sorted.length > 0 ? (totalIncome + totalExpenses) / sorted.length : 0;
+
+  const filteredDaily = timeRange === 'all' ? dailyBalanceData : dailyBalanceData.slice(-parseInt(timeRange));
+
+  return (
+    <div className="layout">
+      <Topbar title="Analisi Avanzata" />
+
+      <main className="main-content">
+        <div className="summary-grid" style={{ marginBottom: 24 }}>
+          <div className="summary-item">
+            <span className="summary-label">Entrate totali</span>
+            <span className="summary-value text-success">€{formatCurrency(totalIncome)}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Spese totali</span>
+            <span className="summary-value text-danger">€{formatCurrency(totalExpenses)}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Tasso risparmio</span>
+            <span className={`summary-value ${savingsRate >= 0 ? 'text-success' : 'text-danger'}`}>
+              {savingsRate.toFixed(1)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="grid-2">
+          <div className="card-chart">
+            <h3 className="chart-title">Andamento mensile entrate/uscite</h3>
+            {monthlyData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <ComposedChart data={monthlyData}>
+                  <defs>
+                    <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--success)" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--danger)" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="var(--danger)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                  <XAxis dataKey="month" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend />
+                  <Bar dataKey="income" name="Entrate" fill="var(--success)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" name="Uscite" fill="var(--danger)" radius={[4, 4, 0, 0]} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="chart-empty">Dati insufficienti</p>
+            )}
+          </div>
+
+          <div className="card-chart">
+            <h3 className="chart-title">Evoluzione del saldo giornaliero</h3>
+            {dailyBalanceData.length > 1 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={filteredDaily}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                  <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area type="monotone" dataKey="balance" fill="var(--chart-line)" fillOpacity={0.08} stroke="none" />
+                  <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="chart-empty">Dati insufficienti</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid-2">
+          <div className="card-chart">
+            <h3 className="chart-title">Spese per categoria (totale)</h3>
+            {categoryData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={categoryData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                  <XAxis type="number" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                  <YAxis type="category" dataKey="category" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} width={80} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Bar dataKey="total" name="Totale" fill="var(--brand)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="chart-empty">Nessuna spesa registrata</p>
+            )}
+          </div>
+
+          <div className="card-chart">
+            <h3 className="chart-title">Statistiche</h3>
+            <div style={{ padding: '16px 0' }}>
+              {balance && (
+                <>
+                  <div className="modal-stat" style={{ marginBottom: 16 }}>
+                    <span className="modal-stat-label">Saldo attuale</span>
+                    <span className="modal-stat-value">€{formatCurrency(balance.current_balance)}</span>
+                  </div>
+                  <div className="modal-stat" style={{ marginBottom: 16 }}>
+                    <span className="modal-stat-label">Transazioni totali</span>
+                    <span className="modal-stat-value">{transactions.length}</span>
+                  </div>
+                  <div className="modal-stat" style={{ marginBottom: 16 }}>
+                    <span className="modal-stat-label">Importo medio transazione</span>
+                    <span className="modal-stat-value">€{formatCurrency(avgTransaction)}</span>
+                  </div>
+                  <div className="modal-stat" style={{ marginBottom: 16 }}>
+                    <span className="modal-stat-label">Categoria principale</span>
+                    <span className="modal-stat-value" style={{ fontSize: 16 }}>
+                      {topCategory ? `${topCategory.category} (€${formatCurrency(topCategory.total)})` : '-'}
+                    </span>
+                  </div>
+                  <div className="modal-stat" style={{ marginBottom: 16 }}>
+                    <span className="modal-stat-label">Mesi di attivita</span>
+                    <span className="modal-stat-value">{monthlyData.length}</span>
+                  </div>
+                  <div className="modal-stat">
+                    <span className="modal-stat-label">Media spese/mese</span>
+                    <span className="modal-stat-value">
+                      €{formatCurrency(monthlyData.length > 0 ? totalExpenses / monthlyData.length : 0)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="section" style={{ textAlign: 'center' }}>
+          <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
+            Torna alla dashboard
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
