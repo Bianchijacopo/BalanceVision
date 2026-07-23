@@ -45,7 +45,9 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 function PieTooltip({ active, payload }) {
-  if (!active || !payload) return null;
+  if (!active || !payload || !payload[0]) return null;
+  const total = payload[0]?.payload?.total || 1;
+  const pct = ((payload[0].value / total) * 100).toFixed(1);
   return (
     <div style={{
       background: 'var(--chart-tooltip-bg)',
@@ -56,8 +58,8 @@ function PieTooltip({ active, payload }) {
       color: 'var(--text-primary)',
       boxShadow: 'var(--shadow-md)'
     }}>
-      <div style={{ fontWeight: 600 }}>{payload[0]?.name}</div>
-      <div>€{payload[0]?.value?.toFixed(2)}</div>
+      <div style={{ fontWeight: 600 }}>{payload[0].name}</div>
+      <div>€{payload[0].value?.toFixed(2)} ({pct}%)</div>
     </div>
   );
 }
@@ -151,7 +153,8 @@ export default function Dashboard() {
       return acc;
     }, []);
 
-  const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value - a.value).slice(0, 8);
+  const monthlyExpenseTotal = monthlyExpenseByCategory.reduce((s, e) => s + e.value, 0);
+const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value - a.value).slice(0, 8).map(e => ({ ...e, total: monthlyExpenseTotal }));
 
   const incomeTransactions = transactions.filter(t => t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
   const expenseTransactions = transactions.filter(t => t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
