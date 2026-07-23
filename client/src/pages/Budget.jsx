@@ -4,8 +4,7 @@ import { apiGet } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
-
-const CATEGORIES = ['Cibo', 'Casa', 'Trasporti', 'Salute', 'Svago', 'Abbigliamento', 'Bolle', 'Stipendi', 'Extra'];
+import { getAllCategories } from '../utils/categoryManager';
 
 function formatCurrency(v) {
   return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -145,7 +144,7 @@ export default function Budget() {
             <div className="card-chart" style={{ padding: '16px 20px' }}>
               <h3 className="chart-title" style={{ marginBottom: 12 }}>Aggiungi budget</h3>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {CATEGORIES.filter(c => !existingCategories.has(c)).map(cat => (
+                {getAllCategories().filter(c => !existingCategories.has(c)).map(cat => (
                   <button
                     key={cat}
                     className="btn btn-secondary btn-sm"

@@ -7,6 +7,7 @@ import { ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, LabelList, X
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
+import { getAllCategories, isDefaultCategory, removeCustomCategory } from '../utils/categoryManager';
 
 const RADIAN = Math.PI / 180;
 
@@ -90,6 +91,8 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [manageCats, setManageCats] = useState(false);
+  const [, forceUpdate] = useState(0);
   const { addToast } = useToast();
   const prevBalanceRef = useRef(null);
   const [animClass, setAnimClass] = useState('');
@@ -202,7 +205,7 @@ export default function Dashboard() {
     addToast('Transazione eliminata', 'success');
   }
 
-  const allCategories = [...new Set(transactions.map(t => t.category))];
+  const allCategories = getAllCategories();
   const filteredTransactions = transactions.filter(t => {
     if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterCategory && t.category !== filterCategory) return false;
@@ -525,7 +528,31 @@ export default function Dashboard() {
             <button className="btn btn-secondary btn-sm" onClick={exportCSV} title="Esporta CSV">
               CSV
             </button>
+            <button className={`btn btn-ghost btn-sm`}
+              onClick={() => setManageCats(!manageCats)}>
+              Categorie
+            </button>
           </div>
+          {manageCats && (
+            <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)' }}>Categorie personalizzate:</span>
+              {getAllCategories().filter(c => !isDefaultCategory(c)).length === 0 && (
+                <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Nessuna</span>
+              )}
+              {getAllCategories().filter(c => !isDefaultCategory(c)).map(c => (
+                <span key={c} style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
+                  background: 'var(--brand-light)', color: 'var(--brand)',
+                }}>
+                  {c}
+                  <button className="btn-delete" style={{ width: 16, height: 16, fontSize: 12 }}
+                    onClick={() => { removeCustomCategory(c); forceUpdate(n => n + 1); }}
+                    title="Elimina categoria">&times;</button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="section">

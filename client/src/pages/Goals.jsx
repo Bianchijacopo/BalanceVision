@@ -89,16 +89,18 @@ export default function Goals() {
 
   async function syncBalance(goalId) {
     if (!data?.currentBalance) return;
+    const goal = data.goals.find(g => g.id === goalId);
+    if (!goal) return;
     try {
       await fetch('http://localhost:3001/api/goals/' + goalId, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({
-          name: '',
-          target_amount: 1,
+          name: goal.name,
+          target_amount: goal.target_amount,
           current_amount: data.currentBalance,
-          deadline: '',
-          category: '',
+          deadline: goal.deadline || '',
+          category: goal.category || '',
         }),
       });
       load();

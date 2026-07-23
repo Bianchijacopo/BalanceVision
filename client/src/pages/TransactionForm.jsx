@@ -4,8 +4,7 @@ import { apiGet, apiPost, apiPut } from '../context/ApiContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { DEFAULT_COLORS, getCategoryColors, setCategoryColor, getUnusedColor } from '../utils/categoryColors';
-
-const CATEGORIES = ['Cibo', 'Casa', 'Trasporti', 'Salute', 'Svago', 'Abbigliamento', 'Bolle', 'Stipendi', 'Extra'];
+import { getAllCategories, addCustomCategory, getCustomCategories } from '../utils/categoryManager';
 
 export default function TransactionForm() {
   const { token } = useAuth();
@@ -16,7 +15,7 @@ export default function TransactionForm() {
   const [type, setType] = useState('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [category, setCategory] = useState(getAllCategories()[0]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
@@ -61,6 +60,7 @@ export default function TransactionForm() {
       const finalCategory = customCategory.trim() || category;
       if (customCategory.trim()) {
         setCategoryColor(customCategory.trim(), selectedColor);
+        addCustomCategory(customCategory.trim());
       }
       const payload = { type, title, amount: parseFloat(amount), category: finalCategory, date, note };
       if (isEdit) {
@@ -152,7 +152,7 @@ export default function TransactionForm() {
                 value={category}
                 onChange={e => setCategory(e.target.value)}
               >
-                {CATEGORIES.map(c => (
+                {getAllCategories().map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
