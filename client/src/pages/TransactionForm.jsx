@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiPost } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
+import Topbar from '../components/Topbar';
 
 const CATEGORIES = ['Cibo', 'Casa', 'Trasporti', 'Salute', 'Svago', 'Abbigliamento', 'Bolle', 'Stipendi', 'Extra'];
 
@@ -16,9 +17,11 @@ export default function TransactionForm() {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [customCategory, setCustomCategory] = useState('');
+  const [success, setSuccess] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setSuccess('');
     try {
       await apiPost('/transactions', {
         type,
@@ -28,17 +31,11 @@ export default function TransactionForm() {
         date,
         note
       }, token);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  async function handleInitialBalance(e) {
-    e.preventDefault();
-    try {
-      await apiPost('/balance/initial-balance', { amount: parseFloat(amount) }, token);
-      navigate('/dashboard');
+      setSuccess('Transazione salvata con successo.');
+      setTitle('');
+      setAmount('');
+      setNote('');
+      setTimeout(() => navigate('/dashboard'), 800);
     } catch (err) {
       setError(err.message);
     }
@@ -46,20 +43,13 @@ export default function TransactionForm() {
 
   return (
     <div className="layout">
-      <header className="navbar">
-        <h1 className="navbar-title">BalanceVision</h1>
-        <button onClick={() => navigate('/dashboard')} className="btn btn-ghost">Dashboard</button>
-      </header>
+      <Topbar title="Nuova transazione" />
 
       <main className="main-content narrow">
         <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">Nuova transazione</h2>
-            <p className="card-subtitle">Registra una entrata o una spesa</p>
-          </div>
-
           <form onSubmit={handleSubmit}>
             {error && <div className="alert-error">{error}</div>}
+            {success && <div className="alert-success">{success}</div>}
 
             <div className="form-group">
               <label className="form-label">Tipo</label>
@@ -95,7 +85,7 @@ export default function TransactionForm() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="amount">Importo</label>
+              <label className="form-label" htmlFor="amount">Importo (EUR)</label>
               <input
                 id="amount"
                 type="number"
@@ -121,13 +111,15 @@ export default function TransactionForm() {
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Oppure inserisci una categoria personalizzata"
-                value={customCategory}
-                onChange={e => setCustomCategory(e.target.value)}
-              />
+              <div style={{ marginTop: 8 }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Categoria personalizzata (opzionale)"
+                  value={customCategory}
+                  onChange={e => setCustomCategory(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="form-group">

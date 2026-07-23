@@ -1,13 +1,62 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { apiGet } from '../context/ApiContext';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import Topbar from '../components/Topbar';
 
-const COLORS = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#ca8a04', '#16a34a', '#0891b2', '#4f46e5'];
+const PIE_COLORS_DARK = ['#00FF5A', '#00993A', '#00C853', '#00E676', '#69F0AE', '#B9F6CA'];
+const PIE_COLORS_LIGHT = ['#D4AF37', '#B8860B', '#C9A33A', '#E8C84A', '#F0D860', '#F5E6A7'];
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload) return null;
+  return (
+    <div style={{
+      background: 'var(--chart-tooltip-bg)',
+      border: '1px solid var(--chart-tooltip-border)',
+      borderRadius: 8,
+      padding: '8px 12px',
+      fontSize: 12,
+      color: 'var(--text-primary)',
+      boxShadow: 'var(--shadow-md)',
+      letterSpacing: '0.2px'
+    }}>
+      <div style={{ color: 'var(--text-secondary)', marginBottom: 2, fontSize: 11 }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ fontWeight: 600 }}>
+          {p.name}: ${typeof p.value === 'number' ? p.value.toFixed(2) : p.value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PieTooltip({ active, payload }) {
+  if (!active || !payload) return null;
+  return (
+    <div style={{
+      background: 'var(--chart-tooltip-bg)',
+      border: '1px solid var(--chart-tooltip-border)',
+      borderRadius: 8,
+      padding: '8px 12px',
+      fontSize: 12,
+      color: 'var(--text-primary)',
+      boxShadow: 'var(--shadow-md)'
+    }}>
+      <div style={{ fontWeight: 600 }}>{payload[0]?.name}</div>
+      <div>${payload[0]?.value?.toFixed(2)}</div>
+    </div>
+  );
+}
+
+function formatCurrency(value) {
+  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 export default function Dashboard() {
-  const { token, user, logout } = useAuth();
+  const { token } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -18,6 +67,7 @@ export default function Dashboard() {
   }, [token]);
 
   const balanceHistory = buildBalanceHistory(transactions, balance?.initial_balance || 0);
+  const projectionData = buildProjection(transactions, balance);
 
   const expenseByCategory = transactions
     .filter(t => t.type === 'expense')
@@ -28,25 +78,22 @@ export default function Dashboard() {
       return acc;
     }, []);
 
+  const topExpenses = [...expenseByCategory].sort((a, b) => b.value - a.value).slice(0, 6);
+  const pieColors = theme === 'dark' ? PIE_COLORS_DARK : PIE_COLORS_LIGHT;
+
   return (
     <div className="layout">
-      <header className="navbar">
-        <h1 className="navbar-title">BalanceVision</h1>
-        <div className="navbar-right">
-          <span className="navbar-user">{user?.name || user?.email}</span>
-          <button onClick={() => { logout(); navigate('/login'); }} className="btn btn-ghost">Esci</button>
-        </div>
-      </header>
+      <Topbar title="Dashboard" />
 
       <main className="main-content">
         <div className="balance-card">
           <p className="balance-label">Saldo corrente</p>
           <h2 className="balance-value">
-            {balance ? `\u20AC${balance.current_balance.toFixed(2)}` : '...'}
+            {balance ? <><span className="dollar-brand">$</span>{formatCurrency(balance.current_balance)}</> : '...'}
           </h2>
           <div className="balance-details">
-            <span className="text-success">+{balance ? balance.total_income.toFixed(2) : '...'}</span>
-            <span className="text-danger">-{balance ? balance.total_expenses.toFixed(2) : '...'}</span>
+            <span className="text-success">+${balance ? formatCurrency(balance.total_income) : '...'}</span>
+            <span className="text-danger">-${balance ? formatCurrency(balance.total_expenses) : '...'}</span>
           </div>
         </div>
 
@@ -56,41 +103,95 @@ export default function Dashboard() {
             {balanceHistory.length > 1 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={balanceHistory}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-                  <YAxis stroke="#9ca3af" fontSize={12} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="balance" stroke="#2563eb" strokeWidth={2} dot={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                  <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <p className="chart-empty">Aggiungi transazioni per vedere il grafico</p>
+              <p className="chart-empty">Aggiungi transazioni per visualizzare il grafico</p>
             )}
           </div>
 
           <div className="card-chart">
             <h3 className="chart-title">Spese per categoria</h3>
-            {expenseByCategory.length > 0 ? (
+            {topExpenses.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={expenseByCategory} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {expenseByCategory.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  <Pie
+                    data={topExpenses}
+                    cx="50%" cy="50%" outerRadius={80}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    animationDuration={800}
+                  >
+                    {topExpenses.map((_, i) => (
+                      <Cell key={i} fill={pieColors[i % pieColors.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip content={<PieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="chart-empty">Aggiungi spese per vedere il grafico</p>
+              <p className="chart-empty">Aggiungi spese per visualizzare il grafico</p>
             )}
+          </div>
+        </div>
+
+        <div className="grid-2">
+          <div className="card-chart">
+            <h3 className="chart-title">Proiezione saldo (30 giorni)</h3>
+            {projectionData.length > 1 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={projectionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                  <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
+                  <Line type="monotone" dataKey="projected" stroke="var(--brand-deep)" strokeWidth={2} strokeDasharray="5 5" dot={false} animationDuration={800} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="chart-empty">Servono piu transazioni per generare una proiezione</p>
+            )}
+          </div>
+
+          <div className="card-chart">
+            <h3 className="chart-title">Riepilogo</h3>
+            <div style={{ padding: '24px 0', textAlign: 'center' }}>
+              {balance && (
+                <>
+                  <div style={{ marginBottom: 20 }}>
+                    <div className="summary-label">Entrate totali</div>
+                    <div className="summary-value text-success" style={{ fontSize: 24 }}>
+                      ${formatCurrency(balance.total_income)}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 20 }}>
+                    <div className="summary-label">Spese totali</div>
+                    <div className="summary-value text-danger" style={{ fontSize: 24 }}>
+                      ${formatCurrency(balance.total_expenses)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="summary-label">Transazioni</div>
+                    <div className="summary-value" style={{ fontSize: 24 }}>
+                      {transactions.length}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="section">
           <div className="section-header">
             <h3 className="section-title">Transazioni recenti</h3>
-            <button onClick={() => navigate('/transactions/new')} className="btn btn-primary">
+            <button onClick={() => navigate('/transactions/new')} className="btn btn-primary btn-sm">
               Nuova transazione
             </button>
           </div>
@@ -107,11 +208,11 @@ export default function Dashboard() {
               <tbody>
                 {transactions.slice(0, 10).map(t => (
                   <tr key={t.id}>
-                    <td>{t.date}</td>
+                    <td className="text-sm">{t.date}</td>
                     <td>{t.title}</td>
                     <td><span className="badge">{t.category}</span></td>
                     <td className={t.type === 'income' ? 'text-success' : 'text-danger'}>
-                      {t.type === 'income' ? '+' : '-'}\u20AC{t.amount.toFixed(2)}
+                      {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -123,9 +224,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="section">
+        <div className="section" style={{ textAlign: 'center' }}>
           <button onClick={() => navigate('/advice')} className="btn btn-secondary">
-            Ottieni consigli finanziari
+            Consigli finanziari
           </button>
         </div>
       </main>
@@ -140,4 +241,30 @@ function buildBalanceHistory(transactions, initialBalance) {
     running += t.type === 'income' ? t.amount : -t.amount;
     return { date: t.date, balance: Math.round(running * 100) / 100 };
   });
+}
+
+function buildProjection(transactions, balance) {
+  if (!balance || transactions.length < 3) return [];
+
+  const history = buildBalanceHistory(transactions, balance.initial_balance);
+  if (history.length < 2) return [];
+
+  const lastDate = new Date(history[history.length - 1].date);
+  const firstDate = new Date(history[0].date);
+  const daysDiff = Math.max(1, (lastDate - firstDate) / (1000 * 60 * 60 * 24));
+  const balanceChange = history[history.length - 1].balance - history[0].balance;
+  const dailyChange = balanceChange / daysDiff;
+
+  const lastBalance = history[history.length - 1].balance;
+  const result = [...history];
+
+  for (let i = 1; i <= 30; i++) {
+    const nextDate = new Date(lastDate);
+    nextDate.setDate(nextDate.getDate() + i);
+    const dateStr = nextDate.toISOString().split('T')[0];
+    const projected = lastBalance + dailyChange * i;
+    result.push({ date: dateStr, balance: null, projected: Math.round(projected * 100) / 100 });
+  }
+
+  return result;
 }

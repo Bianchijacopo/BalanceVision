@@ -21,9 +21,9 @@ export default function Login() {
 
   return (
     <div className="page-center">
-      <div className="card">
+      <div className="card" style={{ maxWidth: 400, width: '100%' }}>
         <div className="card-header">
-          <h1 className="card-title">BalanceVision</h1>
+          <h1 className="card-title gradient-title">BalanceVision</h1>
           <p className="card-subtitle">Accedi al tuo account</p>
         </div>
         <form onSubmit={handleSubmit}>
