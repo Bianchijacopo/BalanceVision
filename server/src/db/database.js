@@ -74,6 +74,7 @@ function migrate() {
     "ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0",
     "ALTER TABLE users ADD COLUMN otp TEXT DEFAULT NULL",
     "ALTER TABLE users ADD COLUMN otp_expiry TEXT DEFAULT NULL",
+    "ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT NULL",
   ];
   for (const sql of migrations) {
     try { db.run(sql); } catch (e) {}

@@ -27,18 +27,21 @@ function MoonIcon() {
   );
 }
 
+function DefaultAvatar() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="16" fill="var(--border)" />
+      <circle cx="16" cy="12" r="5" fill="var(--text-secondary)" />
+      <ellipse cx="16" cy="26" rx="9" ry="6" fill="var(--text-secondary)" />
+    </svg>
+  );
+}
+
 export default function Topbar({ title }) {
   const { theme, toggle } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const initials = (user?.name || user?.email || '?')
-    .split(' ')
-    .map(s => s[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 
   function handleLogout() {
     logout();
@@ -65,7 +68,13 @@ export default function Topbar({ title }) {
           onMouseEnter={() => setMenuOpen(true)}
           onMouseLeave={() => setMenuOpen(false)}
         >
-          <div className="avatar">{initials}</div>
+          <div className="avatar">
+            {user?.avatar ? (
+              <img src={user.avatar} alt="" className="avatar-img" />
+            ) : (
+              <DefaultAvatar />
+            )}
+          </div>
           <span className="text-sm text-secondary">{user?.name || user?.email}</span>
           <div className={`dropdown-menu ${menuOpen ? 'dropdown-visible' : ''}`}>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/profile'); }}>

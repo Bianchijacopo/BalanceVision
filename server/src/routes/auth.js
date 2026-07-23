@@ -43,7 +43,7 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ error: 'Email e password richieste' });
   }
 
-  const user = get('SELECT id, email, name, surname, email_verified, created_at FROM users WHERE email = ?', [email]);
+  const user = get('SELECT id, email, name, surname, email_verified, avatar, created_at FROM users WHERE email = ?', [email]);
   if (!user) {
     return res.status(401).json({ error: 'Credenziali non valide' });
   }
@@ -58,7 +58,7 @@ router.post('/login', (req, res) => {
 });
 
 router.get('/profile', authMiddleware, (req, res) => {
-  const user = get('SELECT id, email, name, surname, email_verified, created_at FROM users WHERE id = ?', [req.userId]);
+  const user = get('SELECT id, email, name, surname, email_verified, avatar, created_at FROM users WHERE id = ?', [req.userId]);
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
   res.json(user);
 });
@@ -67,7 +67,7 @@ router.put('/profile', authMiddleware, (req, res) => {
   const { name, surname } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Il nome e obbligatorio' });
   run('UPDATE users SET name = ?, surname = ? WHERE id = ?', [name.trim(), surname || '', req.userId]);
-  const user = get('SELECT id, email, name, surname, email_verified, created_at FROM users WHERE id = ?', [req.userId]);
+  const user = get('SELECT id, email, name, surname, email_verified, avatar, created_at FROM users WHERE id = ?', [req.userId]);
   res.json({ message: 'Profilo aggiornato', user });
 });
 
@@ -118,8 +118,16 @@ router.post('/verify-otp', authMiddleware, (req, res) => {
     run('UPDATE users SET email_verified = 1, otp = NULL, otp_expiry = NULL WHERE id = ?', [req.userId]);
   }
 
-  const updated = get('SELECT id, email, name, surname, email_verified, created_at FROM users WHERE id = ?', [req.userId]);
+  const updated = get('SELECT id, email, name, surname, email_verified, avatar, created_at FROM users WHERE id = ?', [req.userId]);
   res.json({ message: 'Verifica completata', user: updated });
+});
+
+router.put('/avatar', authMiddleware, (req, res) => {
+  const { avatar } = req.body;
+  if (!avatar) return res.status(400).json({ error: 'Immagine richiesta' });
+  if (avatar.length > 4 * 1024 * 1024) return res.status(400).json({ error: 'Immagine troppo grande (max 4MB)' });
+  run('UPDATE users SET avatar = ? WHERE id = ?', [avatar, req.userId]);
+  res.json({ message: 'Avatar aggiornato', avatar });
 });
 
 router.delete('/account', authMiddleware, (req, res) => {
