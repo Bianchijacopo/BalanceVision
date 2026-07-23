@@ -34,15 +34,15 @@ export default function Advice() {
             <div className="summary-grid">
               <div className="summary-item">
                 <span className="summary-label">Saldo</span>
-                <span className="summary-value">${data.summary.current_balance.toFixed(2)}</span>
+                <span className="summary-value">€{data.summary.current_balance.toFixed(2)}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-label">Entrate totali</span>
-                <span className="summary-value text-success">${data.summary.total_income.toFixed(2)}</span>
+                <span className="summary-value text-success">€{data.summary.total_income.toFixed(2)}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-label">Spese totali</span>
-                <span className="summary-value text-danger">${data.summary.total_expenses.toFixed(2)}</span>
+                <span className="summary-value text-danger">€{data.summary.total_expenses.toFixed(2)}</span>
               </div>
             </div>
           )}

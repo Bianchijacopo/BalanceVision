@@ -5,9 +5,7 @@ import { apiGet } from '../context/ApiContext';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
-
-const PIE_COLORS_DARK = ['#00FF5A', '#00993A', '#00C853', '#00E676', '#69F0AE', '#B9F6CA'];
-const PIE_COLORS_LIGHT = ['#D4AF37', '#B8860B', '#C9A33A', '#E8C84A', '#F0D860', '#F5E6A7'];
+import { getCategoryColors } from '../utils/categoryColors';
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload) return null;
@@ -25,7 +23,7 @@ function ChartTooltip({ active, payload, label }) {
       <div style={{ color: 'var(--text-secondary)', marginBottom: 2, fontSize: 11 }}>{label}</div>
       {payload.map((p, i) => (
         <div key={i} style={{ fontWeight: 600 }}>
-          {p.name}: ${typeof p.value === 'number' ? p.value.toFixed(2) : p.value}
+          {p.name}: €{typeof p.value === 'number' ? p.value.toFixed(2) : p.value}
         </div>
       ))}
     </div>
@@ -45,7 +43,7 @@ function PieTooltip({ active, payload }) {
       boxShadow: 'var(--shadow-md)'
     }}>
       <div style={{ fontWeight: 600 }}>{payload[0]?.name}</div>
-      <div>${payload[0]?.value?.toFixed(2)}</div>
+      <div>€{payload[0]?.value?.toFixed(2)}</div>
     </div>
   );
 }
@@ -78,24 +76,47 @@ export default function Dashboard() {
       return acc;
     }, []);
 
-  const topExpenses = [...expenseByCategory].sort((a, b) => b.value - a.value).slice(0, 6);
-  const pieColors = theme === 'dark' ? PIE_COLORS_DARK : PIE_COLORS_LIGHT;
+  const topExpenses = [...expenseByCategory].sort((a, b) => b.value - a.value).slice(0, 8);
+  const categoryColors = getCategoryColors();
+
+  const now = new Date();
+  const currentMonth = now.toISOString().slice(0, 7);
+  const monthName = now.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+  const monthlyTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
+  const monthlyIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const monthlyExpenses = monthlyTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
   return (
     <div className="layout">
       <Topbar title="Dashboard" />
 
       <main className="main-content">
-        <div className="balance-card">
-          <p className="balance-label">Saldo corrente</p>
-          <h2 className="balance-value">
-            {balance ? <><span className="dollar-brand">$</span>{formatCurrency(balance.current_balance)}</> : '...'}
-          </h2>
-          <div className="balance-details">
-            <span className="text-success">+${balance ? formatCurrency(balance.total_income) : '...'}</span>
-            <span className="text-danger">-${balance ? formatCurrency(balance.total_expenses) : '...'}</span>
+          <div className="balance-card">
+            <p className="balance-label">Saldo corrente</p>
+            <h2 className="balance-value">
+              {balance ? <><span className="dollar-brand">€</span>{formatCurrency(balance.current_balance)}</> : '...'}
+            </h2>
           </div>
-        </div>
+
+          <div className="monthly-summary">
+            <p className="monthly-label">{monthName}</p>
+            <div className="monthly-grid">
+              <div className="monthly-item">
+                <span className="monthly-item-label">Entrate</span>
+                <span className="monthly-item-value text-success">+€{formatCurrency(monthlyIncome)}</span>
+              </div>
+              <div className="monthly-item">
+                <span className="monthly-item-label">Spese</span>
+                <span className="monthly-item-value text-danger">-€{formatCurrency(monthlyExpenses)}</span>
+              </div>
+              <div className="monthly-item">
+                <span className="monthly-item-label">Saldo mese</span>
+                <span className={`monthly-item-value ${monthlyIncome - monthlyExpenses >= 0 ? 'text-success' : 'text-danger'}`}>
+                  €{formatCurrency(monthlyIncome - monthlyExpenses)}
+                </span>
+              </div>
+            </div>
+          </div>
 
         <div className="grid-2">
           <div className="card-chart">
@@ -105,7 +126,7 @@ export default function Dashboard() {
                 <LineChart data={balanceHistory}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
                   <Tooltip content={<ChartTooltip />} />
                   <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
                 </LineChart>
@@ -118,22 +139,44 @@ export default function Dashboard() {
           <div className="card-chart">
             <h3 className="chart-title">Spese per categoria</h3>
             {topExpenses.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={topExpenses}
-                    cx="50%" cy="50%" outerRadius={80}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    animationDuration={800}
-                  >
-                    {topExpenses.map((_, i) => (
-                      <Cell key={i} fill={pieColors[i % pieColors.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<PieTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 250 }}>
+                <div style={{ flex: '0 0 180px', height: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={topExpenses}
+                        cx="50%" cy="50%" outerRadius={80}
+                        dataKey="value"
+                        animationDuration={800}
+                      >
+                        {topExpenses.map(entry => (
+                          <Cell key={entry.name} fill={categoryColors[entry.name] || '#6366F1'} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<PieTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {topExpenses.map(entry => (
+                    <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                      <div style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        background: categoryColors[entry.name] || '#6366F1',
+                        flexShrink: 0
+                      }} />
+                      <span style={{ color: 'var(--text-secondary)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {entry.name}
+                      </span>
+                      <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                        €{entry.value.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <p className="chart-empty">Aggiungi spese per visualizzare il grafico</p>
             )}
@@ -148,7 +191,7 @@ export default function Dashboard() {
                 <LineChart data={projectionData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
                   <Tooltip content={<ChartTooltip />} />
                   <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
                   <Line type="monotone" dataKey="projected" stroke="var(--brand-deep)" strokeWidth={2} strokeDasharray="5 5" dot={false} animationDuration={800} />
@@ -167,13 +210,13 @@ export default function Dashboard() {
                   <div style={{ marginBottom: 20 }}>
                     <div className="summary-label">Entrate totali</div>
                     <div className="summary-value text-success" style={{ fontSize: 24 }}>
-                      ${formatCurrency(balance.total_income)}
+                      €{formatCurrency(balance.total_income)}
                     </div>
                   </div>
                   <div style={{ marginBottom: 20 }}>
                     <div className="summary-label">Spese totali</div>
                     <div className="summary-value text-danger" style={{ fontSize: 24 }}>
-                      ${formatCurrency(balance.total_expenses)}
+                      €{formatCurrency(balance.total_expenses)}
                     </div>
                   </div>
                   <div>
@@ -212,7 +255,7 @@ export default function Dashboard() {
                     <td>{t.title}</td>
                     <td><span className="badge">{t.category}</span></td>
                     <td className={t.type === 'income' ? 'text-success' : 'text-danger'}>
-                      {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                      {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
                     </td>
                   </tr>
                 ))}
