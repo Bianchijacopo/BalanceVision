@@ -103,6 +103,20 @@ function migrate() {
   }
 
   try {
+    db.run(`CREATE TABLE IF NOT EXISTS budgets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      category TEXT NOT NULL,
+      month TEXT NOT NULL,
+      amount REAL NOT NULL CHECK(amount > 0),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(user_id, category, month),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+  } catch(e) {}
+
+  try {
     db.run("ALTER TABLE audit_log RENAME TO audit_log_old");
     db.run(`CREATE TABLE IF NOT EXISTS audit_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
