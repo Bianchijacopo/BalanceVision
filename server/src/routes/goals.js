@@ -61,7 +61,7 @@ router.put('/:id', (req, res) => {
   }
 
   run(
-    `UPDATE goals SET name = ?, target_amount = ?, current_amount = ?, deadline = ?, category = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?`,
+    `UPDATE goals SET name = ?, target_amount = ?, current_amount = ?, deadline = ?, category = ? WHERE id = ? AND user_id = ?`,
     [name, target_amount, current_amount ?? g.current_amount, deadline ?? g.deadline, category ?? g.category, req.params.id, req.userId]
   );
 
