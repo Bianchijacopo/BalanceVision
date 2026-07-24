@@ -5,7 +5,7 @@
   "main": "electron.js",
   "scripts": {
     "build": "cd client && npx vite build",
-    "electron-start": "electron .",
+    "electron-start": "npx electron .",
     "electron-build": "npm run build && electron .",
     "release-win": "npx @electron/packager . BalanceVision --platform=win32 --arch=x64 --out=release --overwrite"
   },

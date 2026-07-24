@@ -1,31 +1,50 @@
 const { app, BrowserWindow } = require('electron');
+const { fork } = require('child_process');
 const path = require('path');
-const { pathToFileURL } = require('url');
-const http = require('http');
 
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'balance-vision-desktop-secret';
-process.env.GMAIL_USER = process.env.GMAIL_USER || 'desktop@balancevision.app';
-process.env.GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || 'desktop-not-used';
-process.env.PORT = '3001';
+let serverProcess = null;
 
-function waitForServer(url, retries) {
-  retries = retries || 40;
+function startServer() {
   return new Promise((resolve) => {
-    let attempts = 0;
-    function check() {
-      http.get(url, (res) => {
-        res.resume();
+    const serverPath = path.join(__dirname, 'server', 'src', 'index.js');
+    const serverDir = path.join(__dirname, 'server');
+
+    const serverEnv = {
+      ...process.env,
+      JWT_SECRET: process.env.JWT_SECRET || 'balance-vision-desktop-secret',
+      GMAIL_USER: process.env.GMAIL_USER || 'desktop@balancevision.app',
+      GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD || 'desktop-not-used',
+      PORT: '3001'
+    };
+
+    serverProcess = fork(serverPath, [], {
+      cwd: serverDir,
+      env: serverEnv,
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+    });
+
+    const timeout = setTimeout(resolve, 8000);
+
+    serverProcess.stdout.on('data', (data) => {
+      if (data.toString().includes('server running')) {
+        clearTimeout(timeout);
         resolve();
-      }).on('error', () => {
-        attempts++;
-        if (attempts >= retries) {
-          resolve();
-        } else {
-          setTimeout(check, 250);
-        }
-      });
-    }
-    check();
+      }
+    });
+
+    serverProcess.stderr.on('data', (data) => {
+      console.error('[server]', data.toString());
+    });
+
+    serverProcess.on('error', (err) => {
+      console.error('[server error]', err);
+      clearTimeout(timeout);
+      resolve();
+    });
+
+    serverProcess.on('exit', (code) => {
+      console.error('[server exited]', code);
+    });
   });
 }
 
@@ -38,28 +57,20 @@ function createWindow() {
     title: 'BalanceVision',
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      webSecurity: false,
     }
   });
-  win.loadURL('http://localhost:3001');
+  win.loadFile(path.join(__dirname, 'client', 'dist', 'index.html'));
 }
 
 app.whenReady().then(async () => {
-  try {
-    const serverPath = path.join(__dirname, 'server', 'src', 'index.js');
-    const serverDir = path.join(__dirname, 'server');
-    const origCwd = process.cwd();
-    process.chdir(serverDir);
-    await import(pathToFileURL(serverPath).href);
-    process.chdir(origCwd);
-  } catch (e) {
-    console.error('Server start error:', e);
-  }
-  await waitForServer('http://localhost:3001');
+  await startServer();
   createWindow();
 });
 
 app.on('window-all-closed', () => {
+  if (serverProcess) serverProcess.kill();
   if (process.platform !== 'darwin') app.quit();
 });
 
