@@ -42,10 +42,11 @@ function processRecurring(userId) {
       const txMonth = genMonth;
       const txDay = String(now.getDate()).padStart(2, '0');
       const txDate = `${txMonth}-${txDay}`;
+      const cat = (item.category || '').trim() || 'Altro';
 
       run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date)
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [userId, item.type, item.title, item.amount, item.category, item.note, txDate]);
+        [userId, item.type, item.title, item.amount, cat, item.note || '', txDate]);
 
       run(`UPDATE recurring_transactions SET last_generated = ? WHERE id = ?`,
         [genDate, item.id]);
@@ -57,6 +58,7 @@ function processRecurring(userId) {
 }
 
 router.get('/', (req, res) => {
+  try { processRecurring(req.userId); } catch (e) { console.error('[recurring process error]', e); }
   const items = all(`SELECT * FROM recurring_transactions
     WHERE user_id = ? ORDER BY created_at DESC`, [req.userId]);
   res.json(items);
@@ -65,18 +67,20 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   const { type, title, amount, category, note, frequency, start_date, end_date } = req.body;
 
-  if (!type || !title || !amount || !category || !start_date) {
-    return res.status(400).json({ error: 'Campi obbligatori: type, title, amount, category, start_date' });
+  if (!type || !title || !amount || !start_date) {
+    return res.status(400).json({ error: 'Campi obbligatori: type, title, amount, start_date' });
   }
 
   if (type !== 'income' && type !== 'expense') {
     return res.status(400).json({ error: 'type deve essere income o expense' });
   }
 
+  const cat = (category || '').trim() || 'Altro';
+
   const result = run(`INSERT INTO recurring_transactions
     (user_id, type, title, amount, category, note, frequency, start_date, end_date)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [req.userId, type, title, amount, category, note || '', frequency || 'monthly', start_date, end_date || null]);
+    [req.userId, type, title, amount, cat, note || '', frequency || 'monthly', start_date, end_date || null]);
 
   const created = get(`SELECT * FROM recurring_transactions WHERE id = ?`, [result.lastInsertRowid]);
   res.status(201).json(created);

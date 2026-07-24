@@ -7,7 +7,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', (req, res) => {
-  processRecurring(req.userId);
+  try { processRecurring(req.userId); } catch (e) { console.error('[recurring process error]', e); }
   const transactions = all(
     'SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC, created_at DESC',
     [req.userId]
