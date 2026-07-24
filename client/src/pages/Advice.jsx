@@ -70,12 +70,14 @@ export default function Advice() {
         {!aiMode && (
           <div className="card" style={{ marginTop: 16, textAlign: 'center', padding: 24 }}>
             <p className="text-secondary" style={{ fontSize: 13, marginBottom: 8 }}>
-              Per consigli piu intelligenti, installa <strong>Ollama</strong> e scarica un modello AI locale.
+              Per consigli AI, imposta la chiave <strong>Groq</strong> (gratis).
             </p>
             <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 12 }}>
-              1. Scarica Ollama da <strong>ollama.ai</strong> e installalo<br />
-              2. Apri terminale e scrivi: <code>ollama pull llama3.2</code><br />
-              3. Riavvia l'app
+              1. Vai su <strong>console.groq.com</strong> e registrati<br />
+              2. Genera una chiave API<br />
+              3. Apri <code>.env</code> nella cartella del progetto e aggiungi:<br />
+              <code>GROQ_API_KEY=la_tua_chiave</code><br />
+              4. Riavvia l'app
             </p>
           </div>
         )}

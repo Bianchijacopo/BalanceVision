@@ -5,8 +5,10 @@ import { authMiddleware } from '../middleware/auth.js';
 const router = Router();
 router.use(authMiddleware);
 
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const OLLAMA_URL = 'http://localhost:11434/api/generate';
-const OLLAMA_MODEL = 'llama3.2';
 
 router.get('/', async (req, res) => {
   try {
@@ -36,20 +38,38 @@ router.get('/', async (req, res) => {
 
     const data = { initialAmount, ...totals, balance, categoryBreakdown, monthlySpending };
 
-    let tips;
-    const ollamaAvailable = await checkOllama();
-    if (ollamaAvailable) {
+    let tips, aiUsed = false;
+
+    if (GROQ_API_KEY) {
       try {
-        tips = await generateAiAdvice(data);
+        tips = await generateGroqAdvice(data);
+        aiUsed = true;
       } catch (e) {
-        console.error('[AI advice error]', e.message);
-        tips = generateRuleAdvice(data);
+        console.error('[Groq error]', e.message);
       }
-    } else {
+    }
+
+    if (!tips) {
+      const ollamaOk = await checkOllama();
+      if (ollamaOk) {
+        try {
+          tips = await generateOllamaAdvice(data);
+          aiUsed = true;
+        } catch (e) {
+          console.error('[Ollama error]', e.message);
+        }
+      }
+    }
+
+    if (!tips) {
       tips = generateRuleAdvice(data);
     }
 
-    res.json({ advice: tips, _ai: ollamaAvailable, summary: { initial_balance: initialAmount, ...totals, current_balance: balance } });
+    res.json({
+      advice: tips,
+      _ai: aiUsed,
+      summary: { initial_balance: initialAmount, ...totals, current_balance: balance }
+    });
   } catch (e) {
     console.error('[advice error]', e);
     res.status(500).json({ error: 'Errore nel generare i consigli' });
@@ -65,69 +85,81 @@ async function checkOllama() {
   }
 }
 
-async function generateAiAdvice(data) {
+function buildPrompt(data) {
   const { total_income, total_expenses, balance, categoryBreakdown, monthlySpending } = data;
   const savings = total_income - total_expenses;
   const savingsRate = total_income > 0 ? ((savings / total_income) * 100).toFixed(1) : 0;
+  const topCats = (categoryBreakdown || []).slice(0, 5).map(c => c.category + ' (' + c.total.toFixed(0) + '€)').join(', ');
+  const monthlyTrend = (monthlySpending || []).map(m => m.month + ': ' + m.total.toFixed(0) + '€').join(', ');
 
-  const topCats = categoryBreakdown.slice(0, 5).map(c => c.category + ' (' + c.total.toFixed(0) + '€)').join(', ');
-  const monthlyTrend = monthlySpending.map(m => m.month + ': ' + m.total.toFixed(0) + '€').join(', ');
+  return `Sei un consulente finanziario. Fornisci 3-4 consigli specifici in italiano basati su questi dati:
 
-  const prompt = `Sei un consulente finanziario personale. Analizza questi dati finanziari e fornisci 3-4 consigli pratici in italiano, brevi e specifici per la situazione dell'utente.
+- Saldo: ${balance.toFixed(0)}€
+- Entrate: ${total_income.toFixed(0)}€
+- Spese: ${total_expenses.toFixed(0)}€
+- Risparmio: ${savings.toFixed(0)}€ (${savingsRate}%)
+- Top categorie: ${topCats || 'nessuna'}
+- Trend spese: ${monthlyTrend || 'nessun dato'}
 
-DATI UTENTE:
-- Saldo attuale: ${balance.toFixed(0)}€
-- Entrate totali: ${total_income.toFixed(0)}€
-- Spese totali: ${total_expenses.toFixed(0)}€
-- Risparmio: ${savings.toFixed(0)}€ (${savingsRate}% delle entrate)
-- Categorie con piu spese: ${topCats || 'nessuna'}
-- Andamento spese mensili: ${monthlyTrend || 'nessun dato'}
+Rispondi SOLO con 3-4 righe, una per consiglio, senza numeri ne formattazione.`;
+}
 
-Rispondi SOLO con 3-4 consigli numerati, uno per riga, senza introduzioni. Ogni consiglio deve essere una frase diretta e concreta. Esempio:
-1. Consiglio specifico qui
-2. Altro consiglio qui`;
+async function generateGroqAdvice(data) {
+  const prompt = buildPrompt(data);
+  const resp = await fetch(GROQ_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + GROQ_API_KEY,
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 500,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
 
+  if (!resp.ok) throw new Error('Groq ' + resp.status);
+  const json = await resp.json();
+  const text = json.choices?.[0]?.message?.content || '';
+  return text.split('\n').map(l => l.replace(/^[-*\d]+[.)\s]*/, '').trim()).filter(l => l.length > 10);
+}
+
+async function generateOllamaAdvice(data) {
+  const prompt = buildPrompt(data);
   const resp = await fetch(OLLAMA_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, options: { temperature: 0.7 } }),
+    body: JSON.stringify({ model: 'llama3.2', prompt, stream: false, options: { temperature: 0.7 } }),
     signal: AbortSignal.timeout(30000),
   });
 
-  if (!resp.ok) throw new Error('Ollama returned ' + resp.status);
-
-  const result = await resp.json();
-  const text = result.response || '';
-
-  return text.split('\n')
-    .map(l => l.replace(/^\d+[.)]\s*/, '').trim())
-    .filter(l => l.length > 10);
+  if (!resp.ok) throw new Error('Ollama ' + resp.status);
+  const json = await resp.json();
+  const text = json.response || '';
+  return text.split('\n').map(l => l.replace(/^[-*\d]+[.)\s]*/, '').trim()).filter(l => l.length > 10);
 }
 
 function generateRuleAdvice(data) {
   const { total_income, total_expenses, categoryBreakdown } = data;
   const savings = total_income - total_expenses;
   const savingsRate = total_income > 0 ? (savings / total_income) * 100 : 0;
-
   const tips = [];
 
   if (savingsRate < 20) {
     tips.push('Il tuo tasso di risparmio e inferiore al 20%. Cerca di ridurre le spese non essenziali.');
   }
-
   if (categoryBreakdown && categoryBreakdown.length > 0) {
-    const topCategory = categoryBreakdown[0];
-    tips.push('La tua spesa maggiore e in "' + topCategory.category + '" (' + topCategory.total.toFixed(2) + ' EUR). Valuta se puoi ridurla.');
+    tips.push('La tua spesa maggiore e in "' + categoryBreakdown[0].category + '" (' + categoryBreakdown[0].total.toFixed(2) + ' EUR). Valuta se puoi ridurla.');
   }
-
   if (total_expenses > total_income * 0.8) {
     tips.push('Le tue spese superano l\'80% delle entrate. Attento a non andare in rosso!');
   }
-
   if (tips.length === 0) {
     tips.push('Ottimo lavoro! Le tue finanze sono in ordine. Continua cosi.');
   }
-
   return tips;
 }
 
