@@ -122,7 +122,13 @@ export default function Advice() {
                 </p>
               )}
               {chat.map((m, i) => (
-                <div key={i} className={`chat-msg ${m.role}`}>{m.text}</div>
+                <div key={i} className={`chat-msg ${m.role}`} dangerouslySetInnerHTML={{
+                  __html: m.text
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    .replace(/\n\n/g, '<br><br>')
+                    .replace(/\n- /g, '<br>- ')
+                }} />
               ))}
               {chatLoading && <div className="chat-msg ai" style={{ color: 'var(--text-tertiary)' }}>Scrivendo...</div>}
               <div ref={chatEnd} />

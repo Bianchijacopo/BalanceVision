@@ -171,7 +171,14 @@ router.post('/chat', async (req, res) => {
       WHERE user_id = ? ORDER BY date DESC LIMIT 15
     `, [req.userId]);
 
-    const systemPrompt = `Sei un consulente finanziario personale. Rispondi in italiano in modo chiaro e utile.
+    const systemPrompt = `Sei un consulente finanziario personale. Rispondi in italiano.
+
+REGOLE DI FORMATTAZIONE (obbligatorie):
+- Usa **grassetto** per numeri, importi, e concetti chiave
+- Usa elenchi puntati con "-" per liste
+- Dividi in paragrafi staccati con righe vuote
+- Inizia con un breve riassunto di 1-2 righe
+- Alla fine, se appropriato, dai 1-2 consigli pratici
 
 DATI DELL'UTENTE:
 - Saldo: ${balance.toFixed(0)}€
@@ -183,7 +190,7 @@ CATEGORIE SPESE: ${(categoryBreakdown || []).map(c => c.category + ' ' + c.total
 
 TRANSAZIONI RECENTI: ${(recentTx || []).map(t => t.date + ' ' + t.title + ' ' + t.amount.toFixed(0) + '€').join(', ')}
 
-Rispondi in modo naturale e colloquiale, usando i dati reali dell'utente per dare consigli personalizzati. Se non sai qualcosa, dillo.`;
+Usa sempre **grassetto** per evidenziare numeri e importi. Non usare markdown oltre al grassetto e agli elenchi puntati.`;
 
     const reply = await groqChat(systemPrompt, message);
     res.json({ reply });
