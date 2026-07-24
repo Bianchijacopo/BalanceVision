@@ -9,10 +9,11 @@ export default function Advice() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [aiMode, setAiMode] = useState(false);
 
   useEffect(() => {
     apiGet('/advice', token)
-      .then(setData)
+      .then(res => { setData(res); setAiMode(res?._ai || false); })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [token]);
@@ -26,6 +27,12 @@ export default function Advice() {
           <div className="card-header">
             <h2 className="card-title">Consigli finanziari</h2>
             <p className="card-subtitle">Analisi personalizzata basata sulle tue transazioni</p>
+            {data && (
+              <span className={`badge ${aiMode ? 'badge-ai' : ''}`}
+                style={{ fontSize: 11, marginTop: 4, display: 'inline-block', padding: '2px 8px', borderRadius: 4, background: aiMode ? 'var(--brand)' : 'var(--bg-muted)', color: aiMode ? 'var(--btn-primary-text)' : 'var(--text-tertiary)' }}>
+                {aiMode ? 'AI attiva' : 'Regole base'}
+              </span>
+            )}
           </div>
 
           {loading && <div className="loading">Analisi in corso...</div>}
@@ -59,6 +66,19 @@ export default function Advice() {
             <p className="text-secondary text-center">Nessun consiglio disponibile. Aggiungi transazioni per ricevere suggerimenti.</p>
           )}
         </div>
+
+        {!aiMode && (
+          <div className="card" style={{ marginTop: 16, textAlign: 'center', padding: 24 }}>
+            <p className="text-secondary" style={{ fontSize: 13, marginBottom: 8 }}>
+              Per consigli piu intelligenti, installa <strong>Ollama</strong> e scarica un modello AI locale.
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 12 }}>
+              1. Scarica Ollama da <strong>ollama.ai</strong> e installalo<br />
+              2. Apri terminale e scrivi: <code>ollama pull llama3.2</code><br />
+              3. Riavvia l'app
+            </p>
+          </div>
+        )}
 
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
