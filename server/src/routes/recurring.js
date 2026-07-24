@@ -1,0 +1,128 @@
+import { Router } from 'express';
+import { all, get, run } from '../db/database.js';
+import { authMiddleware } from '../middleware/auth.js';
+
+const router = Router();
+router.use(authMiddleware);
+
+function processRecurring(userId) {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const currentMonth = today.slice(0, 7);
+
+  const items = all(`SELECT * FROM recurring_transactions
+    WHERE user_id = ? AND active = 1
+    AND (end_date IS NULL OR end_date >= ?)
+    AND start_date <= ?`, [userId, today, today]);
+
+  let created = 0;
+  for (const item of items) {
+    let shouldCreate = false;
+    const lastGen = item.last_generated ? new Date(item.last_generated + 'T00:00:00') : null;
+
+    if (!lastGen) {
+      shouldCreate = true;
+    } else if (item.frequency === 'monthly') {
+      const nextGen = new Date(lastGen);
+      nextGen.setMonth(nextGen.getMonth() + 1);
+      if (now >= nextGen) shouldCreate = true;
+    } else if (item.frequency === 'weekly') {
+      const nextGen = new Date(lastGen);
+      nextGen.setDate(nextGen.getDate() + 7);
+      if (now >= nextGen) shouldCreate = true;
+    } else if (item.frequency === 'yearly') {
+      const nextGen = new Date(lastGen);
+      nextGen.setFullYear(nextGen.getFullYear() + 1);
+      if (now >= nextGen) shouldCreate = true;
+    }
+
+    if (shouldCreate) {
+      const genDate = today;
+      const genMonth = currentMonth;
+      const txMonth = genMonth;
+      const txDay = String(now.getDate()).padStart(2, '0');
+      const txDate = `${txMonth}-${txDay}`;
+
+      run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [userId, item.type, item.title, item.amount, item.category, item.note, txDate]);
+
+      run(`UPDATE recurring_transactions SET last_generated = ? WHERE id = ?`,
+        [genDate, item.id]);
+
+      created++;
+    }
+  }
+  return created;
+}
+
+router.get('/', (req, res) => {
+  const items = all(`SELECT * FROM recurring_transactions
+    WHERE user_id = ? ORDER BY created_at DESC`, [req.userId]);
+  res.json(items);
+});
+
+router.post('/', (req, res) => {
+  const { type, title, amount, category, note, frequency, start_date, end_date } = req.body;
+
+  if (!type || !title || !amount || !category || !start_date) {
+    return res.status(400).json({ error: 'Campi obbligatori: type, title, amount, category, start_date' });
+  }
+
+  if (type !== 'income' && type !== 'expense') {
+    return res.status(400).json({ error: 'type deve essere income o expense' });
+  }
+
+  const result = run(`INSERT INTO recurring_transactions
+    (user_id, type, title, amount, category, note, frequency, start_date, end_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [req.userId, type, title, amount, category, note || '', frequency || 'monthly', start_date, end_date || null]);
+
+  const created = get(`SELECT * FROM recurring_transactions WHERE id = ?`, [result.lastInsertRowid]);
+  res.status(201).json(created);
+});
+
+router.put('/:id', (req, res) => {
+  const existing = get(`SELECT * FROM recurring_transactions WHERE id = ? AND user_id = ?`,
+    [req.params.id, req.userId]);
+  if (!existing) return res.status(404).json({ error: 'Non trovato' });
+
+  const { type, title, amount, category, note, frequency, start_date, end_date, active } = req.body;
+
+  run(`UPDATE recurring_transactions SET
+    type = ?, title = ?, amount = ?, category = ?, note = ?,
+    frequency = ?, start_date = ?, end_date = ?, active = ?
+    WHERE id = ?`,
+    [
+      type || existing.type,
+      title || existing.title,
+      amount || existing.amount,
+      category || existing.category,
+      note !== undefined ? note : existing.note,
+      frequency || existing.frequency,
+      start_date || existing.start_date,
+      end_date !== undefined ? end_date : existing.end_date,
+      active !== undefined ? (active ? 1 : 0) : existing.active,
+      req.params.id
+    ]);
+
+  const updated = get(`SELECT * FROM recurring_transactions WHERE id = ?`, [req.params.id]);
+  res.json(updated);
+});
+
+router.delete('/:id', (req, res) => {
+  const existing = get(`SELECT * FROM recurring_transactions WHERE id = ? AND user_id = ?`,
+    [req.params.id, req.userId]);
+  if (!existing) return res.status(404).json({ error: 'Non trovato' });
+
+  run(`DELETE FROM recurring_transactions WHERE id = ?`, [req.params.id]);
+  res.json({ success: true });
+});
+
+router.post('/process', (req, res) => {
+  const count = processRecurring(req.userId);
+  res.json({ created: count });
+});
+
+export { processRecurring };
+export default router;

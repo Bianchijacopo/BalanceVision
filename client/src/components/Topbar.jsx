@@ -51,6 +51,7 @@ export default function Topbar({ title }) {
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <img src="./logo.png" alt="" style={{ width: 24, height: 24, marginRight: 8, verticalAlign: 'middle' }} />
         <span className="topbar-logo gradient-title">BalanceVision</span>
         {title && (
           <>
@@ -88,6 +89,9 @@ export default function Topbar({ title }) {
             </button>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/goals'); }}>
               Obiettivi
+            </button>
+            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/recurring'); }}>
+              Ricorrenti
             </button>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/advice'); }}>
               Consigli finanziari

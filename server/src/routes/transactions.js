@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { all, get, run } from '../db/database.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { processRecurring } from './recurring.js';
 
 const router = Router();
 router.use(authMiddleware);
 
 router.get('/', (req, res) => {
+  processRecurring(req.userId);
   const transactions = all(
     'SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC, created_at DESC',
     [req.userId]

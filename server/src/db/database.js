@@ -144,6 +144,25 @@ function migrate() {
     db.run("DROP TABLE audit_log_old");
   } catch(e) {}
 
+  try {
+    db.run(`CREATE TABLE IF NOT EXISTS recurring_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+      title TEXT NOT NULL,
+      amount REAL NOT NULL CHECK(amount > 0),
+      category TEXT NOT NULL,
+      note TEXT DEFAULT '',
+      frequency TEXT NOT NULL DEFAULT 'monthly',
+      start_date TEXT NOT NULL,
+      end_date TEXT DEFAULT NULL,
+      last_generated TEXT DEFAULT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+  } catch(e) {}
+
   save();
 }
 

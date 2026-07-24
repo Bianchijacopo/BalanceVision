@@ -22,6 +22,7 @@ export default function Login() {
   return (
     <div className="page-center">
       <div className="welcome-section">
+        <img src="./logo.png" alt="BalanceVision" style={{ width: 64, height: 64, marginBottom: 12 }} />
         <h1 className="welcome-title gradient-title">BalanceVision</h1>
         <p className="welcome-subtitle">Benvenuto su BalanceVision. Il tuo controllo finanziario, semplice e professionale.</p>
       </div>
