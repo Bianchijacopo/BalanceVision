@@ -54,17 +54,7 @@ npm install
 
 Installa Electron e gli strumenti per il packaging.
 
-### 4. Crea l'account admin
-
-```bash
-cd server
-npm run seed
-cd ..
-```
-
-Crea l'utente **admin@gmail.com** con password **admin**.
-
-### 5. Installa il frontend
+### 4. Installa il frontend
 
 ```bash
 cd client
@@ -150,13 +140,9 @@ Questo crea:
 
 ---
 
-## Login
+## Registrazione
 
-| Email | Password |
-|-------|----------|
-| admin@gmail.com | admin |
-
-Puoi creare altri utenti dalla pagina di registrazione.
+Alla prima apertura, clicca su **Registrati** e crea il tuo account con email e password.
 
 ---
 
@@ -244,8 +230,8 @@ Senza chiave Groq, l'app usa consigli basati su regole fisse (non AI).
 | radice | `npm run build` | Builda il frontend |
 | radice | `npm run release-win` | Crea l'exe standalone |
 | client/ | `npm run build` | Builda il frontend |
-| server/ | `npm run seed` | Crea account admin |
-| server/ | `npm run seed:test` | Crea 6 mesi di dati finti |
+| server/ | `npm run seed` | (opzionale) Crea account admin di test |
+| server/ | `npm run seed:test` | (opzionale) Crea 6 mesi di dati finti |
 | server/ | `npm run dev` | Avvia solo il server |
 
 ---
