@@ -21,9 +21,12 @@ export default function Login() {
 
   return (
     <div className="page-center">
+      <div className="welcome-section">
+        <h1 className="welcome-title gradient-title">BalanceVision</h1>
+        <p className="welcome-subtitle">Benvenuto su BalanceVision. Il tuo controllo finanziario, semplice e professionale.</p>
+      </div>
       <div className="card" style={{ maxWidth: 400, width: '100%' }}>
         <div className="card-header">
-          <h1 className="card-title gradient-title">BalanceVision</h1>
           <p className="card-subtitle">Accedi al tuo account</p>
         </div>
         <form onSubmit={handleSubmit}>

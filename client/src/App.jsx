@@ -42,6 +42,7 @@ export default function App() {
         <AuthProvider>
           <ToastProvider>
           <Routes>
+            <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
@@ -55,7 +56,7 @@ export default function App() {
             <Route path="/profile" element={<VerifiedRoute><Profile /></VerifiedRoute>} />
             <Route path="/profile/edit" element={<VerifiedRoute><EditProfile /></VerifiedRoute>} />
             <Route path="/profile/change-password" element={<VerifiedRoute><ChangePassword /></VerifiedRoute>} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </ToastProvider>
         </AuthProvider>

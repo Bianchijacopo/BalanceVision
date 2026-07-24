@@ -9,7 +9,8 @@ import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
 import { getAllCategories, isDefaultCategory, removeCustomCategory } from '../utils/categoryManager';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 const RADIAN = Math.PI / 180;
 
@@ -96,7 +97,7 @@ export default function Dashboard() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterType, setFilterType] = useState('');
   const [manageCats, setManageCats] = useState(false);
-  const [downloadOpen, setDownloadOpen] = useState(false);
+  const chartRef = useRef(null);
   const [, forceUpdate] = useState(0);
   const { addToast } = useToast();
   const prevBalanceRef = useRef(null);
@@ -119,6 +120,18 @@ export default function Dashboard() {
     apiGet('/budgets', token).then(setBudgetData).catch(console.error);
     apiGet('/goals', token).then(setGoalData).catch(console.error);
   }, [token]);
+
+  useEffect(() => {
+    if (transactions.length > 0 && monthOffset === 0) {
+      const latest = transactions.reduce((a, b) => a.date > b.date ? a : b).date;
+      const ly = parseInt(latest.slice(0, 4)), lm = parseInt(latest.slice(5, 7));
+      const now = new Date();
+      const curMonths = now.getFullYear() * 12 + now.getMonth();
+      const latMonths = ly * 12 + (lm - 1);
+      const diff = curMonths - latMonths;
+      if (diff > 0) setMonthOffset(-diff);
+    }
+  }, [transactions]);
 
   useEffect(() => {
     if (prevBalanceRef.current != null && balance?.current_balance !== prevBalanceRef.current) {
@@ -225,22 +238,6 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     return true;
   });
 
-  function exportCSV() {
-    const list = (searchQuery || filterCategory || filterType) ? filteredTransactions : transactions;
-    const headers = 'Data,Titolo,Categoria,Tipo,Importo,Note';
-    const rows = list.map(t =>
-      `"${t.date}","${t.title}","${t.category}","${t.type}",${t.amount},"${(t.note || '').replace(/"/g, '""')}"`
-    ).join('\n');
-    const csv = '\uFEFF' + headers + '\n' + rows;
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `transazioni_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    addToast('CSV esportato con successo', 'success');
-  }
-
   const transactionsBeforeMonth = transactions.filter(t => t.date < displayMonth);
   let monthStartBalance = balance?.initial_balance || 0;
   transactionsBeforeMonth.forEach(t => {
@@ -251,126 +248,182 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
   const peak = monthlyHistory.length > 0 ? monthlyHistory.reduce((a, b) => a.balance > b.balance ? a : b) : null;
   const low = monthlyHistory.length > 0 ? monthlyHistory.reduce((a, b) => a.balance < b.balance ? a : b) : null;
 
-  function downloadPDF() {
+  async function downloadPDF() {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
-    let y = 20;
+    const margin = 20;
+    let y = margin;
 
-    doc.setFontSize(18);
-    doc.setTextColor(0, 180, 90);
+    const brandColor = [0, 180, 90];
+    const textDark = [30, 30, 30];
+    const textMed = [100, 100, 100];
+    const dangerColor = [220, 0, 50];
+
+    doc.setFontSize(22);
+    doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
     doc.text('BalanceVision', pageW / 2, y, { align: 'center' });
-    y += 8;
+    y += 9;
 
-    doc.setFontSize(12);
-    doc.setTextColor(100);
-    doc.text('Report mensile - ' + monthName, pageW / 2, y, { align: 'center' });
-    y += 12;
-
-    doc.setDrawColor(0, 180, 90);
-    doc.line(20, y, pageW - 20, y);
-    y += 8;
+    doc.setFontSize(13);
+    doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+    doc.text('Report finanziario mensile', pageW / 2, y, { align: 'center' });
+    y += 7;
 
     doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.text('Saldo iniziale mese:', 20, y);
-    doc.setFontSize(13);
-    doc.setTextColor(0, 180, 90);
-    doc.text('€' + formatCurrency(monthStartBalance), pageW - 20, y, { align: 'right' });
+    doc.text(monthName, pageW / 2, y, { align: 'center' });
+    y += 4;
+
+    doc.setDrawColor(brandColor[0], brandColor[1], brandColor[2]);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
     y += 10;
 
-    doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.text('Totale entrate:', 20, y);
-    doc.setFontSize(13);
-    doc.setTextColor(0, 180, 90);
-    doc.text('€' + formatCurrency(monthlyIncome), pageW - 20, y, { align: 'right' });
-    y += 10;
+    doc.setFontSize(10);
+    doc.setTextColor(textMed[0], textMed[1], textMed[2]);
 
-    doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.text('Totale spese:', 20, y);
-    doc.setFontSize(13);
-    doc.setTextColor(220, 0, 50);
-    doc.text('-€' + formatCurrency(monthlyExpenses), pageW - 20, y, { align: 'right' });
-    y += 10;
+    const summaryData = [
+      { label: 'Saldo iniziale', value: '€' + formatCurrency(monthStartBalance), color: textDark },
+      { label: 'Entrate del mese', value: '+€' + formatCurrency(monthlyIncome), color: brandColor },
+      { label: 'Spese del mese', value: '-€' + formatCurrency(monthlyExpenses), color: dangerColor },
+      { label: 'Saldo finale', value: '€' + formatCurrency(balance?.current_balance || 0), color: textDark },
+    ];
 
-    doc.setDrawColor(200);
-    doc.line(20, y, pageW - 20, y);
+    doc.setFontSize(9);
+    doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+    doc.text('RIEPILOGO', margin, y);
     y += 6;
 
-    doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.text('Saldo finale:', 20, y);
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.text('€' + formatCurrency(balance?.current_balance || 0), pageW - 20, y, { align: 'right' });
-    y += 6;
-
-    if (peak || low) {
-      doc.setDrawColor(200);
-      doc.line(20, y, pageW - 20, y);
-      y += 6;
+    for (const s of summaryData) {
+      doc.setDrawColor(240, 240, 240);
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(margin, y, pageW - 2 * margin, 9, 2, 2, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+      doc.text(s.label, margin + 4, y + 6.5);
       doc.setFontSize(11);
-      doc.setTextColor(50);
-      doc.text('Picco massimo:', 20, y);
-      doc.setFontSize(12);
-      doc.setTextColor(0, 180, 90);
-      doc.text('€' + formatCurrency(peak?.balance || 0) + ' (' + (peak?.date || '-') + ')', pageW - 20, y, { align: 'right' });
-      y += 8;
-      doc.setFontSize(11);
-      doc.setTextColor(50);
-      doc.text('Punto minimo:', 20, y);
-      doc.setFontSize(12);
-      doc.setTextColor(220, 0, 50);
-      doc.text('€' + formatCurrency(low?.balance || 0) + ' (' + (low?.date || '-') + ')', pageW - 20, y, { align: 'right' });
-      y += 10;
+      doc.setTextColor(s.color[0], s.color[1], s.color[2]);
+      doc.text(s.value, pageW - margin - 4, y + 6.5, { align: 'right' });
+      y += 11;
     }
 
-    y += 4;
+    if (peak || low) {
+      y += 2;
+      doc.setDrawColor(240, 240, 240);
+      doc.line(margin, y, pageW - margin, y);
+      y += 6;
+
+      doc.setFontSize(9);
+      doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+      doc.text('ANDAMENTO', margin, y);
+      y += 6;
+
+      if (peak) {
+        doc.setFontSize(10);
+        doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+        doc.text('Picco massimo:', margin + 4, y + 3);
+        doc.setFontSize(10);
+        doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
+        doc.text('€' + formatCurrency(peak.balance), pageW - margin - 4, y + 3, { align: 'right' });
+        doc.setFontSize(8);
+        doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+        doc.text(peak.date, pageW - margin - 4, y + 8, { align: 'right' });
+        y += 14;
+      }
+
+      if (low) {
+        doc.setFontSize(10);
+        doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+        doc.text('Punto minimo:', margin + 4, y + 3);
+        doc.setFontSize(10);
+        doc.setTextColor(dangerColor[0], dangerColor[1], dangerColor[2]);
+        doc.text('€' + formatCurrency(low.balance), pageW - margin - 4, y + 3, { align: 'right' });
+        doc.setFontSize(8);
+        doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+        doc.text(low.date, pageW - margin - 4, y + 8, { align: 'right' });
+        y += 14;
+      }
+    }
 
     const expenses = monthlyTransactions.filter(t => t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
     const incomes = monthlyTransactions.filter(t => t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
 
+    y += 4;
     if (expenses.length > 0) {
-      doc.setFontSize(13);
-      doc.setTextColor(50);
-      doc.text('Spese del mese', 20, y);
+      if (y > 240) { doc.addPage(); y = margin; }
+
+      doc.setFontSize(9);
+      doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+      doc.text('SPESE DETTAGLIO', margin, y);
       y += 6;
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: y,
-        head: [['Data', 'Titolo', 'Categoria', 'Importo']],
+        head: [['Data', 'Descrizione', 'Categoria', 'Importo']],
         body: expenses.map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]),
         theme: 'grid',
-        headStyles: { fillColor: [220, 0, 50], textColor: [255, 255, 255], fontSize: 9 },
-        bodyStyles: { fontSize: 9, textColor: [50, 50, 50] },
-        alternateRowStyles: { fillColor: [255, 240, 240] },
-        styles: { cellPadding: 3 },
-        margin: { left: 20, right: 20 },
+        headStyles: { fillColor: dangerColor, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
+        bodyStyles: { fontSize: 8, textColor: textDark },
+        alternateRowStyles: { fillColor: [255, 245, 245] },
+        styles: { cellPadding: 2.5 },
+        margin: { left: margin, right: margin },
       });
       y = doc.lastAutoTable.finalY + 10;
     }
 
     if (incomes.length > 0) {
-      doc.setFontSize(13);
-      doc.setTextColor(50);
-      doc.text('Entrate del mese', 20, y);
+      if (y > 240) { doc.addPage(); y = margin; }
+
+      doc.setFontSize(9);
+      doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+      doc.text('ENTRATE DETTAGLIO', margin, y);
       y += 6;
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: y,
-        head: [['Data', 'Titolo', 'Categoria', 'Importo']],
+        head: [['Data', 'Descrizione', 'Categoria', 'Importo']],
         body: incomes.map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]),
         theme: 'grid',
-        headStyles: { fillColor: [0, 180, 90], textColor: [255, 255, 255], fontSize: 9 },
-        bodyStyles: { fontSize: 9, textColor: [50, 50, 50] },
-        alternateRowStyles: { fillColor: [240, 255, 245] },
-        styles: { cellPadding: 3 },
-        margin: { left: 20, right: 20 },
+        headStyles: { fillColor: brandColor, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
+        bodyStyles: { fontSize: 8, textColor: textDark },
+        alternateRowStyles: { fillColor: [245, 255, 245] },
+        styles: { cellPadding: 2.5 },
+        margin: { left: margin, right: margin },
       });
+      y = doc.lastAutoTable.finalY + 10;
     }
 
-    doc.save('report_' + displayMonth + '.pdf');
+    if (chartRef.current) {
+      try {
+        const canvas = await html2canvas(chartRef.current, {
+          scale: 2, useCORS: true, backgroundColor: '#ffffff',
+          width: chartRef.current.scrollWidth,
+          height: chartRef.current.scrollHeight,
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const imgW = pageW - 2 * margin;
+        const imgH = (canvas.height / canvas.width) * imgW;
+        if (y + imgH > 280) { doc.addPage(); y = margin; }
+
+        doc.setFontSize(9);
+        doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+        doc.text('GRAFICO ANDAMENTO SALDO', margin, y);
+        y += 6;
+        doc.addImage(imgData, 'PNG', margin, y, imgW, Math.min(imgH, 120));
+        y += Math.min(imgH, 120) + 8;
+      } catch (e) {
+        console.error('Chart capture failed:', e);
+      }
+    }
+
+    doc.setDrawColor(brandColor[0], brandColor[1], brandColor[2]);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageW - margin, y);
+    y += 5;
+    doc.setFontSize(7);
+    doc.setTextColor(textMed[0], textMed[1], textMed[2]);
+    doc.text('Generato da BalanceVision il ' + new Date().toLocaleDateString('it-IT'), pageW / 2, y, { align: 'center' });
+
+    doc.save('BalanceVision_Report_' + displayMonth + '.pdf');
     addToast('PDF scaricato con successo', 'success');
   }
 
@@ -522,7 +575,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           </div>
 
         <div className="grid-2">
-          <div className="card-chart clickable" onClick={() => setModal('chart-line')}>
+          <div ref={chartRef} className="card-chart clickable" onClick={() => setModal('chart-line')}>
             <h3 className="chart-title">Andamento del saldo</h3>
             {balanceHistory.length > 1 ? (
               <ResponsiveContainer width="100%" height={250}>
@@ -649,129 +702,82 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           </div>
         </div>
 
-        <div className="card-chart" style={{ marginBottom: 16, padding: '12px 16px' }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <input className="form-input" style={{ flex: 1, minWidth: 140, padding: '6px 10px', fontSize: 12 }}
-              placeholder="Cerca transazioni..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-            <select className="form-input" style={{ width: 120, padding: '6px 10px', fontSize: 12 }}
-              value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+        <div className="tx-block">
+          <div className="tx-header">
+            <h3>Transazioni</h3>
+            <span className="tx-header-count">{transactions.length} totali</span>
+          </div>
+
+          <div className="tx-search-wrap">
+            <input className="tx-search-input" placeholder="Cerca transazioni..."
+              value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+          </div>
+
+          <div className="tx-filters">
+            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
               <option value="">Tutte le categorie</option>
               {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select className="form-input" style={{ width: 100, padding: '6px 10px', fontSize: 12 }}
-              value={filterType} onChange={e => setFilterType(e.target.value)}>
+            <select value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="">Tutti</option>
               <option value="income">Entrate</option>
               <option value="expense">Spese</option>
             </select>
             {(searchQuery || filterCategory || filterType) && (
-              <button className="btn btn-ghost btn-sm"
+              <button className="btn-tx-clear"
                 onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterType(''); }}>
                 Cancella filtri
               </button>
             )}
-            <button className={`btn btn-ghost btn-sm`}
+            <button className="btn-tx-ghost"
               onClick={() => setManageCats(!manageCats)}>
               Categorie
             </button>
           </div>
+
           {manageCats && (
-            <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)' }}>Categorie personalizzate:</span>
+            <div className="tx-cats">
+              <span className="tx-cats-label">Personalizzate:</span>
               {getAllCategories().filter(c => !isDefaultCategory(c)).length === 0 && (
                 <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Nessuna</span>
               )}
               {getAllCategories().filter(c => !isDefaultCategory(c)).map(c => (
-                <span key={c} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                  padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
-                  background: 'var(--brand-light)', color: 'var(--brand)',
-                }}>
+                <span key={c} className="tx-cat-tag">
                   {c}
-                  <button className="btn-delete" style={{ width: 16, height: 16, fontSize: 12 }}
-                    onClick={() => { removeCustomCategory(c); forceUpdate(n => n + 1); }}
-                    title="Elimina categoria">&times;</button>
+                  <button onClick={() => { removeCustomCategory(c); forceUpdate(n => n + 1); }} title="Elimina">&times;</button>
                 </span>
               ))}
             </div>
           )}
-        </div>
 
-        <div className="section">
-          <div className="section-header">
-            <h3 className="section-title">Transazioni di {monthName}</h3>
-            {(searchQuery || filterCategory || filterType) && (
-              <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 600 }}>
-                {filteredMonthly.length} risultati
-              </span>
-            )}
-          </div>
-          <div className="timeline">
-            {filteredMonthly.map(t => (
-              <div key={t.id} className="timeline-item">
-                <div className="timeline-dot" style={{ borderColor: t.type === 'income' ? 'var(--success)' : 'var(--danger)' }} />
-                <div className="timeline-content">
-                  <span className="timeline-date">{t.date}</span>
-                  <span className="timeline-title">{t.title}</span>
-                  <span className="timeline-cat"><span className="badge">{t.category}</span></span>
-                  <span className={`timeline-amount ${t.type === 'income' ? 'text-success' : 'text-danger'}`}>
-                    {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
-                  </span>
-                  <button className="btn-icon" onClick={() => navigate('/transactions/edit/' + t.id)} title="Modifica">&#9998;</button>
-                  <button className="btn-delete" onClick={() => handleDeleteWithToast(t.id)} title="Elimina">&times;</button>
+          <div className="tx-list">
+            {filteredTransactions.map(t => (
+              <div key={t.id} className="tx-card">
+                <span className="tx-card-date">{t.date}</span>
+                <div className="tx-card-body">
+                  <span className="tx-card-category">{t.category}</span>
+                  <span className="tx-card-title">{t.title}</span>
+                </div>
+                <span className={`tx-card-amount ${t.type === 'income' ? 'text-success' : 'text-danger'}`}>
+                  {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
+                </span>
+                <div className="tx-card-actions">
+                  <button className="btn-edit" onClick={() => navigate('/transactions/edit/' + t.id)} title="Modifica">&#9998;</button>
+                  <button className="btn-delete-tx" onClick={() => handleDeleteWithToast(t.id)} title="Elimina">&times;</button>
                 </div>
               </div>
             ))}
-            {(searchQuery || filterCategory || filterType ? filteredMonthly.length === 0 : monthlyTransactions.length === 0) && (
-              <p className="text-secondary text-center" style={{ padding: 24 }}>
-                {searchQuery || filterCategory || filterType ? 'Nessuna transazione corrisponde ai filtri' : 'Nessuna transazione in questo mese'}
-              </p>
+            {filteredTransactions.length === 0 && (
+              <div className="tx-empty">
+                {searchQuery || filterCategory || filterType ? 'Nessuna transazione corrisponde ai filtri' : 'Nessuna transazione'}
+              </div>
             )}
           </div>
-        </div>
 
-        <div className="section">
-          <div className="section-header">
-            <h3 className="section-title">Transazioni recenti</h3>
-            <button onClick={() => navigate('/transactions/new')} className="btn btn-primary btn-sm">
-              Nuova transazione
+          <div className="tx-new-btn-wrap">
+            <button className="tx-new-btn" onClick={() => navigate('/transactions/new')}>
+              Nuova Transazione
             </button>
-          </div>
-          <div className="table-wrapper">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Titolo</th>
-                  <th>Categoria</th>
-                  <th>Importo</th>
-                  <th className="actions-cell" colSpan={2}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTransactions.slice(0, 10).map(t => (
-                  <tr key={t.id}>
-                    <td className="text-sm">{t.date}</td>
-                    <td>{t.title}</td>
-                    <td><span className="badge">{t.category}</span></td>
-                    <td className={t.type === 'income' ? 'text-success' : 'text-danger'}>
-                      {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
-                    </td>
-                    <td className="actions-cell">
-                      <button className="btn-icon" onClick={() => navigate('/transactions/edit/' + t.id)} title="Modifica">&#9998;</button>
-                    </td>
-                    <td className="actions-cell">
-                      <button className="btn-delete" onClick={() => handleDeleteWithToast(t.id)} title="Elimina">&times;</button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredTransactions.length === 0 && (
-                  <tr><td colSpan={6} className="text-center text-secondary">
-                    {searchQuery || filterCategory || filterType ? 'Nessuna transazione corrisponde ai filtri' : 'Nessuna transazione'}
-                  </td></tr>
-                )}
-              </tbody>
-            </table>
           </div>
         </div>
 

@@ -1,0 +1,17 @@
+{
+  "name": "balance-vision",
+  "version": "1.0.0",
+  "private": true,
+  "main": "electron.js",
+  "scripts": {
+    "build": "cd client && npx vite build",
+    "electron-start": "electron .",
+    "electron-build": "npm run build && electron .",
+    "release-win": "npx @electron/packager . BalanceVision --platform=win32 --arch=x64 --out=release --overwrite --no-asar"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.0.4",
+    "electron": "^41.7.1",
+    "electron-packager": "^17.1.2"
+  }
+}
