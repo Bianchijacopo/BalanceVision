@@ -1,11 +1,33 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const http = require('http');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'balance-vision-desktop-secret';
 process.env.GMAIL_USER = process.env.GMAIL_USER || 'desktop@balancevision.app';
 process.env.GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || 'desktop-not-used';
 process.env.PORT = '3001';
+
+function waitForServer(url, retries) {
+  retries = retries || 40;
+  return new Promise((resolve) => {
+    let attempts = 0;
+    function check() {
+      http.get(url, (res) => {
+        res.resume();
+        resolve();
+      }).on('error', () => {
+        attempts++;
+        if (attempts >= retries) {
+          resolve();
+        } else {
+          setTimeout(check, 250);
+        }
+      });
+    }
+    check();
+  });
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -19,7 +41,7 @@ function createWindow() {
       contextIsolation: true
     }
   });
-  win.loadFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+  win.loadURL('http://localhost:3001');
 }
 
 app.whenReady().then(async () => {
@@ -33,6 +55,7 @@ app.whenReady().then(async () => {
   } catch (e) {
     console.error('Server start error:', e);
   }
+  await waitForServer('http://localhost:3001');
   createWindow();
 });
 
