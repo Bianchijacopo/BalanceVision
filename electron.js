@@ -23,7 +23,7 @@ function startServer() {
       stdio: ['pipe', 'pipe', 'pipe', 'ipc']
     });
 
-    const timeout = setTimeout(resolve, 8000);
+    const timeout = setTimeout(resolve, 10000);
 
     serverProcess.stdout.on('data', (data) => {
       if (data.toString().includes('server running')) {
@@ -61,7 +61,7 @@ function createWindow() {
       webSecurity: false,
     }
   });
-  win.loadFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+  win.loadURL('http://localhost:3001');
 }
 
 app.whenReady().then(async () => {
