@@ -239,8 +239,10 @@ Senza chiave Groq, l'app usa consigli basati su regole fisse (non AI).
 
 | Dove | Comando | Cosa fa |
 |------|---------|---------|
-| radice | `.\node_modules\electron\dist\electron.exe .` | Avvia l'app desktop |
+| radice | `npm run electron-start` | Avvia l'app desktop |
 | radice | `start.bat` | Avvia in modalità browser (dev) |
+| radice | `npm run build` | Builda il frontend |
+| radice | `npm run release-win` | Crea l'exe standalone |
 | client/ | `npm run build` | Builda il frontend |
 | server/ | `npm run seed` | Crea account admin |
 | server/ | `npm run seed:test` | Crea 6 mesi di dati finti |
