@@ -5,6 +5,7 @@ import { ToastProvider } from './context/ToastContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import TransactionForm from './pages/TransactionForm';
 import AnalisiAvanzata from './pages/AnalisiAvanzata';
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
             <Route path="/dashboard" element={<VerifiedRoute><Dashboard /></VerifiedRoute>} />
             <Route path="/transactions/new" element={<VerifiedRoute><TransactionForm /></VerifiedRoute>} />

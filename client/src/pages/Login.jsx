@@ -56,6 +56,9 @@ export default function Login() {
           <button type="submit" className="btn btn-primary btn-full">
             Accedi
           </button>
+          <div style={{ textAlign: 'center', marginTop: 12 }}>
+            <Link to="/forgot-password" className="link" style={{ fontSize: 13 }}>Password dimenticata?</Link>
+          </div>
         </form>
         <div className="card-footer">
           <span className="text-secondary">Non hai un account?</span>

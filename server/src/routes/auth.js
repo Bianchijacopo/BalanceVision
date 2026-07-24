@@ -122,6 +122,47 @@ router.post('/refresh', (req, res) => {
   res.json({ token, refreshToken: newRefreshToken, user });
 });
 
+router.post('/forgot-send-otp', (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email richiesta' });
+
+  const user = get('SELECT id, email, name FROM users WHERE email = ?', [email]);
+  if (!user) return res.status(404).json({ error: 'Nessun account con questa email' });
+
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, user.id]);
+
+  console.log('OTP reset password per', email, ':', otp);
+  try {
+    const { text, html } = buildOtpEmail(user.name || 'Utente', otp);
+    sendEmail(email, 'Recupero password BalanceVision', text, html).catch(() => {});
+  } catch (e) {}
+
+  res.json({ message: 'Codice inviato alla tua email', otp });
+});
+
+router.post('/reset-password', (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword) return res.status(400).json({ error: 'Campi obbligatori: email, otp, newPassword' });
+
+  const pwErrors = validatePassword(newPassword);
+  if (pwErrors.length > 0) return res.status(400).json({ error: pwErrors.join(', ') });
+
+  const user = get('SELECT id, otp, otp_expiry FROM users WHERE email = ?', [email]);
+  if (!user) return res.status(404).json({ error: 'Nessun account con questa email' });
+  if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Nessun codice richiesto' });
+  if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'Codice scaduto' });
+  if (user.otp !== otp) return res.status(400).json({ error: 'Codice errato' });
+
+  const hash = bcrypt.hashSync(newPassword, 10);
+  run('UPDATE users SET password_hash = ?, otp = NULL, otp_expiry = NULL WHERE id = ?', [hash, user.id]);
+  run('DELETE FROM refresh_tokens WHERE user_id = ?', [user.id]);
+
+  audit(user.id, 'password_reset', req.ip);
+  res.json({ message: 'Password cambiata con successo' });
+});
+
 router.post('/logout', authMiddleware, (req, res) => {
   run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.userId]);
   audit(req.userId, 'logout', req.ip);
