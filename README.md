@@ -1,8 +1,6 @@
 # BalanceVision
 
-Premium personal finance tracker con tema scuro "Wall Street Dark" e chiaro "Luxury Banking
-Light". Transazioni, grafici, budget, obiettivi di risparmio, analisi avanzate, consigli
-finanziari, export PDF e app desktop Electron.
+Premium personal finance tracker con tema scuro "Wall Street Dark" e chiaro "Luxury Banking Light". Transazioni, grafici, budget, obiettivi di risparmio, analisi avanzate, consigli finanziari con AI, chat AI, transazioni ricorrenti, export PDF e app desktop Electron.
 
 ## Stack
 
@@ -10,6 +8,7 @@ finanziari, export PDF e app desktop Electron.
 - **Backend**: Express 4
 - **Database**: sql.js (SQLite puro JS, nessun modulo nativo)
 - **Auth**: JWT + refresh token + OTP
+- **AI**: Groq API (Llama 3.3 70B) o Ollama (locale)
 - **Desktop**: Electron 41
 - **PDF**: jsPDF + jspdf-autotable
 
@@ -45,6 +44,7 @@ Crea il file `server/.env`:
 JWT_SECRET=una-stringa-casuale-lunga-almeno-32-caratteri
 GMAIL_USER=lasciare-vuoto-se-non-usato
 GMAIL_APP_PASSWORD=lasciare-vuoto-se-non-usato
+GROQ_API_KEY=lasciare-vuoto-se-non-usato
 ```
 
 > Le email (OTP, reset password) funzionano solo con credenziali Gmail reali.
@@ -81,32 +81,79 @@ Il client si apre su `http://localhost:5173`.
 |-------|----------|
 | admin@gmail.com | admin |
 
+## Utilizzo
+
+### Dashboard
+
+- Saldo corrente, entrate/uscite del mese, grafico andamento saldo
+- Grafico a torta spese per categoria
+- Transazioni filtrate per mese (usa le frecce `←` `→` per navigare)
+- Budget e obiettivi con barre di progresso
+- Insight: spesa media/giorno, categoria dominante, risparmio, previsione fine mese
+
+### Transazioni Ricorrenti
+
+Crea transazioni che si ripetono automaticamente (settimanale, mensile, annuale).
+Ogni volta che carichi la Dashboard, l'app controlla se generarne di nuove.
+
+### Consigli AI
+
+- **Consigli automatici**: Nella pagina Consigli, l'AI analizza i tuoi dati e mostra suggerimenti personalizzati
+- **Chat AI**: Puoi fare domande dirette come:
+  - *"Come posso risparmiare di più?"*
+  - *"Analizza le mie spese di questo mese"*
+  - *"Dove sto spendendo troppo?"*
+  - *"Quanto posso mettere da parte ogni mese?"*
+- Le risposte includono **grassetto** per importi, elenchi puntati e paragrafi chiari
+
+### AI Backend
+
+L'app supporta due provider AI:
+
+1. **Groq** (consigliato) — API cloud veloce e gratis
+2. **Ollama** — AI locale (fallback se Groq non configurato)
+
+Per attivare Groq:
+
+1. Vai su [console.groq.com](https://console.groq.com) e registrati
+2. Genera una chiave API
+3. Aggiungila a `server/.env`:
+   ```
+   GROQ_API_KEY=gsk_la_tua_chiave
+   ```
+4. Riavvia l'app
+
+Senza chiave Groq, l'app usa regole base (consigli non-AI).
+
 ## App desktop (Electron)
 
-L'app puo essere impacchettata come .exe autonomo senza bisogno di Node.js o terminale.
+### Esecuzione diretta (senza packaging)
 
-### Build ed eseguibile
+Assicurati di avere Electron installato e il frontend buildato:
 
 ```bash
-# 1. Build del frontend
-cd client
+cd client && npm install && npm run build && cd ..
 npm install
-npm run build       # produce client/dist/
-
-# 2. Torna alla radice e impacchetta
-cd ..
-npm install         # installa electron e @electron/packager
-npm run build       # build client (se non gia fatto)
-npm run release-win # produce l'exe in release/
+.\node_modules\electron\dist\electron.exe .
 ```
 
-Dopo il packaging, l'exe si trova in:
+### Collegamento sul desktop
 
-```
-release/BalanceVision-win32-x64/BalanceVision.exe
+Dopo aver eseguito almeno una volta l'app, trovi `BalanceVision.lnk` sul desktop.
+Doppio click → l'app si apre direttamente senza console.
+
+> Nota: il collegamento esegue `launch.bat` (dentro la cartella del progetto) che
+> kill il vecchio processo sulla porta 3001 e avvia Electron.
+
+### Packaging per .exe autonomo
+
+```bash
+cd client && npm install && npm run build && cd ..
+npm install
+npm run release-win    # produce l'exe in release/
 ```
 
-Basta lanciarlo. L'app avvia il server interno su localhost:3001 e apre la finestra.
+L'eseguibile si trova in `release/BalanceVision-win32-x64/BalanceVision.exe`.
 
 ### Requisiti per il packaging
 
@@ -114,8 +161,6 @@ Basta lanciarlo. L'app avvia il server interno su localhost:3001 e apre la fines
 - Aver eseguito `npm install` nella cartella `client/` e nella radice
 
 ### Pulire il database prima del packaging
-
-Per distribuire l'app con database vuoto:
 
 ```bash
 del server\data\balance.db    # Windows
@@ -130,7 +175,8 @@ npm run build && npm run release-win
 - Budget mensili per categoria con barre di progresso colorate
 - Obiettivi di risparmio con sincronizzazione saldo
 - Analisi Avanzata con grafici mensili/giornalieri e statistiche
-- Consigli finanziari generati da regole lato server
+- Transazioni Ricorrenti (settimanale, mensile, annuale)
+- **Consigli AI** con Groq o Ollama + chat interattiva
 - Export PDF (saldo iniziale, entrate/uscite, picchi, tabelle)
 - Temi scuro/chiaro salvati in localStorage
 - Modalita Focus (nasconde saldi per presentazioni)
@@ -146,7 +192,7 @@ BalanceVision/
 │   ├── src/
 │   │   ├── components/      # Topbar, UI components
 │   │   ├── context/         # AuthContext, ThemeContext, ToastContext
-│   │   ├── pages/           # Login, Dashboard, Analytics, Budgets, Goals, etc.
+│   │   ├── pages/           # Login, Dashboard, Analytics, Budgets, Goals, Advice, Recurring
 │   │   └── utils/           # categoryColors.js, categoryManager.js
 │   ├── package.json
 │   └── vite.config.js
@@ -155,10 +201,12 @@ BalanceVision/
 │   ├── src/
 │   │   ├── db/              # database.js (sql.js wrapper)
 │   │   ├── middleware/      # auth.js (JWT verification)
-│   │   ├── routes/          # auth, transactions, balance, advice, budgets, goals
+│   │   ├── routes/          # auth, transactions, balance, advice, budgets, goals, recurring
 │   │   └── index.js         # Entry point Express
 │   └── package.json
 ├── electron.js              # Entry point Electron (main process)
+├── launch.bat               # Script avvio (non tracciato da git)
+├── icon.svg                 # Icona personalizzata per il collegamento
 ├── start.bat                # Avvio one-click (Windows)
 └── package.json             # Root: script Electron + packaging
 ```
@@ -217,7 +265,7 @@ Authorization: Bearer <token>
 ### Bilancio
 | Metodo | Path | Descrizione |
 |--------|------|-------------|
-| GET | `/api/balance` | Saldo, totali entrate/uscite, stats (daily avg, top category, etc.) |
+| GET | `/api/balance` | Saldo, totali entrate/uscite, stats |
 | GET | `/api/balance/history` | Storico saldo giorno per giorno |
 | GET | `/api/balance/monthly` | Totali mensili entrate/uscite |
 
@@ -237,10 +285,20 @@ Authorization: Bearer <token>
 | PUT | `/api/goals/:id` | Modifica obiettivo |
 | DELETE | `/api/goals/:id` | Elimina obiettivo |
 
+### Transazioni Ricorrenti
+| Metodo | Path | Descrizione |
+|--------|------|-------------|
+| GET | `/api/recurring` | Lista ricorrenti |
+| POST | `/api/recurring` | Nuova ricorrente |
+| PUT | `/api/recurring/:id` | Modifica ricorrente |
+| DELETE | `/api/recurring/:id` | Elimina ricorrente |
+| POST | `/api/recurring/process` | Genera transazioni ora |
+
 ### Consigli
 | Metodo | Path | Descrizione |
 |--------|------|-------------|
 | GET | `/api/advice` | Consigli finanziari + sommario |
+| POST | `/api/advice/chat` | Chat AI (body: `{ message: "..." }`) |
 
 ## Dettagli tecnici
 
@@ -248,6 +306,8 @@ Authorization: Bearer <token>
 - Le categorie personalizzate sono salvate in localStorage (non nel DB)
 - I grafici usano Recharts (ComposedChart, Area, BarChart, PieChart)
 - Il PDF e' generato lato client con jsPDF + jspdf-autotable
-- L'app Electron fork non usa fork ma `import()` nello stesso processo
+- L'app Electron fork il server Express in un processo figlio
 - CORS accetta qualsiasi origine (necessario per `file://` in Electron)
 - `client/vite.config.js` usa `base: './'` per path relativi (Electron)
+- L'AI usa Groq API (Llama 3.3 70B) o in alternativa Ollama (locale)
+- Le transazioni ricorrenti generano automaticamente nuove transazioni al caricamento della Dashboard
