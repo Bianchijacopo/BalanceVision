@@ -481,6 +481,9 @@ $RECYCLE.BIN/
 # Local launcher
 launch.bat
 
+# Generated icon
+icon.ico
+
 # Vim temporary swap files
 *.swp
 
