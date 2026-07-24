@@ -122,18 +122,6 @@ export default function Dashboard() {
   }, [token]);
 
   useEffect(() => {
-    if (transactions.length > 0 && monthOffset === 0) {
-      const latest = transactions.reduce((a, b) => a.date > b.date ? a : b).date;
-      const ly = parseInt(latest.slice(0, 4)), lm = parseInt(latest.slice(5, 7));
-      const now = new Date();
-      const curMonths = now.getFullYear() * 12 + now.getMonth();
-      const latMonths = ly * 12 + (lm - 1);
-      const diff = curMonths - latMonths;
-      if (diff > 0) setMonthOffset(-diff);
-    }
-  }, [transactions]);
-
-  useEffect(() => {
     if (prevBalanceRef.current != null && balance?.current_balance !== prevBalanceRef.current) {
       setAnimClass('animating');
       const t = setTimeout(() => setAnimClass(''), 700);
@@ -142,12 +130,29 @@ export default function Dashboard() {
     prevBalanceRef.current = balance?.current_balance;
   }, [balance?.current_balance]);
 
+  useEffect(() => {
+    if (transactions.length > 0 && monthOffset === 0 && !sessionStorage.getItem('bv_nav')) {
+      sessionStorage.setItem('bv_nav', '1');
+      const curMonth = new Date().toISOString().slice(0, 7);
+      if (!transactions.some(t => t.date.startsWith(curMonth))) {
+        const latest = transactions.reduce((a, b) => a.date > b.date ? a : b).date;
+        const ly = parseInt(latest.slice(0, 4)), lm = parseInt(latest.slice(5, 7));
+        const curMonths = new Date().getFullYear() * 12 + new Date().getMonth();
+        const latMonths = ly * 12 + (lm - 1);
+        if (curMonths > latMonths) setMonthOffset(latMonths - curMonths);
+      }
+    }
+  }, [transactions]);
+
   const balanceHistory = buildBalanceHistory(transactions, balance?.initial_balance || 0);
   const projectionData = buildProjection(transactions, balance);
 
   const categoryColors = getCategoryColors();
 
-  const [monthOffset, setMonthOffset] = useState(0);
+  const [monthOffset, setMonthOffset] = useState(() => {
+    try { const s = sessionStorage.getItem('bv_moff'); return s !== null ? parseInt(s, 10) : 0; } catch { return 0; }
+  });
+  useEffect(() => { try { sessionStorage.setItem('bv_moff', String(monthOffset)); } catch {} }, [monthOffset]);
   const now = new Date();
   const targetDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const displayMonth = targetDate.getFullYear() + '-' + String(targetDate.getMonth() + 1).padStart(2, '0');
