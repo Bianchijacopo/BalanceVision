@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiGet } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,10 @@ export default function Advice() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiMode, setAiMode] = useState(false);
+  const [chat, setChat] = useState([]);
+  const [chatMsg, setChatMsg] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatEnd = useRef(null);
 
   useEffect(() => {
     apiGet('/advice', token)
@@ -17,6 +21,29 @@ export default function Advice() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [token]);
+
+  useEffect(() => { chatEnd.current?.scrollIntoView({ behavior: 'smooth' }); }, [chat]);
+
+  async function sendChat() {
+    const msg = chatMsg.trim();
+    if (!msg || chatLoading) return;
+    setChatMsg('');
+    setChat(c => [...c, { role: 'user', text: msg }]);
+    setChatLoading(true);
+    try {
+      const res = await fetch('http://localhost:3001/api/advice/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ message: msg }),
+      });
+      if (!res.ok) throw new Error('Errore');
+      const json = await res.json();
+      setChat(c => [...c, { role: 'ai', text: json.reply }]);
+    } catch (e) {
+      setChat(c => [...c, { role: 'ai', text: 'Errore: ' + e.message }]);
+    }
+    setChatLoading(false);
+  }
 
   return (
     <div className="layout">
@@ -79,6 +106,35 @@ export default function Advice() {
               <code>GROQ_API_KEY=la_tua_chiave</code><br />
               4. Riavvia l'app
             </p>
+          </div>
+        )}
+
+        {aiMode && (
+          <div className="card" style={{ marginTop: 16 }}>
+            <div className="card-header">
+              <h3 className="card-title" style={{ fontSize: 15 }}>Parla con l'AI</h3>
+              <p className="card-subtitle" style={{ fontSize: 12 }}>Fai domande sulle tue finanze</p>
+            </div>
+            <div className="chat-box">
+              {chat.length === 0 && (
+                <p className="text-secondary text-center" style={{ fontSize: 13, padding: 16 }}>
+                  Chiedimi qualsiasi cosa: "Come posso risparmiare?", "Analizza le mie spese", "Dove spendo troppo?"
+                </p>
+              )}
+              {chat.map((m, i) => (
+                <div key={i} className={`chat-msg ${m.role}`}>{m.text}</div>
+              ))}
+              {chatLoading && <div className="chat-msg ai" style={{ color: 'var(--text-tertiary)' }}>Scrivendo...</div>}
+              <div ref={chatEnd} />
+            </div>
+            <div className="chat-input-row" style={{ marginTop: 8 }}>
+              <input value={chatMsg} onChange={e => setChatMsg(e.target.value)}
+                placeholder="Scrivi un messaggio..."
+                onKeyDown={e => e.key === 'Enter' && sendChat()} />
+              <button className="chat-send-btn" onClick={sendChat} disabled={chatLoading || !chatMsg.trim()}>
+                Invia
+              </button>
+            </div>
           </div>
         )}
 

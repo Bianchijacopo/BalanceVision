@@ -142,6 +142,81 @@ async function generateOllamaAdvice(data) {
   return text.split('\n').map(l => l.replace(/^[-*\d]+[.)\s]*/, '').trim()).filter(l => l.length > 10);
 }
 
+router.post('/chat', async (req, res) => {
+  const { message } = req.body;
+  if (!message || message.trim().length === 0) {
+    return res.status(400).json({ error: 'Inserisci un messaggio' });
+  }
+
+  try {
+    const initial = get('SELECT amount FROM initial_balance WHERE user_id = ?', [req.userId]);
+    const initialAmount = initial ? initial.amount : 0;
+
+    const totals = get(`
+      SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
+             COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expenses
+      FROM transactions WHERE user_id = ?
+    `, [req.userId]);
+
+    const balance = initialAmount + totals.total_income - totals.total_expenses;
+
+    const categoryBreakdown = all(`
+      SELECT category, SUM(amount) as total
+      FROM transactions WHERE user_id = ? AND type = 'expense'
+      GROUP BY category ORDER BY total DESC LIMIT 10
+    `, [req.userId]);
+
+    const recentTx = all(`
+      SELECT date, type, title, amount, category FROM transactions
+      WHERE user_id = ? ORDER BY date DESC LIMIT 15
+    `, [req.userId]);
+
+    const systemPrompt = `Sei un consulente finanziario personale. Rispondi in italiano in modo chiaro e utile.
+
+DATI DELL'UTENTE:
+- Saldo: ${balance.toFixed(0)}€
+- Entrate totali: ${totals.total_income.toFixed(0)}€
+- Spese totali: ${totals.total_expenses.toFixed(0)}€
+- Risparmio: ${(totals.total_income - totals.total_expenses).toFixed(0)}€
+
+CATEGORIE SPESE: ${(categoryBreakdown || []).map(c => c.category + ' ' + c.total.toFixed(0) + '€').join(', ')}
+
+TRANSAZIONI RECENTI: ${(recentTx || []).map(t => t.date + ' ' + t.title + ' ' + t.amount.toFixed(0) + '€').join(', ')}
+
+Rispondi in modo naturale e colloquiale, usando i dati reali dell'utente per dare consigli personalizzati. Se non sai qualcosa, dillo.`;
+
+    const reply = await groqChat(systemPrompt, message);
+    res.json({ reply });
+  } catch (e) {
+    console.error('[advice chat error]', e);
+    res.status(500).json({ error: 'Errore nella risposta' });
+  }
+});
+
+async function groqChat(systemPrompt, userMessage) {
+  const resp = await fetch(GROQ_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + GROQ_API_KEY,
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      temperature: 0.7,
+      max_tokens: 800,
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+
+  if (!resp.ok) throw new Error('Groq ' + resp.status);
+  const json = await resp.json();
+  return json.choices?.[0]?.message?.content || 'Non ho capito, riprova.';
+}
+
 function generateRuleAdvice(data) {
   const { total_income, total_expenses, categoryBreakdown } = data;
   const savings = total_income - total_expenses;
