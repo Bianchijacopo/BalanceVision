@@ -478,6 +478,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Local launcher
+launch.bat
+
 # Vim temporary swap files
 *.swp
 
