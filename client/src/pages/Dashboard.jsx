@@ -242,7 +242,12 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
   const allCategories = getAllCategories();
   const filteredTransactions = transactions.filter(t => {
-    if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const inTitle = t.title.toLowerCase().includes(q);
+      const inNote = (t.note || '').toLowerCase().includes(q);
+      if (!inTitle && !inNote) return false;
+    }
     if (filterCategory && t.category !== filterCategory) return false;
     if (filterType && t.type !== filterType) return false;
     if (filterDateFrom && t.date < filterDateFrom) return false;
@@ -252,7 +257,12 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     return true;
   });
   const filteredMonthly = monthlyTransactions.filter(t => {
-    if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const inTitle = t.title.toLowerCase().includes(q);
+      const inNote = (t.note || '').toLowerCase().includes(q);
+      if (!inTitle && !inNote) return false;
+    }
     if (filterCategory && t.category !== filterCategory) return false;
     if (filterType && t.type !== filterType) return false;
     if (filterDateFrom && t.date < filterDateFrom) return false;
