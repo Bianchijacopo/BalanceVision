@@ -2,6 +2,12 @@
 
 **App per la gestione delle finanze personali** — dashboard interattiva, transazioni, budget, obiettivi, analisi avanzata, consigli AI, multi-lingua IT/EN, tema scuro/chiaro, import CSV, report email, esportazione PDF, app desktop Electron.
 
+<p align="center">
+  <a href="#installazione-e-setup" style="display: inline-block; padding: 12px 32px; background: #00b45a; color: #fff; font-size: 18px; font-weight: 700; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 8px rgba(0,180,90,0.3);">
+    ⬇️ Vai alla Guida all'Installazione
+  </a>
+</p>
+
 ---
 
 ## 📋 Funzionalità Complete
@@ -198,10 +204,6 @@ Il backend AI usa **Groq** (cloud, gratuito, senza bisogno di carta di credito):
 - `bv_custom_categories` — categorie personalizzate
 - `bv_cat_colors` — colori assegnati a ogni categoria
 - `bv_cat_trans_cache` — cache traduzioni AI con indicizzazione per lingua
-
----
-
-## ⬇️ [Vai alla Guida all'Installazione](#installazione-e-setup)
 
 ---
 
