@@ -807,19 +807,19 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           )}
 
           <div className="tx-list">
-            {filteredTransactions.map(t => (
-              <div key={t.id} className="tx-card">
-                <span className="tx-card-date">{t.date}</span>
+            {filteredTransactions.map(tx => (
+              <div key={tx.id} className="tx-card">
+                <span className="tx-card-date">{tx.date}</span>
                 <div className="tx-card-body">
-                  <span className="tx-card-category">{t.category}</span>
-                  <span className="tx-card-title">{t.title}</span>
+                  <span className="tx-card-category">{tx.category}</span>
+                  <span className="tx-card-title">{tx.title}</span>
                 </div>
-                <span className={`tx-card-amount ${t.type === 'income' ? 'text-success' : 'text-danger'}`}>
-                  {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
+                <span className={`tx-card-amount ${tx.type === 'income' ? 'text-success' : 'text-danger'}`}>
+                  {tx.type === 'income' ? '+' : '-'}€{tx.amount.toFixed(2)}
                 </span>
                 <div className="tx-card-actions">
-                  <button className="btn-edit" onClick={() => navigate('/transactions/edit/' + t.id)} title={t('dashboard.editBtn')}>&#9998;</button>
-                  <button className="btn-delete-tx" onClick={() => handleDeleteWithToast(t.id)} title={t('dashboard.deleteBtn')}>&times;</button>
+                  <button className="btn-edit" onClick={() => navigate('/transactions/edit/' + tx.id)} title={t('dashboard.editBtn')}>&#9998;</button>
+                  <button className="btn-delete-tx" onClick={() => handleDeleteWithToast(tx.id)} title={t('dashboard.deleteBtn')}>&times;</button>
                 </div>
               </div>
             ))}
@@ -865,11 +865,11 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             <button className="modal-close" onClick={() => setCategoryModal(null)}>×</button>
           </div>
           <div className="category-modal-transactions">
-            {categoryModal.transactions.map(t => (
-              <div key={t.id} className="modal-entry">
-                <span className="modal-entry-date">{t.date}</span>
-                <span className="modal-entry-title">{t.title}</span>
-                <span className="text-danger">-€{t.amount.toFixed(2)}</span>
+            {categoryModal.transactions.map(tx => (
+              <div key={tx.id} className="modal-entry">
+                <span className="modal-entry-date">{tx.date}</span>
+                <span className="modal-entry-title">{tx.title}</span>
+                <span className="text-danger">-€{tx.amount.toFixed(2)}</span>
               </div>
             ))}
           </div>
@@ -929,12 +929,12 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
               <span className="text-success">€{formatCurrency(totalIncome)}</span>
             </div>
             <div className="modal-column-list">
-              {incomeTransactions.map(t => (
-                <div className="modal-entry" key={t.id}>
-                  <span className="modal-entry-date">{t.date}</span>
-                  <span className="modal-entry-title">{t.title}</span>
-                  <span className="badge">{t.category}</span>
-                  <span className="text-success">+€{t.amount.toFixed(2)}</span>
+              {incomeTransactions.map(tx => (
+                <div className="modal-entry" key={tx.id}>
+                  <span className="modal-entry-date">{tx.date}</span>
+                  <span className="modal-entry-title">{tx.title}</span>
+                  <span className="badge">{tx.category}</span>
+                  <span className="text-success">+€{tx.amount.toFixed(2)}</span>
                 </div>
               ))}
               {incomeTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>{t('dashboard.modalNoIncome')}</p>}
@@ -946,12 +946,12 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
               <span className="text-danger">€{formatCurrency(totalExpenses)}</span>
             </div>
             <div className="modal-column-list">
-              {expenseTransactions.map(t => (
-                <div className="modal-entry" key={t.id}>
-                  <span className="modal-entry-date">{t.date}</span>
-                  <span className="modal-entry-title">{t.title}</span>
-                  <span className="badge">{t.category}</span>
-                  <span className="text-danger">-€{t.amount.toFixed(2)}</span>
+              {expenseTransactions.map(tx => (
+                <div className="modal-entry" key={tx.id}>
+                  <span className="modal-entry-date">{tx.date}</span>
+                  <span className="modal-entry-title">{tx.title}</span>
+                  <span className="badge">{tx.category}</span>
+                  <span className="text-danger">-€{tx.amount.toFixed(2)}</span>
                 </div>
               ))}
               {expenseTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>{t('dashboard.modalNoExpense')}</p>}
@@ -1112,9 +1112,9 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
 function buildBalanceHistory(transactions, initialBalance) {
   const sorted = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
   let running = initialBalance;
-  return sorted.map(t => {
-    running += t.type === 'income' ? t.amount : -t.amount;
-    return { date: t.date, balance: Math.round(running * 100) / 100 };
+  return sorted.map(tx => {
+    running += tx.type === 'income' ? tx.amount : -tx.amount;
+    return { date: tx.date, balance: Math.round(running * 100) / 100 };
   });
 }
 
