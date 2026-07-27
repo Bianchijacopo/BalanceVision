@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { run } from '../db/database.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(verifiedMiddleware);
 
 function parseCSV(text) {
   const lines = [];

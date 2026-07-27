@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { get } from '../db/database.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -20,4 +21,12 @@ export function authMiddleware(req, res, next) {
   } catch {
     return res.status(401).json({ error: 'Token non valido' });
   }
+}
+
+export function verifiedMiddleware(req, res, next) {
+  const user = get('SELECT email_verified FROM users WHERE id = ?', [req.userId]);
+  if (!user || !user.email_verified) {
+    return res.status(403).json({ error: 'Verifica la tua email prima di usare questa funzione' });
+  }
+  next();
 }

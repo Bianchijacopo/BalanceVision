@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(verifiedMiddleware);
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';

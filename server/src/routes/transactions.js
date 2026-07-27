@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { all, get, run } from '../db/database.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { processRecurring } from './recurring.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(verifiedMiddleware);
 
 router.get('/', (req, res) => {
   try { processRecurring(req.userId); } catch (e) { console.error('[recurring process error]', e); }

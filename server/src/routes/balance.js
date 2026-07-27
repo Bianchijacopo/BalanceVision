@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { get, run } from '../db/database.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(verifiedMiddleware);
 
 router.get('/', (req, res) => {
   const initial = get('SELECT amount FROM initial_balance WHERE user_id = ?', [req.userId]);

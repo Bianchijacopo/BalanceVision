@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { get, run, all } from '../db/database.js';
-import { authMiddleware } from '../middleware/auth.js';
-import { sendEmail } from '../email.js';
+import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(verifiedMiddleware);
 
 const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MONTHS_IT = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];

@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { all, get, run } from '../db/database.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(verifiedMiddleware);
 
 function processRecurring(userId) {
   const now = new Date();

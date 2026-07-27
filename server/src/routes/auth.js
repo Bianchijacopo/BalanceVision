@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { get, run } from '../db/database.js';
-import { generateToken, authMiddleware } from '../middleware/auth.js';
+import { generateToken, authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { sendEmail, buildOtpEmail } from '../email.js';
 
 const router = Router();
@@ -186,13 +186,13 @@ router.post('/logout', authMiddleware, (req, res) => {
   res.json({ message: 'Disconnessione effettuata' });
 });
 
-router.get('/profile', authMiddleware, (req, res) => {
+router.get('/profile', authMiddleware, verifiedMiddleware, (req, res) => {
   const user = getUser(req.userId);
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
   res.json(user);
 });
 
-router.put('/profile', authMiddleware, (req, res) => {
+router.put('/profile', authMiddleware, verifiedMiddleware, (req, res) => {
   const { name, surname } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Il nome e obbligatorio' });
   run('UPDATE users SET name = ?, surname = ? WHERE id = ?', [name.trim(), surname || '', req.userId]);
@@ -201,7 +201,7 @@ router.put('/profile', authMiddleware, (req, res) => {
   res.json({ message: 'Profilo aggiornato', user });
 });
 
-router.post('/change-password', authMiddleware, (req, res) => {
+router.post('/change-password', authMiddleware, verifiedMiddleware, (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Campi obbligatori' });
 
@@ -260,7 +260,7 @@ router.post('/verify-otp', authMiddleware, (req, res) => {
   res.json({ message: 'Verifica completata', user: updated });
 });
 
-router.put('/avatar', authMiddleware, (req, res) => {
+router.put('/avatar', authMiddleware, verifiedMiddleware, (req, res) => {
   const { avatar } = req.body;
   if (!avatar) return res.status(400).json({ error: 'Immagine richiesta' });
   if (avatar.length > 4 * 1024 * 1024) return res.status(400).json({ error: 'Immagine troppo grande (max 4MB)' });
@@ -269,7 +269,7 @@ router.put('/avatar', authMiddleware, (req, res) => {
   res.json({ message: 'Avatar aggiornato', avatar });
 });
 
-router.delete('/account', authMiddleware, (req, res) => {
+router.delete('/account', authMiddleware, verifiedMiddleware, (req, res) => {
   const { otp } = req.body;
   if (!otp) return res.status(400).json({ error: 'Codice OTP richiesto per eliminare l\'account' });
 
