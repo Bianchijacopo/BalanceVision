@@ -73,7 +73,6 @@ router.post('/register', async (req, res) => {
   res.status(201).json({
     token, refreshToken,
     user: getUser(result.lastInsertRowid),
-    otp
   });
 });
 
@@ -139,7 +138,7 @@ router.post('/forgot-send-otp', (req, res) => {
     sendEmail(email, 'Recupero password BalanceVision', text, html).catch(() => {});
   } catch (e) {}
 
-  res.json({ message: 'Codice inviato alla tua email', otp });
+  res.json({ message: 'Codice inviato alla tua email' });
 });
 
 router.post('/reset-password', (req, res) => {
