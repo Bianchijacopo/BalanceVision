@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import {
   getAllCategories, getCustomCategories, addCustomCategory,
-  removeCustomCategory, isDefaultCategory, DEFAULT_CATEGORIES
+  removeCustomCategory, isDefaultCategory, DEFAULT_CATEGORIES, catName
 } from '../utils/categoryManager';
 import {
   getCategoryColors, setCategoryColor, getUnusedColor, DEFAULT_COLORS
@@ -94,10 +94,7 @@ export default function Categories() {
                   width: 10, height: 10, borderRadius: '50%', display: 'inline-block',
                   background: colors[c], flexShrink: 0
                 }} />
-                {c}
-                <input type="color" value={colors[c] || DEFAULT_COLORS[0]}
-                  onChange={e => handleColorChange(c, e.target.value)}
-                  style={{ width: 20, height: 20, border: 'none', padding: 0, cursor: 'pointer', background: 'none' }} />
+                {catName(c, t)}
               </span>
             ))}
           </div>

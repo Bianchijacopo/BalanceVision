@@ -329,6 +329,8 @@ const it = {
   categories: {
     title: 'Categorie',
     subtitle: 'Gestisci le tue categorie di transazioni',
+    names: { Cibo: 'Cibo', Casa: 'Casa', Trasporti: 'Trasporti', Salute: 'Salute',
+      Svago: 'Svago', Abbigliamento: 'Abbigliamento', Bolle: 'Bolle', Stipendi: 'Stipendi', Extra: 'Extra' },
     defaultTitle: 'Categorie predefinite',
     customTitle: 'Categorie personalizzate',
     addNew: 'Aggiungi categoria',

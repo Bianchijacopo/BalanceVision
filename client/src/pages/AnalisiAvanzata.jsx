@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import Topbar from '../components/Topbar';
 import { BarChart, Bar, LineChart, Line, ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { catName } from '../utils/categoryManager';
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload) return null;
@@ -170,7 +171,7 @@ export default function AnalisiAvanzata() {
                   return (
                     <div key={cat.category}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <span style={{ fontWeight: 600, fontSize: 13 }}>{cat.category}</span>
+                        <span style={{ fontWeight: 600, fontSize: 13 }}>{catName(cat.category, t)}</span>
                         <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
                           <span style={{ fontWeight: 700 }}>€{formatCurrency(cat.total)}</span>
                           {hasBudget && (
@@ -244,7 +245,7 @@ export default function AnalisiAvanzata() {
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
                     <span className="modal-stat-label">{t('analytics.topCategory')}</span>
                     <span className="modal-stat-value" style={{ fontSize: 16 }}>
-                      {topCategory ? `${topCategory.category} (€${formatCurrency(topCategory.total)})` : '-'}
+                      {topCategory ? `${catName(topCategory.category, t)} (€${formatCurrency(topCategory.total)})` : '-'}
                     </span>
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>

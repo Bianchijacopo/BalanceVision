@@ -5,6 +5,7 @@ import { apiGet, apiPost, apiPut } from '../context/ApiContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
+import { catName } from '../utils/categoryManager';
 
 function formatCurrency(v) {
   return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -187,7 +188,7 @@ export default function Recurring() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{item.title}</div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      {item.category && <span className="badge">{item.category}</span>}
+                      {item.category && <span className="badge">{catName(item.category, t)}</span>}
                       <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
                         {t('recurring.' + (FREQUENZE.find(f => f.value === item.frequency)?.label || item.frequency))}
                       </span>

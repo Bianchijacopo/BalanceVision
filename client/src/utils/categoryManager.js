@@ -38,3 +38,7 @@ export function removeCustomCategory(name) {
 export function isDefaultCategory(name) {
   return DEFAULT_CATEGORIES.includes(name);
 }
+
+export function catName(cat, t) {
+  return t('categories.names.' + cat, cat);
+}

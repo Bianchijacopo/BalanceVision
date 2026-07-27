@@ -16,14 +16,14 @@ export function LanguageProvider({ children }) {
     try { localStorage.setItem(LANG_KEY, lang); } catch {}
   }, [lang]);
 
-  const t = (path) => {
+  const t = (path, fallback) => {
     const keys = path.split('.');
     let val = LANGUAGES[lang];
     for (const k of keys) {
       if (val && typeof val === 'object') val = val[k];
-      else return path;
+      else return fallback !== undefined ? fallback : path;
     }
-    return typeof val === 'string' ? val : path;
+    return typeof val === 'string' ? val : (fallback !== undefined ? fallback : path);
   };
 
   return (

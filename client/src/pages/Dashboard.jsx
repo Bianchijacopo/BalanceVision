@@ -8,7 +8,7 @@ import { ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, LabelList, X
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
-import { getAllCategories, isDefaultCategory, removeCustomCategory } from '../utils/categoryManager';
+import { getAllCategories, isDefaultCategory, removeCustomCategory, catName } from '../utils/categoryManager';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
@@ -533,7 +533,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                   return (
                     <div key={b.id}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                        <span style={{ fontWeight: 600 }}>{b.category}</span>
+                        <span style={{ fontWeight: 600 }}>{catName(b.category, t)}</span>
                         <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
                           €{b.spent.toFixed(0)} / €{b.amount.toFixed(0)}
                           <span style={{ marginLeft: 6, fontWeight: 700, fontSize: 11,
@@ -770,7 +770,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           <div className="tx-filters">
             <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
               <option value="">{t('dashboard.allCategories')}</option>
-              {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+              {allCategories.map(c => <option key={c} value={c}>{catName(c, t)}</option>)}
             </select>
             <select value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="">{t('dashboard.allTypes')}</option>
@@ -827,7 +827,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               )}
               {getAllCategories().filter(c => !isDefaultCategory(c)).map(c => (
                 <span key={c} className="tx-cat-tag">
-                  {c}
+                  {catName(c, t)}
                   <button onClick={() => { removeCustomCategory(c); forceUpdate(n => n + 1); }} title={t('dashboard.deleteBtn')}>&times;</button>
                 </span>
               ))}
@@ -839,7 +839,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               <div key={tx.id} className="tx-card">
                 <span className="tx-card-date">{tx.date}</span>
                 <div className="tx-card-body">
-                  <span className="tx-card-category">{tx.category}</span>
+                  <span className="tx-card-category">{catName(tx.category, t)}</span>
                   <span className="tx-card-title">{tx.title}</span>
                 </div>
                 <span className={`tx-card-amount ${tx.type === 'income' ? 'text-success' : 'text-danger'}`}>
@@ -889,7 +889,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       <div className="modal-overlay" onClick={() => setCategoryModal(null)}>
         <div className="modal-panel modal-panel-chart" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
-            <h3 className="chart-title" style={{ margin: 0 }}>{categoryModal.category}</h3>
+            <h3 className="chart-title" style={{ margin: 0 }}>{catName(categoryModal.category, t)}</h3>
             <button className="modal-close" onClick={() => setCategoryModal(null)}>×</button>
           </div>
           <div className="category-modal-transactions">
@@ -961,7 +961,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                 <div className="modal-entry" key={tx.id}>
                   <span className="modal-entry-date">{tx.date}</span>
                   <span className="modal-entry-title">{tx.title}</span>
-                  <span className="badge">{tx.category}</span>
+                  <span className="badge">{catName(tx.category, t)}</span>
                   <span className="text-success">+€{tx.amount.toFixed(2)}</span>
                 </div>
               ))}
@@ -978,7 +978,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                 <div className="modal-entry" key={tx.id}>
                   <span className="modal-entry-date">{tx.date}</span>
                   <span className="modal-entry-title">{tx.title}</span>
-                  <span className="badge">{tx.category}</span>
+                  <span className="badge">{catName(tx.category, t)}</span>
                   <span className="text-danger">-€{tx.amount.toFixed(2)}</span>
                 </div>
               ))}

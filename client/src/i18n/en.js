@@ -329,6 +329,8 @@ const en = {
   categories: {
     title: 'Categories',
     subtitle: 'Manage your transaction categories',
+    names: { Cibo: 'Food', Casa: 'Home', Trasporti: 'Transport', Salute: 'Health',
+      Svago: 'Leisure', Abbigliamento: 'Clothing', Bolle: 'Bills', Stipendi: 'Salary', Extra: 'Extra' },
     defaultTitle: 'Default categories',
     customTitle: 'Custom categories',
     addNew: 'Add category',

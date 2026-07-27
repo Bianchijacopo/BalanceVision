@@ -4,7 +4,7 @@ import { apiGet, apiPost, apiPut } from '../context/ApiContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { DEFAULT_COLORS, getCategoryColors, setCategoryColor, getUnusedColor } from '../utils/categoryColors';
-import { getAllCategories, addCustomCategory, getCustomCategories } from '../utils/categoryManager';
+import { getAllCategories, addCustomCategory, getCustomCategories, catName } from '../utils/categoryManager';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function TransactionForm() {
@@ -155,7 +155,7 @@ export default function TransactionForm() {
                 onChange={e => setCategory(e.target.value)}
               >
                 {getAllCategories().map(c => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>{catName(c, t)}</option>
                 ))}
               </select>
               <div style={{ marginTop: 8 }}>

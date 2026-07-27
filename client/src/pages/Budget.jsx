@@ -4,7 +4,7 @@ import { apiGet } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
-import { getAllCategories } from '../utils/categoryManager';
+import { getAllCategories, catName } from '../utils/categoryManager';
 import { useLanguage } from '../context/LanguageContext';
 
 function formatCurrency(v) {
@@ -96,7 +96,7 @@ export default function Budget() {
                       width: 10, height: 10, borderRadius: '50%',
                       background: categoryColors[b.category] || '#6366F1', flexShrink: 0
                     }} />
-                    <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>{b.category}</span>
+                    <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>{catName(b.category, t)}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                       €{formatCurrency(b.spent)}
                       <span style={{ color: 'var(--text-tertiary)', fontWeight: 500, fontSize: 12 }}>
@@ -152,13 +152,13 @@ export default function Budget() {
                     className="btn btn-secondary btn-sm"
                     onClick={() => { setEditCategory(cat); setEditAmount(''); }}
                   >
-                    {cat}
+                    {catName(cat, t)}
                   </button>
                 ))}
               </div>
               {typeof editCategory === 'string' && (
                 <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, minWidth: 80 }}>{editCategory}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, minWidth: 80 }}>{catName(editCategory, t)}</span>
                   <input
                     type="number"
                     step="0.01"
