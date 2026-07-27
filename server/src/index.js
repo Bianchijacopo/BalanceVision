@@ -39,6 +39,9 @@ if (!process.env.GROQ_API_KEY) {
 if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
   console.log('AVVISO: GMAIL_USER/GMAIL_APP_PASSWORD non impostate — email disabilitate');
 }
+console.log('AVVISO: Il database SQLite non e cifrato. Per dati sensibili in produzione,');
+console.log('        utilizza la cifratura a livello di disco (BitLocker/LUKS) o un');
+console.log('        database con cifratura nativa (SQLCipher).');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
