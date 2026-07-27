@@ -1,7 +1,7 @@
 const en = {
   app: 'BalanceVision',
   nav: { dashboard: 'Dashboard', analytics: 'Analytics', budgets: 'Budgets', goals: 'Goals',
-    recurring: 'Recurring', advice: 'Advice', profile: 'Profile', logout: 'Log out' },
+    recurring: 'Recurring', advice: 'Advice', categories: 'Categories', profile: 'Profile', logout: 'Log out' },
   login: { title: 'Sign in', email: 'Email', password: 'Password', submit: 'Sign in',
     noAccount: "Don't have an account?", register: 'Register', forgotPw: 'Forgot password?',
     welcomeSubtitle: 'Welcome to BalanceVision. Your financial control, simple and professional.',
@@ -324,6 +324,24 @@ const en = {
     success: 'Email verified successfully',
     codeSent: 'New code sent',
     error: 'Enter the 6-digit code',
+  },
+  categories: {
+    title: 'Categories',
+    subtitle: 'Manage your transaction categories',
+    defaultTitle: 'Default categories',
+    customTitle: 'Custom categories',
+    addNew: 'Add category',
+    nameLabel: 'Category name',
+    namePlaceholder: 'e.g. Entertainment',
+    colorLabel: 'Color',
+    addBtn: 'Add',
+    deleteConfirm: 'Are you sure you want to delete "{name}"?',
+    deleted: 'Category deleted',
+    added: 'Category "{name}" added',
+    nameExists: 'This category already exists',
+    noCustom: 'No custom categories yet',
+    deleteBtn: 'Delete',
+    backToDashboard: 'Back to Dashboard',
   },
 };
 export default en;
