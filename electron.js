@@ -1,6 +1,9 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, session } = require('electron');
 const { fork } = require('child_process');
 const path = require('path');
+
+const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+const SERVER_PORT = 3001;
 
 let serverProcess = null;
 
@@ -10,40 +13,52 @@ function startServer() {
     const serverDir = path.join(__dirname, 'server');
 
     const serverEnv = {
-      ...process.env,
-      JWT_SECRET: process.env.JWT_SECRET || 'balance-vision-desktop-secret',
-      GMAIL_USER: process.env.GMAIL_USER || 'desktop@balancevision.app',
-      GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD || 'desktop-not-used',
-      PORT: '3001'
+      NODE_ENV: isDev ? 'development' : 'production',
+      JWT_SECRET: process.env.JWT_SECRET,
+      GMAIL_USER: process.env.GMAIL_USER || '',
+      GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD || '',
+      GROQ_API_KEY: process.env.GROQ_API_KEY || '',
+      PORT: String(SERVER_PORT),
+      CORS_ORIGIN: 'http://localhost:' + SERVER_PORT,
     };
+
+    if (!serverEnv.JWT_SECRET) {
+      console.error('ERRORE FATALE: JWT_SECRET non impostato');
+      app.quit();
+      return;
+    }
 
     serverProcess = fork(serverPath, [], {
       cwd: serverDir,
       env: serverEnv,
-      stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+      execArgv: [],
     });
 
-    const timeout = setTimeout(resolve, 10000);
+    const timeout = setTimeout(() => {
+      console.error('[server] timeout avvio server');
+      resolve();
+    }, 15000);
 
     serverProcess.stdout.on('data', (data) => {
-      if (data.toString().includes('server running')) {
+      const msg = data.toString();
+      if (msg.includes('server running')) {
         clearTimeout(timeout);
         resolve();
       }
     });
 
     serverProcess.stderr.on('data', (data) => {
-      console.error('[server]', data.toString());
+      if (isDev) console.error('[server]', data.toString());
     });
 
     serverProcess.on('error', (err) => {
-      console.error('[server error]', err);
       clearTimeout(timeout);
       resolve();
     });
 
     serverProcess.on('exit', (code) => {
-      console.error('[server exited]', code);
+      if (code !== 0 && isDev) console.error('[server exited]', code);
     });
   });
 }
@@ -55,13 +70,71 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'BalanceVision',
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      preload: path.join(__dirname, 'preload.js'),
+      disableDialogs: true,
+      spellcheck: false,
+    },
+  });
+
+  win.loadURL('http://localhost:' + SERVER_PORT);
+
+  win.once('ready-to-show', () => {
+    win.show();
+  });
+
+  if (isDev) {
+    win.webContents.openDevTools({ mode: 'right' });
+  }
+
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; " +
+          "script-src 'self'; " +
+          "style-src 'self' 'unsafe-inline'; " +
+          "img-src 'self' data: blob:; " +
+          "connect-src 'self' http://localhost:" + SERVER_PORT + " https://api.groq.com; " +
+          "font-src 'self' data:; " +
+          "object-src 'none'; " +
+          "frame-src 'none'; " +
+          "base-uri 'self'; " +
+          "form-action 'self'; " +
+          "upgrade-insecure-requests",
+        ],
+        'X-Content-Type-Options': ['nosniff'],
+        'X-Frame-Options': ['DENY'],
+        'X-XSS-Protection': ['1; mode=block'],
+        'Strict-Transport-Security': ['max-age=31536000; includeSubDomains'],
+        'Referrer-Policy': ['strict-origin-when-cross-origin'],
+        'Permissions-Policy': [
+          'camera=(), microphone=(), geolocation=(), notifications=(), payment=(), usb=()'
+        ],
+      },
+    });
+  });
+
+  win.webContents.on('will-navigate', (event, url) => {
+    const allowed = url.startsWith('http://localhost:' + SERVER_PORT);
+    if (!allowed) {
+      event.preventDefault();
     }
   });
-  win.loadURL('http://localhost:3001');
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    const allowed = url.startsWith('http://localhost:' + SERVER_PORT)
+      || url.startsWith('https://console.groq.com')
+      || url.startsWith('https://myaccount.google.com');
+    return { action: allowed ? 'allow' : 'deny' };
+  });
 }
 
 app.whenReady().then(async () => {
@@ -70,10 +143,19 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (serverProcess) serverProcess.kill();
+  if (serverProcess) {
+    serverProcess.kill();
+    serverProcess = null;
+  }
   if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+
+app.on('web-contents-created', (event, contents) => {
+  contents.on('will-attach-webview', (event) => {
+    event.preventDefault();
+  });
 });
