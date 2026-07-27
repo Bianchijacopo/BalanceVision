@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
 import { getDb, run } from './db/database.js';
 import { sanitizeBody } from './utils/sanitize.js';
+import { errorHandler, notFoundHandler } from './utils/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import transactionRoutes from './routes/transactions.js';
 import balanceRoutes from './routes/balance.js';
@@ -134,6 +135,10 @@ app.use('/api/recurring', recurringRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/translate', translateRoutes);
+
+// Error handling
+app.use('/api', errorHandler);
+app.use('/api', notFoundHandler);
 
 // SPA fallback
 app.get('*', (req, res) => {
