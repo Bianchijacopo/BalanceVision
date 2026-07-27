@@ -40,6 +40,7 @@ const it = {
     focusOn: "Focus mode attivato",
     focusOff: "Focus mode disattivato",
     txDeleted: "Transazione eliminata",
+    undo: "Annulla",
     manage: "Gestisci",
     moreBudgets: "altri budget",
     budgetTitle: "Budget",

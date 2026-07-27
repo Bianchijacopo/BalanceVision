@@ -236,8 +236,24 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
   }
 
   function handleDeleteWithToast(id) {
+    const tx = transactions.find(t => t.id === id);
     deleteTransaction(id);
-    addToast(t('dashboard.txDeleted'), 'success');
+    addToast(t('dashboard.txDeleted'), 'success', 5000, {
+      label: t('dashboard.undo'),
+      onClick: async () => {
+        try {
+          await fetch('http://localhost:3001/api/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(tx),
+          });
+          apiGet('/transactions', token).then(setTransactions).catch(console.error);
+          apiGet('/balance', token).then(setBalance).catch(console.error);
+        } catch (e) {
+          addToast(e.message, 'error');
+        }
+      }
+    });
   }
 
   const allCategories = getAllCategories();
