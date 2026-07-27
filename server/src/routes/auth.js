@@ -7,6 +7,8 @@ import { sendEmail, buildOtpEmail } from '../email.js';
 
 const router = Router();
 const PASSWORD_MIN = 8;
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
@@ -263,7 +265,11 @@ router.post('/verify-otp', authMiddleware, (req, res) => {
 router.put('/avatar', authMiddleware, verifiedMiddleware, (req, res) => {
   const { avatar } = req.body;
   if (!avatar) return res.status(400).json({ error: 'Immagine richiesta' });
-  if (avatar.length > 4 * 1024 * 1024) return res.status(400).json({ error: 'Immagine troppo grande (max 4MB)' });
+  if (avatar.length > MAX_AVATAR_SIZE) return res.status(400).json({ error: 'Immagine troppo grande (max 2MB)' });
+  const mimeMatch = avatar.match(/^data:image\/(\w+);base64,/);
+  if (!mimeMatch) return res.status(400).json({ error: 'Formato immagine non valido. Usa data:image/...;base64,...' });
+  const mime = 'image/' + mimeMatch[1];
+  if (!ALLOWED_AVATAR_TYPES.includes(mime)) return res.status(400).json({ error: 'Tipo immagine non supportato. Usa JPEG, PNG, GIF o WebP.' });
   run('UPDATE users SET avatar = ? WHERE id = ?', [avatar, req.userId]);
   audit(req.userId, 'avatar_update', req.ip);
   res.json({ message: 'Avatar aggiornato', avatar });
