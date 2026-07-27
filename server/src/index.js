@@ -36,11 +36,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(helmet({ contentSecurityPolicy: false }));
+const corsOrigin = process.env.CORS_ORIGIN || '*';
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    return callback(null, true);
-  },
+  origin: corsOrigin === '*' ? true : corsOrigin.split(',').map(s => s.trim()),
   credentials: true
 }));
 app.use(express.json({ limit: '5mb' }));
