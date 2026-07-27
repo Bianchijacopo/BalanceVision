@@ -163,6 +163,17 @@ function migrate() {
     )`);
   } catch(e) {}
 
+  try {
+    db.run(`CREATE TABLE IF NOT EXISTS user_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      report_enabled INTEGER NOT NULL DEFAULT 0,
+      report_day INTEGER NOT NULL DEFAULT 1,
+      last_report_sent TEXT DEFAULT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+  } catch(e) {}
+
   save();
 }
 

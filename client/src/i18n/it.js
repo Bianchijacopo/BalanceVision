@@ -361,5 +361,19 @@ const it = {
     error: 'Importazione fallita',
     backToDashboard: 'Torna alla Dashboard',
   },
+  reports: {
+    title: 'Report mensile',
+    subtitle: 'Ricevi un riepilogo mensile via email delle tue finanze',
+    enable: 'Attiva report automatico mensile',
+    day: 'Giorno del mese',
+    dayHint: 'Il report verra inviato in questo giorno ogni mese',
+    lastSent: 'Ultimo invio: {date}',
+    never: 'Mai',
+    sendNow: 'Invia report ora',
+    sending: 'Invio in corso...',
+    sent: 'Report inviato con successo',
+    saveSettings: 'Salva impostazioni',
+    settingsSaved: 'Impostazioni salvate',
+  },
 };
 export default it;

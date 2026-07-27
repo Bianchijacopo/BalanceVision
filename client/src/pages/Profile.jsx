@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 
@@ -15,8 +16,10 @@ function DefaultAvatarBig() {
 }
 
 export default function Profile() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const locale = lang === 'en' ? 'en-US' : 'it-IT';
   const { token, user, setUser, logout } = useAuth();
+  const { addToast } = useToast();
   const navigate = useNavigate();
   const fileRef = useRef(null);
   const [profile, setProfile] = useState(null);
@@ -25,6 +28,10 @@ export default function Profile() {
   const [deleteError, setDeleteError] = useState('');
   const [deleteStep, setDeleteStep] = useState('confirm');
   const [uploading, setUploading] = useState(false);
+  const [reportEnabled, setReportEnabled] = useState(false);
+  const [reportDay, setReportDay] = useState(1);
+  const [lastReport, setLastReport] = useState(null);
+  const [sendingReport, setSendingReport] = useState(false);
 
   useEffect(() => {
     fetch('http://localhost:3001/api/auth/profile', {
@@ -35,6 +42,41 @@ export default function Profile() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [token]);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/reports/settings', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+      .then(r => r.json())
+      .then(s => { setReportEnabled(s.report_enabled); setReportDay(s.report_day); setLastReport(s.last_report_sent); })
+      .catch(() => {});
+  }, [token]);
+
+  async function handleSaveReportSettings() {
+    try {
+      const res = await fetch('http://localhost:3001/api/reports/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ report_enabled: reportEnabled, report_day: reportDay }),
+      });
+      if (res.ok) addToast(t('reports.settingsSaved'), 'success');
+    } catch (e) { addToast(e.message, 'error'); }
+  }
+
+  async function handleSendReport() {
+    setSendingReport(true);
+    try {
+      const res = await fetch('http://localhost:3001/api/reports/send?lang=' + lang, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (!res.ok) throw new Error('Error');
+      addToast(t('reports.sent'), 'success');
+      const now = new Date().toISOString().slice(0, 10);
+      setLastReport(now);
+    } catch (e) { addToast(e.message, 'error'); }
+    setSendingReport(false);
+  }
 
   async function handleDeleteRequest() {
     try {
@@ -196,6 +238,45 @@ export default function Profile() {
             )}
           </div>
         </div>
+
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-header">
+            <h3 className="card-title" style={{ fontSize: 15 }}>{t('reports.title')}</h3>
+            <p className="card-subtitle">{t('reports.subtitle')}</p>
+          </div>
+          <div className="form-row" style={{ marginBottom: 12 }}>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={reportEnabled} onChange={e => setReportEnabled(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: 'var(--brand)' }} />
+              {t('reports.enable')}
+            </label>
+          </div>
+          {reportEnabled && (
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">{t('reports.day')}</label>
+                <select className="form-input" value={reportDay} onChange={e => setReportDay(parseInt(e.target.value, 10))}>
+                  {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>{t('reports.dayHint')}</p>
+              </div>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button onClick={handleSaveReportSettings} className="btn btn-primary" style={{ flex: 1 }}>
+              {t('reports.saveSettings')}
+            </button>
+            <button onClick={handleSendReport} className="btn btn-secondary" disabled={sendingReport} style={{ flex: 1 }}>
+              {sendingReport ? t('reports.sending') : t('reports.sendNow')}
+            </button>
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 8 }}>
+            {t('reports.lastSent').replace('{date}', lastReport ? new Date(lastReport).toLocaleDateString(locale) : t('reports.never'))}
+          </p>
+        </div>
+
       </main>
     </div>
   );

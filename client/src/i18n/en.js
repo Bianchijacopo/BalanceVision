@@ -361,5 +361,19 @@ const en = {
     error: 'Import failed',
     backToDashboard: 'Back to Dashboard',
   },
+  reports: {
+    title: 'Monthly Report',
+    subtitle: 'Receive a monthly email summary of your finances',
+    enable: 'Enable automatic monthly report',
+    day: 'Day of month',
+    dayHint: 'The report will be sent on this day each month',
+    lastSent: 'Last sent: {date}',
+    never: 'Never',
+    sendNow: 'Send report now',
+    sending: 'Sending...',
+    sent: 'Report sent successfully',
+    saveSettings: 'Save settings',
+    settingsSaved: 'Settings saved',
+  },
 };
 export default en;
