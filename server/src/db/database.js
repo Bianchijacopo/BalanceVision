@@ -176,7 +176,48 @@ function migrate() {
     )`);
   } catch(e) {}
 
+  fixTimezones();
+
   save();
+}
+
+function getFixedOffset() {
+  const d = new Date();
+  const sign = d.getTimezoneOffset() > 0 ? '-' : '+';
+  const abs = Math.abs(d.getTimezoneOffset());
+  const hours = String(Math.floor(abs / 60)).padStart(2, '0');
+  return `${sign}${hours}:00`;
+}
+
+function fixTimezones() {
+  try {
+    const row = get("SELECT value FROM meta WHERE key = 'tz_fixed'");
+    if (row) return;
+  } catch(e) {}
+  try {
+    db.run("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)");
+  } catch(e) {}
+
+  const offset = getFixedOffset();
+  const tables = [
+    { name: 'users', cols: ['created_at', 'last_login_at'] },
+    { name: 'transactions', cols: ['created_at'] },
+    { name: 'initial_balance', cols: ['created_at'] },
+    { name: 'audit_log', cols: ['created_at'] },
+    { name: 'refresh_tokens', cols: ['created_at'] },
+    { name: 'goals', cols: ['created_at'] },
+    { name: 'budgets', cols: ['created_at', 'updated_at'] },
+    { name: 'recurring_transactions', cols: ['created_at'] },
+    { name: 'user_settings', cols: ['last_report_sent'] },
+  ];
+  for (const { name, cols } of tables) {
+    for (const col of cols) {
+      try {
+        db.run(`UPDATE ${name} SET ${col} = datetime(${col}, '${offset}') WHERE ${col} IS NOT NULL`);
+      } catch(e) {}
+    }
+  }
+  try { db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('tz_fixed', '1')"); } catch(e) {}
 }
 
 function save() {
@@ -185,6 +226,13 @@ function save() {
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_PATH, buffer);
   }
+}
+
+export function localNow() {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().replace('T', ' ').substring(0, 19);
 }
 
 export function all(sql, params = []) {

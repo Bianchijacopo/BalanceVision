@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { all, get, run } from '../db/database.js';
+import { all, get, run, localNow } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { validate, schemas } from '../utils/validate.js';
 
@@ -54,16 +54,16 @@ router.post('/', validate(schemas.budget), (req, res) => {
 
   if (existing) {
     run(
-      'UPDATE budgets SET amount = ?, updated_at = datetime("now") WHERE id = ?',
-      [amount, existing.id]
+      'UPDATE budgets SET amount = ?, updated_at = ? WHERE id = ?',
+      [amount, localNow(), existing.id]
     );
     const updated = get('SELECT * FROM budgets WHERE id = ?', [existing.id]);
     return res.json(updated);
   }
 
   const result = run(
-    'INSERT INTO budgets (user_id, category, month, amount) VALUES (?, ?, ?, ?)',
-    [req.userId, category, month, amount]
+    'INSERT INTO budgets (user_id, category, month, amount, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+    [req.userId, category, month, amount, localNow(), localNow()]
   );
 
   const budget = get('SELECT * FROM budgets WHERE id = ?', [result.lastInsertRowid]);

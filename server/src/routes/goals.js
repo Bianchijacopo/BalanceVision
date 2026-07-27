@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { all, get, run } from '../db/database.js';
+import { all, get, run, localNow } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { validate, schemas } from '../utils/validate.js';
 
@@ -36,8 +36,8 @@ router.post('/', validate(schemas.goal), (req, res) => {
   const { name, target_amount, current_amount, deadline, category } = req.body;
 
   const result = run(
-    'INSERT INTO goals (user_id, name, target_amount, current_amount, deadline, category) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.userId, name, target_amount, current_amount || 0, deadline || '', category || '']
+    'INSERT INTO goals (user_id, name, target_amount, current_amount, deadline, category, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [req.userId, name, target_amount, current_amount || 0, deadline || '', category || '', localNow()]
   );
 
   const goal = get('SELECT * FROM goals WHERE id = ?', [result.lastInsertRowid]);

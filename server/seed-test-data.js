@@ -1,4 +1,4 @@
-import { getDb, get, run, close } from './src/db/database.js';
+import { getDb, get, run, close, localNow } from './src/db/database.js';
 
 const CATEGORIES = ['Cibo', 'Casa', 'Trasporti', 'Salute', 'Svago', 'Abbigliamento', 'Bolle', 'Stipendi', 'Extra'];
 
@@ -56,7 +56,7 @@ async function seedTestData() {
 
   const initialBalance = get('SELECT amount FROM initial_balance WHERE user_id = ?', [userId]);
   if (!initialBalance) {
-    run('INSERT INTO initial_balance (user_id, amount) VALUES (?, ?)', [userId, 5000]);
+    run('INSERT INTO initial_balance (user_id, amount, created_at) VALUES (?, ?, ?)', [userId, 5000, localNow()]);
     console.log('Saldo iniziale impostato a €5.000,00');
   }
 
@@ -68,8 +68,8 @@ async function seedTestData() {
       const title = pick(INCOME_TITLES);
       const amount = rand(800, 3500);
       run(
-        'INSERT INTO transactions (user_id, type, title, amount, category, date) VALUES (?, ?, ?, ?, ?, ?)',
-        [userId, 'income', title, amount, 'Stipendi', date]
+        'INSERT INTO transactions (user_id, type, title, amount, category, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [userId, 'income', title, amount, 'Stipendi', date, localNow()]
       );
       total++;
     }
@@ -80,8 +80,8 @@ async function seedTestData() {
       const title = pick(EXPENSE_TITLES_BY_CAT[cat]);
       const amount = rand(10, 400);
       run(
-        'INSERT INTO transactions (user_id, type, title, amount, category, date) VALUES (?, ?, ?, ?, ?, ?)',
-        [userId, 'expense', title, amount, cat, date]
+        'INSERT INTO transactions (user_id, type, title, amount, category, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [userId, 'expense', title, amount, cat, date, localNow()]
       );
       total++;
     }

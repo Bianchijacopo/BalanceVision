@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { all, get, run } from '../db/database.js';
+import { all, get, run, localNow } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { validate, schemas } from '../utils/validate.js';
 
@@ -46,9 +46,9 @@ function processRecurring(userId) {
       const txDate = `${txMonth}-${txDay}`;
       const cat = (item.category || '').trim() || 'Altro';
 
-      run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [userId, item.type, item.title, item.amount, cat, item.note || '', txDate]);
+      run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, item.type, item.title, item.amount, cat, item.note || '', txDate, localNow()]);
 
       run(`UPDATE recurring_transactions SET last_generated = ? WHERE id = ?`,
         [genDate, item.id]);
@@ -73,9 +73,9 @@ router.post('/', validate(schemas.recurring), (req, res) => {
   const cat = (category || '').trim() || 'Altro';
 
   const result = run(`INSERT INTO recurring_transactions
-    (user_id, type, title, amount, category, note, frequency, start_date, end_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [req.userId, type, title, amount, cat, note || '', frequency || 'monthly', start_date, end_date || null]);
+    (user_id, type, title, amount, category, note, frequency, start_date, end_date, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [req.userId, type, title, amount, cat, note || '', frequency || 'monthly', start_date, end_date || null, localNow()]);
 
   const created = get(`SELECT * FROM recurring_transactions WHERE id = ?`, [result.lastInsertRowid]);
   res.status(201).json(created);

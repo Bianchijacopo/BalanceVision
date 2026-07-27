@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { get, run } from '../db/database.js';
+import { get, run, localNow } from '../db/database.js';
 import { generateToken, authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { sendEmail, buildOtpEmail } from '../email.js';
 import { validate, schemas } from '../utils/validate.js';
@@ -17,7 +17,7 @@ const LOCKOUT_MINUTES = 15;
 
 function audit(userId, action, ip) {
   try {
-    run('INSERT INTO audit_log (user_id, action, ip) VALUES (?, ?, ?)', [userId, action, ip || '']);
+    run('INSERT INTO audit_log (user_id, action, ip, created_at) VALUES (?, ?, ?, ?)', [userId, action, ip || '', localNow()]);
   } catch (e) {}
 }
 
@@ -25,7 +25,7 @@ function generateRefreshToken(userId) {
   const token = crypto.randomBytes(40).toString('hex');
   const hash = crypto.createHash('sha256').update(token).digest('hex');
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  run('INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)', [userId, hash, expiresAt]);
+  run('INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)', [userId, hash, expiresAt, localNow()]);
   return token;
 }
 
@@ -42,7 +42,7 @@ router.post('/register', validate(schemas.register), async (req, res) => {
   }
 
   const password_hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
-  const result = run('INSERT INTO users (email, password_hash, name, surname) VALUES (?, ?, ?, ?)', [email, password_hash, name || '', surname || '']);
+  const result = run('INSERT INTO users (email, password_hash, name, surname, created_at) VALUES (?, ?, ?, ?, ?)', [email, password_hash, name || '', surname || '', localNow()]);
 
   const token = generateToken(result.lastInsertRowid);
   const refreshToken = generateRefreshToken(result.lastInsertRowid);
@@ -98,7 +98,7 @@ router.post('/login', validate(schemas.login), (req, res) => {
 
   const token = generateToken(user.id);
   const refreshToken = generateRefreshToken(user.id);
-  run('UPDATE users SET login_attempts = 0, last_login_ip = ?, last_login_at = datetime(\'now\') WHERE id = ?', [req.ip, user.id]);
+  run('UPDATE users SET login_attempts = 0, last_login_ip = ?, last_login_at = ? WHERE id = ?', [req.ip, localNow(), user.id]);
 
   audit(user.id, 'login', req.ip);
   const { password_hash, ...safe } = user;

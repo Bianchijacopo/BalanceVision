@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { get, run } from '../db/database.js';
+import { get, run, localNow } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -37,7 +37,7 @@ router.post('/initial-balance', (req, res) => {
   if (existing) {
     run('UPDATE initial_balance SET amount = ? WHERE user_id = ?', [amount, req.userId]);
   } else {
-    run('INSERT INTO initial_balance (user_id, amount) VALUES (?, ?)', [req.userId, amount]);
+    run('INSERT INTO initial_balance (user_id, amount, created_at) VALUES (?, ?, ?)', [req.userId, amount, localNow()]);
   }
 
   res.json({ initial_balance: amount });

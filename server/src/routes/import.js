@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { run } from '../db/database.js';
+import { run, localNow } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -133,9 +133,9 @@ router.post('/csv', (req, res) => {
       }
 
       try {
-        run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [req.userId, type, title, Math.abs(amount), category, note, date]);
+        run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [req.userId, type, title, Math.abs(amount), category, note, date, localNow()]);
         created++;
       } catch (e) {
         errors.push({ row: ri + 2, error: e.message });

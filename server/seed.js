@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { getDb, get, run, close } from './src/db/database.js';
+import { getDb, get, run, close, localNow } from './src/db/database.js';
 
 async function seed() {
   await getDb();
@@ -9,7 +9,7 @@ async function seed() {
     console.log('Account admin gia esistente (id: %d, email: admin@gmail.com)', existing.id);
   } else {
     const hash = bcrypt.hashSync('admin', 10);
-    const result = run('INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)', ['admin@gmail.com', hash, 'Admin']);
+    const result = run('INSERT INTO users (email, password_hash, name, created_at) VALUES (?, ?, ?, ?)', ['admin@gmail.com', hash, 'Admin', localNow()]);
     console.log('Account admin creato (id: %d, email: admin@gmail.com, password: admin)', result.lastInsertRowid);
   }
 

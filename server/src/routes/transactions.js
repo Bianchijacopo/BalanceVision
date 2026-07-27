@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { all, get, run } from '../db/database.js';
+import { all, get, run, localNow } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { validate, schemas } from '../utils/validate.js';
 import { processRecurring } from './recurring.js';
@@ -21,8 +21,8 @@ router.post('/', validate(schemas.transaction), (req, res) => {
   const { type, title, amount, category, date, note } = req.body;
 
   const result = run(
-    'INSERT INTO transactions (user_id, type, title, amount, category, date, note) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [req.userId, type, title, amount, category, date, note || '']
+    'INSERT INTO transactions (user_id, type, title, amount, category, date, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [req.userId, type, title, amount, category, date, note || '', localNow()]
   );
 
   const transaction = get('SELECT * FROM transactions WHERE id = ?', [result.lastInsertRowid]);
