@@ -4,6 +4,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import fs from 'fs';
+import https from 'https';
+import http from 'http';
 import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
 import { getDb, run } from './db/database.js';
@@ -95,7 +97,20 @@ app.get('*', (req, res) => {
 });
 
 getDb().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log('BalanceVision server running on http://localhost:' + PORT);
-  });
+  const sslKeyPath = process.env.SSL_KEY_PATH;
+  const sslCertPath = process.env.SSL_CERT_PATH;
+
+  if (sslKeyPath && sslCertPath && fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
+    const options = {
+      key: fs.readFileSync(sslKeyPath),
+      cert: fs.readFileSync(sslCertPath),
+    };
+    https.createServer(options, app).listen(PORT, '0.0.0.0', () => {
+      console.log('BalanceVision server running on https://localhost:' + PORT);
+    });
+  } else {
+    http.createServer(app).listen(PORT, '0.0.0.0', () => {
+      console.log('BalanceVision server running on http://localhost:' + PORT);
+    });
+  }
 });
