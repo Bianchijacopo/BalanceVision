@@ -16,6 +16,17 @@ const FREQUENZE = [
   { value: 'yearly', label: 'yearly' },
 ];
 
+const INITIAL_FORM = {
+  type: 'expense',
+  title: '',
+  amount: '',
+  category: '',
+  note: '',
+  frequency: 'monthly',
+  start_date: '',
+  end_date: '',
+};
+
 export default function Recurring() {
   const { t } = useLanguage();
   const { token } = useAuth();
