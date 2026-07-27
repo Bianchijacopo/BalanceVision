@@ -85,7 +85,9 @@ function formatCurrency(value) {
 export default function Dashboard() {
   const { token } = useAuth();
   const { theme } = useTheme();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const locale = lang === 'en' ? 'en-US' : 'it-IT';
+  const timeOpts = lang === 'en' ? { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true } : { hour: '2-digit', minute: '2-digit', second: '2-digit' };
   const navigate = useNavigate();
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -165,7 +167,7 @@ export default function Dashboard() {
   const now = new Date();
   const targetDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const displayMonth = targetDate.getFullYear() + '-' + String(targetDate.getMonth() + 1).padStart(2, '0');
-  const monthName = targetDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+  const monthName = targetDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   const monthlyTransactions = transactions.filter(t => t.date.startsWith(displayMonth));
   const monthlyIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const monthlyExpenses = monthlyTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -443,7 +445,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     y += 5;
     doc.setFontSize(7);
     doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-    doc.text(t('dashboard.pdfGeneratedBy') + new Date().toLocaleDateString('it-IT'), pageW / 2, y, { align: 'center' });
+    doc.text(t('dashboard.pdfGeneratedBy') + new Date().toLocaleDateString(locale), pageW / 2, y, { align: 'center' });
 
     doc.save('BalanceVision_Report_' + displayMonth + '.pdf');
     addToast(t('dashboard.pdfSuccess'), 'success');
@@ -456,8 +458,8 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
       <main className="main-content">
           <div className="clock-wrap">
-            <div className="clock-date">{clock.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
-            <div className="clock-time">{clock.toLocaleTimeString('it-IT')}</div>
+            <div className="clock-date">{clock.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+            <div className="clock-time">{clock.toLocaleTimeString(locale, timeOpts)}</div>
           </div>
           <div className={`balance-card clickable balance-countup ${animClass}`} onClick={() => setModal('balance')}>
             <p className="balance-label">{displayLabel}</p>

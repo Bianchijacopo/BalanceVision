@@ -8,7 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 export default function Advice() {
   const { token } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiMode, setAiMode] = useState(false);
@@ -18,7 +18,7 @@ export default function Advice() {
   const chatEnd = useRef(null);
 
   useEffect(() => {
-    apiGet('/advice', token)
+    apiGet('/advice?lang=' + lang, token)
       .then(res => { setData(res); setAiMode(res?._ai || false); })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -36,13 +36,13 @@ export default function Advice() {
       const res = await fetch('http://localhost:3001/api/advice/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ message: msg }),
+        body: JSON.stringify({ message: msg, lang }),
       });
       if (!res.ok) throw new Error('Errore');
       const json = await res.json();
       setChat(c => [...c, { role: 'ai', text: json.reply }]);
     } catch (e) {
-      setChat(c => [...c, { role: 'ai', text: 'Errore: ' + e.message }]);
+      setChat(c => [...c, { role: 'ai', text: (lang === 'en' ? 'Error: ' : 'Errore: ') + e.message }]);
     }
     setChatLoading(false);
   }
