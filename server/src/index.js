@@ -70,13 +70,23 @@ app.use(cors({
 app.use(express.json({ limit: '5mb' }));
 app.use(sanitizeBody);
 
-const authLimiter = rateLimit({
+const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: 60,
   message: { error: 'Troppe richieste. Riprova tra un minuto.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: 'Troppe richieste. Riprova tra un minuto.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api', globalLimiter);
 
 // Serve frontend static files
 if (fs.existsSync(distDir)) {
