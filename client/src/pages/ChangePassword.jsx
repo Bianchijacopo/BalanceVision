@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 
 export default function ChangePassword() {
+  const { t } = useLanguage();
   const { token } = useAuth();
   const navigate = useNavigate();
   const [oldPassword, setOldPassword] = useState('');
@@ -19,15 +21,15 @@ export default function ChangePassword() {
     setSuccess('');
 
     if (!oldPassword || !newPassword || !confirmPassword) {
-      setError('Tutti i campi sono obbligatori');
+      setError(t('profile.allFieldsRequired'));
       return;
     }
     if (newPassword.length < 6) {
-      setError('La nuova password deve essere almeno 6 caratteri');
+      setError(t('profile.passwordMinLength'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError('Le password non coincidono');
+      setError(t('profile.passwordsDontMatch'));
       return;
     }
 
@@ -40,7 +42,7 @@ export default function ChangePassword() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setSuccess('Password cambiata con successo');
+      setSuccess(t('profile.passwordChanged'));
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -54,12 +56,12 @@ export default function ChangePassword() {
 
   return (
     <div className="layout">
-      <Topbar title="Cambia password" />
+      <Topbar title={t('profile.changePasswordTitle')} />
       <main className="main-content narrow">
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title gradient-title">Cambia password</h2>
-            <p className="card-subtitle">Inserisci la password attuale e la nuova password</p>
+            <h2 className="card-title gradient-title">{t('profile.changePasswordTitle')}</h2>
+            <p className="card-subtitle">{t('profile.changePasswordSubtitle')}</p>
           </div>
 
           {error && <div className="alert-error">{error}</div>}
@@ -67,23 +69,23 @@ export default function ChangePassword() {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label" htmlFor="oldPassword">Password attuale</label>
+              <label className="form-label" htmlFor="oldPassword">{t('profile.currentPassword')}</label>
               <input id="oldPassword" type="password" className="form-input" value={oldPassword} onChange={e => setOldPassword(e.target.value)} required />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="newPassword">Nuova password</label>
+              <label className="form-label" htmlFor="newPassword">{t('profile.newPassword')}</label>
               <input id="newPassword" type="password" className="form-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="confirmPassword">Conferma nuova password</label>
+              <label className="form-label" htmlFor="confirmPassword">{t('profile.confirmPassword')}</label>
               <input id="confirmPassword" type="password" className="form-input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button type="button" onClick={() => navigate('/profile')} className="btn btn-secondary" style={{ flex: 1 }}>
-                Annulla
+                {t('profile.cancel')}
               </button>
               <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                {saving ? 'Salvataggio...' : 'Cambia password'}
+                {saving ? t('profile.saving') : t('profile.changePasswordBtn')}
               </button>
             </div>
           </form>

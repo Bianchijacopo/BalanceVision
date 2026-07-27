@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { apiGet } from '../context/ApiContext';
 import { useToast } from '../context/ToastContext';
 import { ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, LabelList, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -84,6 +85,7 @@ function formatCurrency(value) {
 export default function Dashboard() {
   const { token } = useAuth();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -212,7 +214,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
   }
 
   const displayBalance = hoveredPoint ? hoveredPoint.balance : balance?.current_balance;
-  const displayLabel = hoveredPoint ? 'Saldo al ' + hoveredPoint.date : 'Saldo corrente';
+  const displayLabel = hoveredPoint ? t('dashboard.balanceAt') + hoveredPoint.date : t('dashboard.balance');
 
   const daysInMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
   const dailyAvg = monthlyTransactions.length > 0 ? monthlyExpenses / Math.max(1, new Set(monthlyTransactions.map(t => t.date)).size) : 0;
@@ -228,12 +230,12 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
   function toggleFocus() {
     setFocusMode(p => !p);
-    addToast(focusMode ? 'Focus mode disattivato' : 'Focus mode attivato', 'info');
+    addToast(focusMode ? t('dashboard.focusOff') : t('dashboard.focusOn'), 'info');
   }
 
   function handleDeleteWithToast(id) {
     deleteTransaction(id);
-    addToast('Transazione eliminata', 'success');
+    addToast(t('dashboard.txDeleted'), 'success');
   }
 
   const allCategories = getAllCategories();
@@ -286,7 +288,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
     doc.setFontSize(13);
     doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-    doc.text('Report finanziario mensile', pageW / 2, y, { align: 'center' });
+    doc.text(t('dashboard.pdfReportTitle'), pageW / 2, y, { align: 'center' });
     y += 7;
 
     doc.setFontSize(11);
@@ -302,15 +304,15 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     doc.setTextColor(textMed[0], textMed[1], textMed[2]);
 
     const summaryData = [
-      { label: 'Saldo iniziale', value: '€' + formatCurrency(monthStartBalance), color: textDark },
-      { label: 'Entrate del mese', value: '+€' + formatCurrency(monthlyIncome), color: brandColor },
-      { label: 'Spese del mese', value: '-€' + formatCurrency(monthlyExpenses), color: dangerColor },
-      { label: 'Saldo finale', value: '€' + formatCurrency(balance?.current_balance || 0), color: textDark },
+      { label: t('dashboard.pdfInitialBalance'), value: '€' + formatCurrency(monthStartBalance), color: textDark },
+      { label: t('dashboard.pdfMonthlyIncome'), value: '+€' + formatCurrency(monthlyIncome), color: brandColor },
+      { label: t('dashboard.pdfMonthlyExpenses'), value: '-€' + formatCurrency(monthlyExpenses), color: dangerColor },
+      { label: t('dashboard.pdfFinalBalance'), value: '€' + formatCurrency(balance?.current_balance || 0), color: textDark },
     ];
 
     doc.setFontSize(9);
     doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-    doc.text('RIEPILOGO', margin, y);
+    doc.text(t('dashboard.pdfSummary'), margin, y);
     y += 6;
 
     for (const s of summaryData) {
@@ -334,13 +336,13 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
       doc.setFontSize(9);
       doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-      doc.text('ANDAMENTO', margin, y);
+      doc.text(t('dashboard.pdfTrend'), margin, y);
       y += 6;
 
       if (peak) {
         doc.setFontSize(10);
         doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-        doc.text('Picco massimo:', margin + 4, y + 3);
+        doc.text(t('dashboard.pdfPeak'), margin + 4, y + 3);
         doc.setFontSize(10);
         doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
         doc.text('€' + formatCurrency(peak.balance), pageW - margin - 4, y + 3, { align: 'right' });
@@ -353,7 +355,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       if (low) {
         doc.setFontSize(10);
         doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-        doc.text('Punto minimo:', margin + 4, y + 3);
+        doc.text(t('dashboard.pdfLow'), margin + 4, y + 3);
         doc.setFontSize(10);
         doc.setTextColor(dangerColor[0], dangerColor[1], dangerColor[2]);
         doc.text('€' + formatCurrency(low.balance), pageW - margin - 4, y + 3, { align: 'right' });
@@ -373,12 +375,12 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
       doc.setFontSize(9);
       doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-      doc.text('SPESE DETTAGLIO', margin, y);
+      doc.text(t('dashboard.pdfExpenseDetail'), margin, y);
       y += 6;
 
       autoTable(doc, {
         startY: y,
-        head: [['Data', 'Descrizione', 'Categoria', 'Importo']],
+        head: [[t('dashboard.pdfTableDate'), t('dashboard.pdfTableDesc'), t('dashboard.pdfTableCategory'), t('dashboard.pdfTableAmount')]],
         body: expenses.map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]),
         theme: 'grid',
         headStyles: { fillColor: dangerColor, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
@@ -395,12 +397,12 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
       doc.setFontSize(9);
       doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-      doc.text('ENTRATE DETTAGLIO', margin, y);
+      doc.text(t('dashboard.pdfIncomeDetail'), margin, y);
       y += 6;
 
       autoTable(doc, {
         startY: y,
-        head: [['Data', 'Descrizione', 'Categoria', 'Importo']],
+        head: [[t('dashboard.pdfTableDate'), t('dashboard.pdfTableDesc'), t('dashboard.pdfTableCategory'), t('dashboard.pdfTableAmount')]],
         body: incomes.map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]),
         theme: 'grid',
         headStyles: { fillColor: brandColor, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
@@ -426,7 +428,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
         doc.setFontSize(9);
         doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-        doc.text('GRAFICO ANDAMENTO SALDO', margin, y);
+        doc.text(t('dashboard.pdfChartTrend'), margin, y);
         y += 6;
         doc.addImage(imgData, 'PNG', margin, y, imgW, Math.min(imgH, 120));
         y += Math.min(imgH, 120) + 8;
@@ -441,16 +443,16 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     y += 5;
     doc.setFontSize(7);
     doc.setTextColor(textMed[0], textMed[1], textMed[2]);
-    doc.text('Generato da BalanceVision il ' + new Date().toLocaleDateString('it-IT'), pageW / 2, y, { align: 'center' });
+    doc.text(t('dashboard.pdfGeneratedBy') + new Date().toLocaleDateString('it-IT'), pageW / 2, y, { align: 'center' });
 
     doc.save('BalanceVision_Report_' + displayMonth + '.pdf');
-    addToast('PDF scaricato con successo', 'success');
+    addToast(t('dashboard.pdfSuccess'), 'success');
   }
 
   return (
     <>
     <div className={`layout ${focusMode ? 'focus-mode' : ''}`}>
-      <Topbar title="Dashboard" />
+      <Topbar title={t('nav.dashboard')} />
 
       <main className="main-content">
           <div className="clock-wrap">
@@ -468,21 +470,21 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             {monthlyTransactions.length > 0 && (
               <>
               <div className="insight-card">
-                <div className="insight-label">Spesa media/giorno</div>
+                <div className="insight-label">{t('dashboard.dailyAvg')}</div>
                 <div className="insight-value">€{formatCurrency(dailyAvg)}</div>
               </div>
               <div className="insight-card">
-                <div className="insight-label">Categoria dominante</div>
+                <div className="insight-label">{t('dashboard.topCategory')}</div>
                 <div className="insight-value" style={{ fontSize: 14 }}>{topCategory || '-'}</div>
               </div>
               <div className="insight-card">
-                <div className="insight-label">Risparmio</div>
+                <div className="insight-label">{t('dashboard.savings')}</div>
                 <div className={`insight-value ${savingsRate >= 0 ? 'text-success' : 'text-danger'}`}>
                   {savingsRate.toFixed(1)}%
                 </div>
               </div>
               <div className="insight-card">
-                <div className="insight-label">Previsione fine mese</div>
+                <div className="insight-label">{t('dashboard.projection')}</div>
                 <div className="insight-value">€{formatCurrency(projectedEndBalance)}</div>
               </div>
               </>
@@ -492,8 +494,8 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           {budgetData?.budgets?.length > 0 && (
             <div className="card-chart" style={{ marginBottom: 24 }}>
               <div className="section-header">
-                <h3 className="chart-title" style={{ margin: 0 }}>Budget {monthName}</h3>
-                <button className="btn btn-secondary btn-sm" onClick={() => navigate('/budgets')}>Gestisci</button>
+                <h3 className="chart-title" style={{ margin: 0 }}>{t('dashboard.budgetTitle')} {monthName}</h3>
+                <button className="btn btn-secondary btn-sm" onClick={() => navigate('/budgets')}>{t('dashboard.manage')}</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {budgetData.budgets.slice(0, 4).map(b => {
@@ -526,7 +528,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                 {budgetData.budgets.length > 4 && (
                   <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontWeight: 600, cursor: 'pointer' }}
                     onClick={() => navigate('/budgets')}>
-                    +{budgetData.budgets.length - 4} altri budget
+                    +{budgetData.budgets.length - 4} {t('dashboard.moreBudgets')}
                   </div>
                 )}
               </div>
@@ -536,8 +538,8 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           {goalData?.goals?.length > 0 && (
             <div className="card-chart" style={{ marginBottom: 24 }}>
               <div className="section-header">
-                <h3 className="chart-title" style={{ margin: 0 }}>Obiettivi di risparmio</h3>
-                <button className="btn btn-secondary btn-sm" onClick={() => navigate('/goals')}>Gestisci</button>
+                <h3 className="chart-title" style={{ margin: 0 }}>{t('dashboard.goalsTitle')}</h3>
+                <button className="btn btn-secondary btn-sm" onClick={() => navigate('/goals')}>{t('dashboard.manage')}</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {goalData.goals.slice(0, 3).map(g => {
@@ -567,7 +569,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                 {goalData.goals.length > 3 && (
                   <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontWeight: 600, cursor: 'pointer' }}
                     onClick={() => navigate('/goals')}>
-                    +{goalData.goals.length - 3} altri obiettivi
+                    +{goalData.goals.length - 3} {t('dashboard.moreGoals')}
                   </div>
                 )}
               </div>
@@ -582,15 +584,15 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             </div>
             <div className="monthly-grid" key={displayMonth}>
               <div className="monthly-item">
-                <span className="monthly-item-label">Entrate</span>
+                <span className="monthly-item-label">{t('dashboard.income')}</span>
                 <span className="monthly-item-value text-success">{hasMonthlyIncome ? '+€' + formatCurrency(monthlyIncome) : '-'}</span>
               </div>
               <div className="monthly-item">
-                <span className="monthly-item-label">Spese</span>
+                <span className="monthly-item-label">{t('dashboard.expenses')}</span>
                 <span className="monthly-item-value text-danger">{hasMonthlyExpense ? '-€' + formatCurrency(monthlyExpenses) : '-'}</span>
               </div>
               <div className="monthly-item">
-                <span className="monthly-item-label">Saldo mese</span>
+                <span className="monthly-item-label">{t('dashboard.monthBalance')}</span>
                 <span className={`monthly-item-value ${monthlyIncome >= monthlyExpenses ? 'text-success' : 'text-danger'}`}>
                   {(hasMonthlyIncome || hasMonthlyExpense) ? '€' + formatCurrency(monthlyIncome - monthlyExpenses) : '-'}
                 </span>
@@ -600,7 +602,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
         <div className="grid-2">
           <div ref={chartRef} className="card-chart clickable" onClick={() => setModal('chart-line')}>
-            <h3 className="chart-title">Andamento del saldo</h3>
+            <h3 className="chart-title">{t('dashboard.chartBalance')}</h3>
             {balanceHistory.length > 1 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <ComposedChart data={balanceHistory} onMouseMove={handleBalanceHover} onMouseLeave={handleBalanceLeave}>
@@ -619,12 +621,12 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                 </ComposedChart>
               </ResponsiveContainer>
             ) : (
-              <p className="chart-empty">Aggiungi transazioni per visualizzare il grafico</p>
+              <p className="chart-empty">{t('dashboard.chartBalanceEmpty')}</p>
             )}
           </div>
 
           <div className="card-chart clickable" onClick={() => setModal('chart-pie')}>
-            <h3 className="chart-title">Spese per categoria</h3>
+            <h3 className="chart-title">{t('dashboard.chartExpenses')}</h3>
             {monthlyTopExpenses.length > 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 250 }}>
                 <div style={{ flex: '0 0 180px', height: '100%' }}>
@@ -673,14 +675,14 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                 </div>
               </div>
             ) : (
-              <p className="chart-empty">Aggiungi spese per visualizzare il grafico</p>
+              <p className="chart-empty">{t('dashboard.chartExpensesEmpty')}</p>
             )}
           </div>
         </div>
 
         <div className="grid-2">
           <div className="card-chart clickable" onClick={() => setModal('chart-projection')}>
-            <h3 className="chart-title">Proiezione saldo (30 giorni)</h3>
+            <h3 className="chart-title">{t('dashboard.chartProjection')}</h3>
             {projectionData.length > 1 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={projectionData}>
@@ -693,29 +695,29 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <p className="chart-empty">Servono piu transazioni per generare una proiezione</p>
+              <p className="chart-empty">{t('dashboard.chartProjectionEmpty')}</p>
             )}
           </div>
 
           <div className="card-chart">
-            <h3 className="chart-title">Riepilogo</h3>
+            <h3 className="chart-title">{t('dashboard.summary')}</h3>
             <div style={{ padding: '24px 0', textAlign: 'center' }}>
               {balance && (
                 <>
                   <div style={{ marginBottom: 20 }}>
-                    <div className="summary-label">Entrate totali</div>
+                    <div className="summary-label">{t('dashboard.totalIncome')}</div>
                     <div className="summary-value text-success" style={{ fontSize: 24 }}>
                       €{formatCurrency(balance.total_income)}
                     </div>
                   </div>
                   <div style={{ marginBottom: 20 }}>
-                    <div className="summary-label">Spese totali</div>
+                    <div className="summary-label">{t('dashboard.totalExpenses')}</div>
                     <div className="summary-value text-danger" style={{ fontSize: 24 }}>
                       €{formatCurrency(balance.total_expenses)}
                     </div>
                   </div>
                   <div>
-                    <div className="summary-label">Transazioni</div>
+                    <div className="summary-label">{t('dashboard.totalTransactions')}</div>
                     <div className="summary-value" style={{ fontSize: 24 }}>
                       {transactions.length}
                     </div>
@@ -728,39 +730,39 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
         <div className="tx-block">
           <div className="tx-header">
-            <h3>Transazioni</h3>
-            <span className="tx-header-count">{transactions.length} totali</span>
+            <h3>{t('dashboard.totalTransactions')}</h3>
+            <span className="tx-header-count">{transactions.length} {t('dashboard.total')}</span>
           </div>
 
           <div className="tx-search-wrap">
-            <input className="tx-search-input" placeholder="Cerca transazioni..."
+            <input className="tx-search-input" placeholder={t('dashboard.search')}
               value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           </div>
 
           <div className="tx-filters">
             <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-              <option value="">Tutte le categorie</option>
+              <option value="">{t('dashboard.allCategories')}</option>
               {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <select value={filterType} onChange={e => setFilterType(e.target.value)}>
-              <option value="">Tutti</option>
-              <option value="income">Entrate</option>
-              <option value="expense">Spese</option>
+              <option value="">{t('dashboard.allTypes')}</option>
+              <option value="income">{t('dashboard.incomes')}</option>
+              <option value="expense">{t('dashboard.expensesLabel')}</option>
             </select>
             <button className="btn-tx-ghost" onClick={() => setShowAdvFilters(!showAdvFilters)}
               style={{ background: showAdvFilters ? 'var(--brand)' : '', color: showAdvFilters ? 'var(--btn-primary-text)' : '' }}>
-              {showAdvFilters ? 'Filtri base' : 'Filtri avanzati'}
+              {showAdvFilters ? t('dashboard.basicFilters') : t('dashboard.advFilters')}
             </button>
             {(searchQuery || filterCategory || filterType || filterDateFrom || filterDateTo || filterAmountMin || filterAmountMax) && (
               <button className="btn-tx-clear"
                 onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterType('');
                   setFilterDateFrom(''); setFilterDateTo(''); setFilterAmountMin(''); setFilterAmountMax(''); }}>
-                Cancella filtri
+                {t('dashboard.clearFilters')}
               </button>
             )}
             <button className="btn-tx-ghost"
               onClick={() => setManageCats(!manageCats)}>
-              Categorie
+              {t('dashboard.categories')}
             </button>
           </div>
 
@@ -768,21 +770,21 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             <div className="tx-adv-filters">
               <div className="tx-adv-row">
                 <div className="tx-adv-field">
-                  <label>Da data</label>
+                  <label>{t('dashboard.fromDate')}</label>
                   <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
                 </div>
                 <div className="tx-adv-field">
-                  <label>A data</label>
+                  <label>{t('dashboard.toDate')}</label>
                   <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
                 </div>
               </div>
               <div className="tx-adv-row">
                 <div className="tx-adv-field">
-                  <label>Importo min (€)</label>
+                  <label>{t('dashboard.amountMin')}</label>
                   <input type="number" step="0.01" min="0" placeholder="0" value={filterAmountMin} onChange={e => setFilterAmountMin(e.target.value)} />
                 </div>
                 <div className="tx-adv-field">
-                  <label>Importo max (€)</label>
+                  <label>{t('dashboard.amountMax')}</label>
                   <input type="number" step="0.01" min="0" placeholder="99999" value={filterAmountMax} onChange={e => setFilterAmountMax(e.target.value)} />
                 </div>
               </div>
@@ -791,14 +793,14 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
           {manageCats && (
             <div className="tx-cats">
-              <span className="tx-cats-label">Personalizzate:</span>
+              <span className="tx-cats-label">{t('dashboard.custom')}</span>
               {getAllCategories().filter(c => !isDefaultCategory(c)).length === 0 && (
-                <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Nessuna</span>
+                <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{t('dashboard.none')}</span>
               )}
               {getAllCategories().filter(c => !isDefaultCategory(c)).map(c => (
                 <span key={c} className="tx-cat-tag">
                   {c}
-                  <button onClick={() => { removeCustomCategory(c); forceUpdate(n => n + 1); }} title="Elimina">&times;</button>
+                  <button onClick={() => { removeCustomCategory(c); forceUpdate(n => n + 1); }} title={t('dashboard.deleteBtn')}>&times;</button>
                 </span>
               ))}
             </div>
@@ -816,42 +818,42 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                   {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
                 </span>
                 <div className="tx-card-actions">
-                  <button className="btn-edit" onClick={() => navigate('/transactions/edit/' + t.id)} title="Modifica">&#9998;</button>
-                  <button className="btn-delete-tx" onClick={() => handleDeleteWithToast(t.id)} title="Elimina">&times;</button>
+                  <button className="btn-edit" onClick={() => navigate('/transactions/edit/' + t.id)} title={t('dashboard.editBtn')}>&#9998;</button>
+                  <button className="btn-delete-tx" onClick={() => handleDeleteWithToast(t.id)} title={t('dashboard.deleteBtn')}>&times;</button>
                 </div>
               </div>
             ))}
             {filteredTransactions.length === 0 && (
               <div className="tx-empty">
                 {(searchQuery || filterCategory || filterType || filterDateFrom || filterDateTo || filterAmountMin || filterAmountMax)
-                  ? 'Nessuna transazione corrisponde ai filtri' : 'Nessuna transazione'}
+                  ? t('dashboard.noFilter') : t('dashboard.noTx')}
               </div>
             )}
           </div>
 
           <div className="tx-new-btn-wrap">
             <button className="tx-new-btn" onClick={() => navigate('/transactions/new')}>
-              Nuova Transazione
+              {t('dashboard.newTx')}
             </button>
           </div>
         </div>
 
         <div className="section" style={{ textAlign: 'center' }}>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('/analytics')} className="btn btn-secondary">Analisi Avanzata</button>
-            <button onClick={() => navigate('/budgets')} className="btn btn-secondary">Budget</button>
-            <button onClick={() => navigate('/goals')} className="btn btn-secondary">Obiettivi</button>
-            <button onClick={() => navigate('/advice')} className="btn btn-secondary">Consigli</button>
+            <button onClick={() => navigate('/analytics')} className="btn btn-secondary">{t('analytics.title')}</button>
+            <button onClick={() => navigate('/budgets')} className="btn btn-secondary">{t('nav.budgets')}</button>
+            <button onClick={() => navigate('/goals')} className="btn btn-secondary">{t('nav.goals')}</button>
+            <button onClick={() => navigate('/advice')} className="btn btn-secondary">{t('nav.advice')}</button>
           </div>
         </div>
       </main>
     </div>
 
-    <button className="focus-toggle" style={{ left: 24, right: 'auto' }} onClick={toggleFocus} title="Attiva/disattiva focus mode">
+    <button className="focus-toggle" style={{ left: 24, right: 'auto' }} onClick={toggleFocus} title={t('dashboard.toggleFocus')}>
       {focusMode ? '◉' : '○'}
     </button>
 
-    <button className="focus-toggle" style={{ background: 'var(--brand)', color: 'var(--btn-primary-text)', borderColor: 'var(--brand)' }} onClick={downloadPDF} title="Scarica report PDF">
+    <button className="focus-toggle" style={{ background: 'var(--brand)', color: 'var(--btn-primary-text)', borderColor: 'var(--brand)' }} onClick={downloadPDF} title={t('dashboard.downloadPdf')}>
       &#8595;
     </button>
 
@@ -872,7 +874,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             ))}
           </div>
           <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', textAlign: 'right' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Totale: €{categoryModal.total.toFixed(2)}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('dashboard.modalTotal')} €{categoryModal.total.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -913,17 +915,17 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
   if (type === 'balance') {
     const totalIncome = incomeTransactions.reduce((s, t) => s + t.amount, 0);
     const totalExpenses = expenseTransactions.reduce((s, t) => s + t.amount, 0);
-    title = 'Dettaglio saldo';
+    title = t('dashboard.modalBalanceDetail');
     content = (
       <>
         <div className="modal-balance-total">
-          <span className="modal-balance-label">Saldo totale</span>
+          <span className="modal-balance-label">{t('dashboard.modalTotalBalance')}</span>
           <span className="modal-balance-value">€{formatCurrency(balance?.current_balance || 0)}</span>
         </div>
         <div className="modal-split">
           <div className="modal-column modal-column-income">
             <div className="modal-column-header">
-              <span>Entrate</span>
+              <span>{t('dashboard.income')}</span>
               <span className="text-success">€{formatCurrency(totalIncome)}</span>
             </div>
             <div className="modal-column-list">
@@ -935,12 +937,12 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                   <span className="text-success">+€{t.amount.toFixed(2)}</span>
                 </div>
               ))}
-              {incomeTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>Nessuna entrata</p>}
+              {incomeTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>{t('dashboard.modalNoIncome')}</p>}
             </div>
           </div>
           <div className="modal-column modal-column-expense">
             <div className="modal-column-header">
-              <span>Uscite</span>
+              <span>{t('dashboard.modalExpenses')}</span>
               <span className="text-danger">€{formatCurrency(totalExpenses)}</span>
             </div>
             <div className="modal-column-list">
@@ -952,14 +954,14 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                   <span className="text-danger">-€{t.amount.toFixed(2)}</span>
                 </div>
               ))}
-              {expenseTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>Nessuna uscita</p>}
+              {expenseTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>{t('dashboard.modalNoExpense')}</p>}
             </div>
           </div>
         </div>
       </>
     );
   } else if (type === 'chart-line') {
-    title = 'Andamento del saldo';
+    title = t('dashboard.chartBalance');
     content = (
       <div className="modal-chart-layout">
         <div className="modal-chart-area">
@@ -974,35 +976,35 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="chart-empty">Dati insufficienti</p>
+            <p className="chart-empty">{t('dashboard.insufficientData')}</p>
           )}
         </div>
         <div className="modal-chart-sidebar">
           <div className="modal-stat">
-            <span className="modal-stat-label">Saldo iniziale</span>
+            <span className="modal-stat-label">{t('dashboard.pdfInitialBalance')}</span>
             <span className="modal-stat-value">€{formatCurrency(balanceStats?.start || 0)}</span>
           </div>
           <div className="modal-stat">
-            <span className="modal-stat-label">Saldo attuale</span>
+            <span className="modal-stat-label">{t('dashboard.modalCurrentBalance')}</span>
             <span className="modal-stat-value">€{formatCurrency(balanceStats?.end || 0)}</span>
           </div>
           <div className="modal-stat">
-            <span className="modal-stat-label">Minimo</span>
+            <span className="modal-stat-label">{t('dashboard.modalMin')}</span>
             <span className="modal-stat-value text-danger">€{formatCurrency(balanceStats?.min || 0)}</span>
           </div>
           <div className="modal-stat">
-            <span className="modal-stat-label">Massimo</span>
+            <span className="modal-stat-label">{t('dashboard.modalMax')}</span>
             <span className="modal-stat-value text-success">€{formatCurrency(balanceStats?.max || 0)}</span>
           </div>
           <div className="modal-stat">
-            <span className="modal-stat-label">Transazioni</span>
+            <span className="modal-stat-label">{t('dashboard.totalTransactions')}</span>
             <span className="modal-stat-value">{balanceStats?.count || 0}</span>
           </div>
         </div>
       </div>
     );
   } else if (type === 'chart-pie') {
-    title = 'Spese per categoria';
+    title = t('dashboard.chartExpenses');
     const totalExpenseAmount = topExpenses.reduce((s, e) => s + e.value, 0);
     content = (
       <div className="modal-chart-layout">
@@ -1020,12 +1022,12 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="chart-empty">Nessuna spesa</p>
+            <p className="chart-empty">{t('dashboard.modalNoExpenseData')}</p>
           )}
         </div>
         <div className="modal-chart-sidebar">
           <div className="modal-stat">
-            <span className="modal-stat-label">Totale spese</span>
+            <span className="modal-stat-label">{t('dashboard.modalTotalExpenses')}</span>
             <span className="modal-stat-value">€{formatCurrency(totalExpenseAmount)}</span>
           </div>
           {topExpenses.map(entry => (
@@ -1046,7 +1048,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
       </div>
     );
   } else if (type === 'chart-projection') {
-    title = 'Proiezione saldo (30 giorni)';
+    title = t('dashboard.chartProjection');
     const dailyChange = balanceStats && balanceStats.count > 1
       ? ((balanceStats.end - balanceStats.start) / balanceStats.count)
       : 0;
@@ -1065,26 +1067,26 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="chart-empty">Dati insufficienti</p>
+            <p className="chart-empty">{t('dashboard.insufficientData')}</p>
           )}
         </div>
         <div className="modal-chart-sidebar">
           <div className="modal-stat">
-            <span className="modal-stat-label">Saldo attuale</span>
+            <span className="modal-stat-label">{t('dashboard.modalCurrentBalance')}</span>
             <span className="modal-stat-value">€{formatCurrency(balanceStats?.end || 0)}</span>
           </div>
           <div className="modal-stat">
-            <span className="modal-stat-label">Proiettato (30g)</span>
+            <span className="modal-stat-label">{t('dashboard.modalProjected')}</span>
             <span className="modal-stat-value">€{formatCurrency(projStats?.end || 0)}</span>
           </div>
           <div className="modal-stat">
-            <span className="modal-stat-label">Variazione giornaliera</span>
+            <span className="modal-stat-label">{t('dashboard.modalDailyChange')}</span>
             <span className={`modal-stat-value ${dailyChange >= 0 ? 'text-success' : 'text-danger'}`}>
               €{formatCurrency(Math.abs(dailyChange))}/g
             </span>
           </div>
           <div className="modal-stat">
-            <span className="modal-stat-label">Data proiezione</span>
+            <span className="modal-stat-label">{t('dashboard.modalProjectionDate')}</span>
             <span className="modal-stat-value text-secondary">
               {projectionData.length > 1 ? projectionData[projectionData.length - 1].date : '-'}
             </span>

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Login() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,46 +25,46 @@ export default function Login() {
     <div className="page-center">
       <div className="welcome-section">
         <h1 className="welcome-title gradient-title">BalanceVision</h1>
-        <p className="welcome-subtitle">Benvenuto su BalanceVision. Il tuo controllo finanziario, semplice e professionale.</p>
+        <p className="welcome-subtitle">{t('login.welcomeSubtitle')}</p>
       </div>
       <div className="card" style={{ maxWidth: 400, width: '100%' }}>
         <div className="card-header">
-          <p className="card-subtitle">Accedi al tuo account</p>
+          <p className="card-subtitle">{t('login.accessAccount')}</p>
         </div>
         <form onSubmit={handleSubmit}>
           {error && <div className="alert-error">{error}</div>}
           <div className="form-group">
-            <label className="form-label" htmlFor="email">Email</label>
+            <label className="form-label" htmlFor="email">{t('login.email')}</label>
             <input
               id="email"
               type="text"
               className="form-input"
-              placeholder="mario@esempio.it"
+              placeholder={t('login.email')}
               value={email}
               onChange={e => setEmail(e.target.value)}
             />
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
+            <label className="form-label" htmlFor="password">{t('login.password')}</label>
             <input
               id="password"
               type="password"
               className="form-input"
-              placeholder="Inserisci la password"
+              placeholder={t('login.passwordPlaceholder')}
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
           </div>
           <button type="submit" className="btn btn-primary btn-full">
-            Accedi
+            {t('login.submit')}
           </button>
           <div style={{ textAlign: 'center', marginTop: 12 }}>
-            <Link to="/forgot-password" className="link" style={{ fontSize: 13 }}>Password dimenticata?</Link>
+            <Link to="/forgot-password" className="link" style={{ fontSize: 13 }}>{t('login.forgotPw')}</Link>
           </div>
         </form>
         <div className="card-footer">
-          <span className="text-secondary">Non hai un account?</span>
-          <Link to="/register" className="link">Registrati</Link>
+          <span className="text-secondary">{t('login.noAccount')}</span>
+          <Link to="/register" className="link">{t('login.register')}</Link>
         </div>
       </div>
     </div>

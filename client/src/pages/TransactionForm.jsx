@@ -5,12 +5,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { DEFAULT_COLORS, getCategoryColors, setCategoryColor, getUnusedColor } from '../utils/categoryColors';
 import { getAllCategories, addCustomCategory, getCustomCategories } from '../utils/categoryManager';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function TransactionForm() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const { t } = useLanguage();
 
   const [type, setType] = useState('expense');
   const [title, setTitle] = useState('');
@@ -81,14 +83,14 @@ export default function TransactionForm() {
 
   if (loading) return (
     <div className="layout">
-      <Topbar title="Modifica transazione" />
+      <Topbar title={t('transactionForm.editTx')} />
       <main className="main-content narrow"><div className="loading">Caricamento...</div></main>
     </div>
   );
 
   return (
     <div className="layout">
-      <Topbar title={isEdit ? 'Modifica transazione' : 'Nuova transazione'} />
+      <Topbar title={isEdit ? t('transactionForm.editTx') : t('transactionForm.newTx')} />
 
       <main className="main-content narrow">
         <div className="card">
@@ -97,32 +99,32 @@ export default function TransactionForm() {
             {success && <div className="alert-success">{success}</div>}
 
             <div className="form-group">
-              <label className="form-label">Tipo</label>
+              <label className="form-label">{t('transactionForm.type')}</label>
               <div className="toggle-group">
                 <button
                   type="button"
                   className={`toggle-btn ${type === 'expense' ? 'toggle-active' : ''}`}
                   onClick={() => setType('expense')}
                 >
-                  Spesa
+                  {t('transactionForm.expense')}
                 </button>
                 <button
                   type="button"
                   className={`toggle-btn ${type === 'income' ? 'toggle-active' : ''}`}
                   onClick={() => setType('income')}
                 >
-                  Entrata
+                  {t('transactionForm.income')}
                 </button>
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="title">Titolo</label>
+              <label className="form-label" htmlFor="title">{t('transactionForm.title')}</label>
               <input
                 id="title"
                 type="text"
                 className="form-input"
-                placeholder="Es. Supermercato, Affitto, Stipendio"
+                placeholder={t('transactionForm.titlePlaceholder')}
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 required
@@ -130,7 +132,7 @@ export default function TransactionForm() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="amount">Importo (€)</label>
+              <label className="form-label" htmlFor="amount">{t('transactionForm.amount')}</label>
               <input
                 id="amount"
                 type="number"
@@ -145,7 +147,7 @@ export default function TransactionForm() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="category">Categoria</label>
+              <label className="form-label" htmlFor="category">{t('transactionForm.category')}</label>
               <select
                 id="category"
                 className="form-input"
@@ -167,7 +169,7 @@ export default function TransactionForm() {
               </div>
               {showColorPicker && (
                 <div style={{ marginTop: 12 }}>
-                  <label className="form-label">Colore categoria</label>
+                  <label className="form-label">{t('transactionForm.category')}</label>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {DEFAULT_COLORS.map(color => (
                       <button
@@ -193,7 +195,7 @@ export default function TransactionForm() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="date">Data</label>
+              <label className="form-label" htmlFor="date">{t('transactionForm.date')}</label>
               <input
                 id="date"
                 type="date"
@@ -205,11 +207,11 @@ export default function TransactionForm() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="note">Nota (opzionale)</label>
+              <label className="form-label" htmlFor="note">{t('transactionForm.note')}</label>
               <textarea
                 id="note"
                 className="form-input"
-                placeholder="Note aggiuntive..."
+                placeholder={t('transactionForm.notePlaceholder')}
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 rows={3}
@@ -217,7 +219,7 @@ export default function TransactionForm() {
             </div>
 
             <button type="submit" className="btn btn-primary btn-full">
-              {isEdit ? 'Aggiorna transazione' : 'Salva transazione'}
+              {isEdit ? t('transactionForm.update') : t('transactionForm.save')}
             </button>
           </form>
         </div>

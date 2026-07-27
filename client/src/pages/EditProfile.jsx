@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { apiGet, apiPost } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 
 export default function EditProfile() {
+  const { t } = useLanguage();
   const { token, user, login } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -34,7 +36,7 @@ export default function EditProfile() {
   async function handleSave() {
     setError('');
     setSuccess('');
-    if (!name.trim()) { setError('Il nome e obbligatorio'); return; }
+    if (!name.trim()) { setError(t('profile.nameRequired')); return; }
 
     setSaving(true);
     try {
@@ -54,7 +56,7 @@ export default function EditProfile() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setSuccess('Profilo aggiornato con successo');
+      setSuccess(t('profile.profileUpdated'));
       setTimeout(() => navigate('/profile'), 1200);
     } catch (err) {
       setError(err.message);
@@ -83,7 +85,7 @@ export default function EditProfile() {
       const profileData = await profileRes.json();
       if (!profileRes.ok) throw new Error(profileData.error);
 
-      setSuccess('Profilo aggiornato e email verificata');
+      setSuccess(t('profile.emailVerified'));
       setTimeout(() => navigate('/profile'), 1200);
     } catch (err) {
       setError(err.message);
@@ -94,19 +96,19 @@ export default function EditProfile() {
 
   if (loading) return (
     <div className="layout">
-      <Topbar title="Modifica profilo" />
-      <main className="main-content narrow"><div className="loading">Caricamento...</div></main>
+      <Topbar title={t('profile.editProfileTitle')} />
+      <main className="main-content narrow"><div className="loading">{t('profile.loading')}</div></main>
     </div>
   );
 
   return (
     <div className="layout">
-      <Topbar title="Modifica profilo" />
+      <Topbar title={t('profile.editProfileTitle')} />
       <main className="main-content narrow">
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title gradient-title">Modifica dati</h2>
-            <p className="card-subtitle">Aggiorna le tue informazioni personali</p>
+            <h2 className="card-title gradient-title">{t('profile.editProfileTitle')}</h2>
+            <p className="card-subtitle">{t('profile.editProfileSubtitle')}</p>
           </div>
 
           {error && <div className="alert-error">{error}</div>}
@@ -115,35 +117,35 @@ export default function EditProfile() {
           {!otpSent ? (
             <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
               <div className="form-group">
-                <label className="form-label" htmlFor="name">Nome</label>
+                <label className="form-label" htmlFor="name">{t('profile.name')}</label>
                 <input id="name" type="text" className="form-input" value={name} onChange={e => setName(e.target.value)} required />
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="surname">Cognome</label>
+                <label className="form-label" htmlFor="surname">{t('profile.surname')}</label>
                 <input id="surname" type="text" className="form-input" value={surname} onChange={e => setSurname(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="email">Email</label>
+                <label className="form-label" htmlFor="email">{t('profile.email')}</label>
                 <input id="email" type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required />
                 {email !== originalEmail && (
                   <p className="text-secondary" style={{ fontSize: 11, marginTop: 4 }}>
-                    La modifica dell'email richiede la verifica tramite OTP.
+                    {t('profile.emailChangeOtp')}
                   </p>
                 )}
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <button type="button" onClick={() => navigate('/profile')} className="btn btn-secondary" style={{ flex: 1 }}>
-                  Annulla
-                </button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                  {saving ? 'Salvataggio...' : 'Salva modifiche'}
+                  <button type="button" onClick={() => navigate('/profile')} className="btn btn-secondary" style={{ flex: 1 }}>
+                    {t('profile.cancel')}
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                    {saving ? t('profile.saving') : t('profile.saveChanges')}
                 </button>
               </div>
             </form>
           ) : (
             <div>
               <p className="text-secondary" style={{ fontSize: 13, marginBottom: 12, textAlign: 'center' }}>
-                Inserisci il codice OTP inviato a <strong>{pendingEmail}</strong> per verificare la nuova email.
+                {t('profile.otpSentTo')} <strong>{pendingEmail}</strong>
               </p>
               <input
                 type="text"
@@ -154,11 +156,11 @@ export default function EditProfile() {
                 style={{ textAlign: 'center', letterSpacing: 8, fontSize: 22, fontWeight: 700, fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace" }}
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button onClick={() => setOtpSent(false)} className="btn btn-secondary" style={{ flex: 1 }}>
-                  Indietro
-                </button>
-                <button onClick={handleVerifyOtp} className="btn btn-primary" style={{ flex: 1 }}>
-                  {saving ? 'Verifica...' : 'Verifica e salva'}
+                  <button onClick={() => setOtpSent(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                    {t('profile.back')}
+                  </button>
+                  <button onClick={handleVerifyOtp} className="btn btn-primary" style={{ flex: 1 }}>
+                    {saving ? t('profile.verifying') : t('profile.verifyAndSave')}
                 </button>
               </div>
             </div>

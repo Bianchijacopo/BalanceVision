@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Register() {
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,50 +27,50 @@ export default function Register() {
       <div className="card" style={{ maxWidth: 400, width: '100%' }}>
         <div className="card-header">
           <h1 className="card-title gradient-title">BalanceVision</h1>
-          <p className="card-subtitle">Crea il tuo account</p>
+          <p className="card-subtitle">{t('register.subtitle')}</p>
         </div>
         <form onSubmit={handleSubmit}>
           {error && <div className="alert-error">{error}</div>}
           <div className="form-group">
-            <label className="form-label" htmlFor="name">Nome</label>
+            <label className="form-label" htmlFor="name">{t('register.name')}</label>
             <input
               id="name"
               type="text"
               className="form-input"
-              placeholder="Mario Rossi"
+              placeholder={t('register.namePlaceholder')}
               value={name}
               onChange={e => setName(e.target.value)}
             />
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="email">Email</label>
+            <label className="form-label" htmlFor="email">{t('register.email')}</label>
             <input
               id="email"
               type="text"
               className="form-input"
-              placeholder="mario@esempio.it"
+              placeholder={t('register.emailPlaceholder')}
               value={email}
               onChange={e => setEmail(e.target.value)}
             />
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
+            <label className="form-label" htmlFor="password">{t('register.password')}</label>
             <input
               id="password"
               type="password"
               className="form-input"
-              placeholder="Minimo 6 caratteri"
+              placeholder={t('register.passwordHint')}
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
           </div>
           <button type="submit" className="btn btn-primary btn-full">
-            Registrati
+            {t('register.submit')}
           </button>
         </form>
         <div className="card-footer">
-          <span className="text-secondary">Hai gia un account?</span>
-          <Link to="/login" className="link">Accedi</Link>
+          <span className="text-secondary">{t('register.haveAccount')}</span>
+          <Link to="/login" className="link">{t('register.login')}</Link>
         </div>
       </div>
     </div>

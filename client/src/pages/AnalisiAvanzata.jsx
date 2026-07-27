@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiGet } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 import Topbar from '../components/Topbar';
 import { BarChart, Bar, LineChart, Line, ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
@@ -34,6 +35,7 @@ function formatCurrency(v) {
 export default function AnalisiAvanzata() {
   const { token } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [transactions, setTransactions] = useState([]);
   const [balance, setBalance] = useState(null);
   const [budgetData, setBudgetData] = useState(null);
@@ -84,20 +86,20 @@ export default function AnalisiAvanzata() {
 
   return (
     <div className="layout">
-      <Topbar title="Analisi Avanzata" />
+      <Topbar title={t('analytics.title')} />
 
       <main className="main-content">
         <div className="summary-grid" style={{ marginBottom: 24 }}>
           <div className="summary-item">
-            <span className="summary-label">Entrate totali</span>
+            <span className="summary-label">{t('analytics.totalIncome')}</span>
             <span className="summary-value text-success">€{formatCurrency(totalIncome)}</span>
           </div>
           <div className="summary-item">
-            <span className="summary-label">Spese totali</span>
+            <span className="summary-label">{t('analytics.totalExpenses')}</span>
             <span className="summary-value text-danger">€{formatCurrency(totalExpenses)}</span>
           </div>
           <div className="summary-item">
-            <span className="summary-label">Tasso risparmio</span>
+            <span className="summary-label">{t('analytics.savingsRate')}</span>
             <span className={`summary-value ${savingsRate >= 0 ? 'text-success' : 'text-danger'}`}>
               {savingsRate.toFixed(1)}%
             </span>
@@ -106,7 +108,7 @@ export default function AnalisiAvanzata() {
 
         <div className="grid-2">
           <div className="card-chart">
-            <h3 className="chart-title">Andamento mensile entrate/uscite</h3>
+            <h3 className="chart-title">{t('analytics.monthlyTrend')}</h3>
             {monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height={280}>
                 <ComposedChart data={monthlyData}>
@@ -125,17 +127,17 @@ export default function AnalisiAvanzata() {
                   <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend />
-                  <Bar dataKey="income" name="Entrate" fill="var(--success)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expense" name="Uscite" fill="var(--danger)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="income" name={t('analytics.income')} fill="var(--success)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" name={t('analytics.expense')} fill="var(--danger)" radius={[4, 4, 0, 0]} />
                 </ComposedChart>
               </ResponsiveContainer>
             ) : (
-              <p className="chart-empty">Dati insufficienti</p>
+              <p className="chart-empty">{t('analytics.insufficientData')}</p>
             )}
           </div>
 
           <div className="card-chart">
-            <h3 className="chart-title">Evoluzione del saldo giornaliero</h3>
+            <h3 className="chart-title">{t('analytics.dailyBalance')}</h3>
             {dailyBalanceData.length > 1 ? (
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={filteredDaily}>
@@ -148,14 +150,14 @@ export default function AnalisiAvanzata() {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <p className="chart-empty">Dati insufficienti</p>
+              <p className="chart-empty">{t('analytics.insufficientData')}</p>
             )}
           </div>
         </div>
 
         <div className="grid-2">
           <div className="card-chart">
-            <h3 className="chart-title">Spese per categoria e budget rimasto</h3>
+            <h3 className="chart-title">{t('analytics.expensesByCategory')}</h3>
             {categoryData.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {categoryData.map(cat => {
@@ -178,13 +180,13 @@ export default function AnalisiAvanzata() {
                                 marginLeft: 6, fontWeight: 700, fontSize: 12,
                                 color: aIsOver ? 'var(--danger)' : aRem >= 40 ? 'var(--success)' : aRem >= 20 ? 'var(--warning)' : 'var(--danger)'
                               }}>
-                                {aIsOver ? '+' + (aPct - 100) + '%' : aRem + '% rimasto'}
+                                {aIsOver ? '+' + (aPct - 100) + '%' : aRem + t('analytics.budgetRemaining')}
                               </span>
                             </span>
                           )}
                           {!hasBudget && (
                             <span style={{ color: 'var(--text-tertiary)', fontSize: 11, marginLeft: 6 }}>
-                              ({((cat.total / categoryData.reduce((s, c) => s + c.total, 0)) * 100).toFixed(1)}% del totale)
+                              ({((cat.total / categoryData.reduce((s, c) => s + c.total, 0)) * 100).toFixed(1)}% {t('analytics.ofTotal')})
                             </span>
                           )}
                         </span>
@@ -213,44 +215,44 @@ export default function AnalisiAvanzata() {
                 })}
                 {budgetData?.budgets?.length === 0 && (
                   <p className="text-secondary text-center" style={{ fontSize: 12, padding: 8 }}>
-                    Imposta dei budget in /budgets per vedere la percentuale rimasta
+                    {t('analytics.noBudgetSet')}
                   </p>
                 )}
               </div>
             ) : (
-              <p className="chart-empty">Nessuna spesa registrata</p>
+              <p className="chart-empty">{t('analytics.noExpenses')}</p>
             )}
           </div>
 
           <div className="card-chart">
-            <h3 className="chart-title">Statistiche</h3>
+            <h3 className="chart-title">{t('analytics.statistics')}</h3>
             <div style={{ padding: '16px 0' }}>
               {balance && (
                 <>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
-                    <span className="modal-stat-label">Saldo attuale</span>
+                    <span className="modal-stat-label">{t('analytics.currentBalance')}</span>
                     <span className="modal-stat-value">€{formatCurrency(balance.current_balance)}</span>
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
-                    <span className="modal-stat-label">Transazioni totali</span>
+                    <span className="modal-stat-label">{t('analytics.totalTransactions')}</span>
                     <span className="modal-stat-value">{transactions.length}</span>
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
-                    <span className="modal-stat-label">Importo medio transazione</span>
+                    <span className="modal-stat-label">{t('analytics.avgTransaction')}</span>
                     <span className="modal-stat-value">€{formatCurrency(avgTransaction)}</span>
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
-                    <span className="modal-stat-label">Categoria principale</span>
+                    <span className="modal-stat-label">{t('analytics.topCategory')}</span>
                     <span className="modal-stat-value" style={{ fontSize: 16 }}>
                       {topCategory ? `${topCategory.category} (€${formatCurrency(topCategory.total)})` : '-'}
                     </span>
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
-                    <span className="modal-stat-label">Mesi di attivita</span>
+                    <span className="modal-stat-label">{t('analytics.monthsActive')}</span>
                     <span className="modal-stat-value">{monthlyData.length}</span>
                   </div>
                   <div className="modal-stat">
-                    <span className="modal-stat-label">Media spese/mese</span>
+                    <span className="modal-stat-label">{t('analytics.avgMonthlyExpenses')}</span>
                     <span className="modal-stat-value">
                       €{formatCurrency(monthlyData.length > 0 ? totalExpenses / monthlyData.length : 0)}
                     </span>
@@ -263,7 +265,7 @@ export default function AnalisiAvanzata() {
 
         <div className="section" style={{ textAlign: 'center' }}>
           <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
-            Torna alla dashboard
+            {t('analytics.backToDashboard')}
           </button>
         </div>
       </main>

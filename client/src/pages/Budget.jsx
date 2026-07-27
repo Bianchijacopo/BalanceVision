@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
 import { getAllCategories } from '../utils/categoryManager';
+import { useLanguage } from '../context/LanguageContext';
 
 function formatCurrency(v) {
   return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -13,6 +14,7 @@ function formatCurrency(v) {
 export default function Budget() {
   const { token } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editCategory, setEditCategory] = useState(null);
@@ -69,17 +71,17 @@ export default function Budget() {
 
   return (
     <div className="layout">
-      <Topbar title="Budget mensili" />
+      <Topbar title={t('budgets.title')} />
 
       <main className="main-content">
         <div className="section-header" style={{ marginBottom: 20 }}>
           <h3 className="section-title">{monthName}</h3>
           <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>
-            {data ? '€' + formatCurrency(data.totalBudget) + ' budget totale' : ''}
+            {data ? '€' + formatCurrency(data.totalBudget) + ' ' + t('budgets.totalBudget') : ''}
           </span>
         </div>
 
-        {loading && <div className="loading">Caricamento...</div>}
+        {loading && <div className="loading">{t('budgets.loading')}</div>}
 
         {!loading && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -105,10 +107,10 @@ export default function Budget() {
                       fontSize: 12, fontWeight: 700, minWidth: 48, textAlign: 'right',
                       color: b.spent > b.amount ? 'var(--danger)' : bRem >= 40 ? 'var(--success)' : bRem >= 20 ? 'var(--warning)' : 'var(--danger)'
                     }}>
-                      {b.spent > b.amount ? '+' + (bPct - 100) + '%' : bRem + '% rimasto'}
+                      {b.spent > b.amount ? '+' + (bPct - 100) + '%' : bRem + t('budgets.budgetRemaining')}
                     </span>
-                    <button className="btn-icon" onClick={() => { setEditCategory(b); setEditAmount(String(b.amount)); }} title="Modifica budget">&#9998;</button>
-                    <button className="btn-delete" onClick={() => handleDelete(b.id)} title="Elimina budget">&times;</button>
+                    <button className="btn-icon" onClick={() => { setEditCategory(b); setEditAmount(String(b.amount)); }} title={t('budgets.editBudget')}>&#9998;</button>
+                    <button className="btn-delete" onClick={() => handleDelete(b.id)} title={t('budgets.deleteBudget')}>&times;</button>
                   </div>
                   <div style={{
                     height: 6, borderRadius: 3, background: 'var(--bg-muted)',
@@ -133,8 +135,8 @@ export default function Budget() {
                         onChange={e => setEditAmount(e.target.value)}
                         autoFocus
                       />
-                      <button className="btn btn-primary btn-sm" onClick={() => handleSave(b.category)}>Salva</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setEditCategory(null)}>Annulla</button>
+                      <button className="btn btn-primary btn-sm" onClick={() => handleSave(b.category)}>{t('budgets.save')}</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setEditCategory(null)}>{t('budgets.cancel')}</button>
                     </div>
                   )}
                 </div>
@@ -142,7 +144,7 @@ export default function Budget() {
             })}
 
             <div className="card-chart" style={{ padding: '16px 20px' }}>
-              <h3 className="chart-title" style={{ marginBottom: 12 }}>Aggiungi budget</h3>
+              <h3 className="chart-title" style={{ marginBottom: 12 }}>{t('budgets.addBudget')}</h3>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {getAllCategories().filter(c => !existingCategories.has(c)).map(cat => (
                   <button
@@ -163,13 +165,13 @@ export default function Budget() {
                     min="0.01"
                     className="form-input"
                     style={{ width: 160, padding: '6px 10px', fontSize: 13 }}
-                    placeholder="Importo budget"
+                    placeholder={t('budgets.budgetPlaceholder')}
                     value={editAmount}
                     onChange={e => setEditAmount(e.target.value)}
                     autoFocus
                   />
-                  <button className="btn btn-primary btn-sm" onClick={() => handleSave(editCategory)}>Crea</button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => setEditCategory(null)}>Annulla</button>
+                  <button className="btn btn-primary btn-sm" onClick={() => handleSave(editCategory)}>{t('budgets.create')}</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setEditCategory(null)}>{t('budgets.cancel')}</button>
                 </div>
               )}
             </div>
@@ -178,7 +180,7 @@ export default function Budget() {
 
         <div className="section" style={{ textAlign: 'center', marginTop: 24 }}>
           <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
-            Torna alla dashboard
+            {t('budgets.backToDashboard')}
           </button>
         </div>
       </main>

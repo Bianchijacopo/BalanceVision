@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function ForgotPassword() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
@@ -21,7 +23,7 @@ export default function ForgotPassword() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      setMsg('Codice inviato a ' + email + (json.otp ? ' (OTP: ' + json.otp + ')' : ''));
+      setMsg(t('forgotPassword.codeSent') + ' ' + email + (json.otp ? ' (OTP: ' + json.otp + ')' : ''));
       setStep(2);
     } catch (e) {
       setError(e.message);
@@ -51,9 +53,9 @@ export default function ForgotPassword() {
         <div className="card-header">
           <h1 className="card-title gradient-title">BalanceVision</h1>
           <p className="card-subtitle">
-            {step === 1 && 'Recupera la tua password'}
-            {step === 2 && 'Inserisci il codice ricevuto'}
-            {step === 3 && 'Scegli una nuova password'}
+            {step === 1 && t('forgotPassword.title1')}
+            {step === 2 && t('forgotPassword.title2')}
+            {step === 3 && t('forgotPassword.title3')}
           </p>
         </div>
 
@@ -63,13 +65,13 @@ export default function ForgotPassword() {
         {step === 1 && (
           <form onSubmit={sendOtp}>
             <div className="form-group">
-              <label className="form-label" htmlFor="email">Email</label>
+              <label className="form-label" htmlFor="email">{t('forgotPassword.email')}</label>
               <input id="email" type="text" className="form-input"
-                placeholder="mario@esempio.it" value={email}
+                placeholder={t('forgotPassword.emailPlaceholder')} value={email}
                 onChange={e => setEmail(e.target.value)} required />
             </div>
             <button type="submit" className="btn btn-primary btn-full">
-              Invia codice
+              {t('forgotPassword.sendCode')}
             </button>
           </form>
         )}
@@ -77,13 +79,13 @@ export default function ForgotPassword() {
         {step === 2 && (
           <form onSubmit={e => { e.preventDefault(); setStep(3); }}>
             <div className="form-group">
-              <label className="form-label" htmlFor="otp">Codice di verifica</label>
+              <label className="form-label" htmlFor="otp">{t('forgotPassword.verifyCodeTitle')}</label>
               <input id="otp" type="text" className="form-input"
-                placeholder="Inserisci il codice a 6 cifre" value={otp}
+                placeholder={t('forgotPassword.otpPlaceholder')} value={otp}
                 onChange={e => setOtp(e.target.value)} required />
             </div>
             <button type="submit" className="btn btn-primary btn-full">
-              Verifica codice
+              {t('forgotPassword.verifyCode')}
             </button>
           </form>
         )}
@@ -91,20 +93,20 @@ export default function ForgotPassword() {
         {step === 3 && (
           <form onSubmit={resetPassword}>
             <div className="form-group">
-              <label className="form-label" htmlFor="password">Nuova password</label>
+              <label className="form-label" htmlFor="password">{t('forgotPassword.newPasswordTitle')}</label>
               <input id="password" type="password" className="form-input"
-                placeholder="Min. 8 caratteri, maiuscola, minuscola, numero" value={password}
+                placeholder={t('forgotPassword.newPasswordPlaceholder')} value={password}
                 onChange={e => setPassword(e.target.value)} required />
             </div>
             <button type="submit" className="btn btn-primary btn-full">
-              Cambia password
+              {t('forgotPassword.changePassword')}
             </button>
           </form>
         )}
 
         <div className="card-footer">
-          <span className="text-secondary">Torna al</span>
-          <Link to="/login" className="link">Login</Link>
+          <span className="text-secondary">{t('forgotPassword.backToLogin')}</span>
+          <Link to="/login" className="link">{t('forgotPassword.loginLink')}</Link>
         </div>
       </div>
     </div>

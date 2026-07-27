@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function VerifyEmail() {
+  const { t } = useLanguage();
   const { token, user, setUser, setJustRegistered } = useAuth();
   const navigate = useNavigate();
   const [otp, setOtp] = useState('');
@@ -16,7 +18,7 @@ export default function VerifyEmail() {
 
   async function handleVerify() {
     setError('');
-    if (!otp || otp.length < 6) { setError('Inserisci il codice di 6 cifre'); return; }
+    if (!otp || otp.length < 6) { setError(t('verifyEmail.error')); return; }
     setLoading(true);
     try {
       const res = await fetch('http://localhost:3001/api/auth/verify-otp', {
@@ -26,7 +28,7 @@ export default function VerifyEmail() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setSuccess('Email verificata con successo');
+      setSuccess(t('verifyEmail.success'));
       if (data.user) setUser(data.user);
       setJustRegistered(false);
       setTimeout(() => navigate('/dashboard'), 800);
@@ -48,7 +50,7 @@ export default function VerifyEmail() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       if (data.otp) alert('OTP di test: ' + data.otp);
-      setSuccess('Nuovo codice inviato');
+      setSuccess(t('verifyEmail.codeSent'));
     } catch (err) {
       setError(err.message);
     }
@@ -58,9 +60,9 @@ export default function VerifyEmail() {
     <div className="page-center">
       <div className="card" style={{ maxWidth: 400, width: '100%' }}>
         <div className="card-header">
-          <h2 className="card-title gradient-title">Verifica email</h2>
+          <h2 className="card-title gradient-title">{t('verifyEmail.title')}</h2>
           <p className="card-subtitle">
-            Inserisci il codice inviato a <strong>{user?.email}</strong>
+            {t('verifyEmail.title')}: <strong>{user?.email}</strong>
           </p>
         </div>
         {error && <div className="alert-error">{error}</div>}
@@ -76,11 +78,11 @@ export default function VerifyEmail() {
           />
         </div>
         <button onClick={handleVerify} className="btn btn-primary btn-full" disabled={loading || otp.length < 6}>
-          {loading ? 'Verifica...' : 'Verifica email'}
+          {loading ? t('verifyEmail.verifying') : t('verifyEmail.verifyBtn')}
         </button>
         <div className="card-footer" style={{ flexDirection: 'column', gap: 8 }}>
           <button onClick={handleResend} className="link" style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer', fontSize: 13 }}>
-            Invia di nuovo il codice
+            {t('verifyEmail.resend')}
           </button>
         </div>
       </div>

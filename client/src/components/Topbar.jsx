@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 
 function SunIcon() {
@@ -40,6 +41,7 @@ function DefaultAvatar() {
 export default function Topbar({ title }) {
   const { theme, toggle } = useTheme();
   const { user, logout } = useAuth();
+  const { lang, setLang, t } = useLanguage();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -60,7 +62,12 @@ export default function Topbar({ title }) {
         )}
       </div>
       <div className="topbar-right">
-        <button onClick={toggle} className="theme-toggle" title={theme === 'light' ? 'Tema scuro' : 'Tema chiaro'}>
+        <button onClick={() => setLang(lang === 'it' ? 'en' : 'it')} className="theme-toggle"
+          title={lang === 'it' ? 'Switch to English' : 'Passa all\'italiano'}
+          style={{ fontWeight: 700, fontSize: 13, letterSpacing: 0.5 }}>
+          {lang === 'it' ? 'EN' : 'IT'}
+        </button>
+        <button onClick={toggle} className="theme-toggle" title={theme === 'light' ? 'Dark theme' : 'Light theme'}>
           {theme === 'light' ? <MoonIcon /> : <SunIcon />}
         </button>
         <div
@@ -78,30 +85,30 @@ export default function Topbar({ title }) {
           <span className="text-sm text-secondary">{user?.name || user?.email}</span>
           <div className={`dropdown-menu ${menuOpen ? 'dropdown-visible' : ''}`}>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/dashboard'); }}>
-              Dashboard
+              {t('nav.dashboard')}
             </button>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/analytics'); }}>
-              Analisi Avanzata
+              {t('nav.analytics')}
             </button>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/budgets'); }}>
-              Budget
+              {t('nav.budgets')}
             </button>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/goals'); }}>
-              Obiettivi
+              {t('nav.goals')}
             </button>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/recurring'); }}>
-              Ricorrenti
+              {t('nav.recurring')}
             </button>
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/advice'); }}>
-              Consigli finanziari
+              {t('nav.advice')}
             </button>
             <div className="dropdown-divider" />
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/profile'); }}>
-              Profilo
+              {t('nav.profile')}
             </button>
             <div className="dropdown-divider" />
             <button className="dropdown-item" onClick={handleLogout}>
-              Disconnetti
+              {t('nav.logout')}
             </button>
           </div>
         </div>

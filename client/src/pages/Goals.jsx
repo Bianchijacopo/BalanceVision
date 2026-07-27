@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiGet } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
+import { useLanguage } from '../context/LanguageContext';
 
 function formatCurrency(v) {
   return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -19,6 +20,7 @@ export default function Goals() {
   const [target, setTarget] = useState('');
   const [current, setCurrent] = useState('');
   const [deadline, setDeadline] = useState('');
+  const { t } = useLanguage();
   const [category, setCategory] = useState('');
 
   async function load() {
@@ -109,28 +111,28 @@ export default function Goals() {
 
   return (
     <div className="layout">
-      <Topbar title="Obiettivi di risparmio" />
+      <Topbar title={t('goals.title')} />
 
       <main className="main-content">
         <div className="section-header" style={{ marginBottom: 20 }}>
-          <h3 className="section-title">I tuoi obiettivi</h3>
+          <h3 className="section-title">{t('goals.yourGoals')}</h3>
           <button className="btn btn-primary btn-sm" onClick={() => { resetForm(); setShowForm(true); }}>
-            Nuovo obiettivo
+            {t('goals.newGoal')}
           </button>
         </div>
 
         {data?.currentBalance != null && (
           <div className="insights-grid" style={{ marginBottom: 20 }}>
             <div className="insight-card">
-              <div className="insight-label">Saldo attuale</div>
+              <div className="insight-label">{t('goals.currentBalance')}</div>
               <div className="insight-value">€{formatCurrency(data.currentBalance)}</div>
             </div>
             <div className="insight-card">
-              <div className="insight-label">Obiettivi</div>
+              <div className="insight-label">{t('goals.goals')}</div>
               <div className="insight-value">{data.goals.length}</div>
             </div>
             <div className="insight-card">
-              <div className="insight-label">Totale risparmiato</div>
+              <div className="insight-label">{t('goals.totalSaved')}</div>
               <div className="insight-value">
                 €{formatCurrency(data.goals.reduce((s, g) => s + g.current_amount, 0))}
               </div>
@@ -138,12 +140,12 @@ export default function Goals() {
           </div>
         )}
 
-        {loading && <div className="loading">Caricamento...</div>}
+        {loading && <div className="loading">{t('goals.loading')}</div>}
 
         {!loading && data?.goals.length === 0 && !showForm && (
           <div className="card-chart" style={{ textAlign: 'center', padding: 48 }}>
-            <p className="text-secondary" style={{ marginBottom: 16 }}>Nessun obiettivo di risparmio impostato</p>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>Crea il primo obiettivo</button>
+            <p className="text-secondary" style={{ marginBottom: 16 }}>{t('goals.noGoals')}</p>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>{t('goals.createFirst')}</button>
           </div>
         )}
 
@@ -170,7 +172,7 @@ export default function Goals() {
                       {g.category && <span className="badge">{g.category}</span>}
                       {g.deadline && (
                         <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 8 }}>
-                          Scadenza: {g.deadline}
+                          {t('goals.deadline')} {g.deadline}
                         </span>
                       )}
                     </div>
@@ -182,11 +184,11 @@ export default function Goals() {
                         </span>
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
-                        {achieved ? 'Raggiunto!' : '€' + formatCurrency(g.remaining) + ' rimasti'}
+                        {achieved ? t('goals.achieved') : t('goals.remaining', { amount: '€' + formatCurrency(g.remaining) })}
                       </div>
                     </div>
-                    <button className="btn-icon" onClick={() => handleEdit(g)} title="Modifica">&#9998;</button>
-                    <button className="btn-delete" onClick={() => handleDelete(g.id)} title="Elimina">&times;</button>
+                    <button className="btn-icon" onClick={() => handleEdit(g)} title={t('goals.editGoal')}>&#9998;</button>
+                    <button className="btn-delete" onClick={() => handleDelete(g.id)} title={t('goals.delete')}>&times;</button>
                   </div>
                   <div style={{ height: 8, borderRadius: 4, background: 'var(--bg-muted)', overflow: 'hidden' }}>
                     <div style={{
@@ -198,7 +200,7 @@ export default function Goals() {
                   {!achieved && (
                     <button className="btn btn-secondary btn-sm" style={{ marginTop: 10 }}
                       onClick={() => syncBalance(g.id)}>
-                      Aggiorna dal saldo attuale
+                      {t('goals.updateFromBalance')}
                     </button>
                   )}
                 </div>
@@ -211,43 +213,43 @@ export default function Goals() {
           <div className="card" style={{ marginTop: 24 }}>
             <div className="card-header">
               <h3 className="card-title" style={{ fontSize: 16 }}>
-                {editId ? 'Modifica obiettivo' : 'Nuovo obiettivo'}
+                {editId ? t('goals.editGoal') : t('goals.newGoal')}
               </h3>
             </div>
             <form onSubmit={handleSave}>
               <div className="form-group">
-                <label className="form-label">Nome</label>
+                <label className="form-label">{t('goals.name')}</label>
                 <input className="form-input" value={name} onChange={e => setName(e.target.value)}
-                  placeholder="Es. vacanza, fondo emergenza" required />
+                  placeholder={t('goals.namePlaceholder')} required />
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Importo target (€)</label>
+                  <label className="form-label">{t('goals.targetAmount')}</label>
                   <input className="form-input" type="number" step="0.01" min="0.01" value={target}
                     onChange={e => setTarget(e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Importo attuale (€)</label>
+                  <label className="form-label">{t('goals.currentAmount')}</label>
                   <input className="form-input" type="number" step="0.01" min="0" value={current}
                     onChange={e => setCurrent(e.target.value)} />
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Scadenza (opzionale)</label>
+                  <label className="form-label">{t('goals.deadlineOptional')}</label>
                   <input className="form-input" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Categoria (opzionale)</label>
+                  <label className="form-label">{t('goals.categoryOptional')}</label>
                   <input className="form-input" value={category} onChange={e => setCategory(e.target.value)}
-                    placeholder="Es. Viaggi, Casa" />
+                    placeholder={t('goals.categoryPlaceholder')} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="submit" className="btn btn-primary">
-                  {editId ? 'Aggiorna' : 'Crea obiettivo'}
+                  {editId ? t('goals.update') : t('goals.create')}
                 </button>
-                <button type="button" className="btn btn-secondary" onClick={resetForm}>Annulla</button>
+                <button type="button" className="btn btn-secondary" onClick={resetForm}>{t('goals.cancel')}</button>
               </div>
             </form>
           </div>
@@ -255,7 +257,7 @@ export default function Goals() {
 
         <div className="section" style={{ textAlign: 'center', marginTop: 24 }}>
           <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
-            Torna alla dashboard
+            {t('goals.backToDashboard')}
           </button>
         </div>
       </main>
