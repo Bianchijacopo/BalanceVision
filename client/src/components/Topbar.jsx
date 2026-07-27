@@ -105,6 +105,9 @@ export default function Topbar({ title }) {
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/categories'); }}>
               {t('nav.categories')}
             </button>
+            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/import'); }}>
+              {t('nav.import')}
+            </button>
             <div className="dropdown-divider" />
             <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/profile'); }}>
               {t('nav.profile')}

@@ -14,6 +14,7 @@ import adviceRoutes from './routes/advice.js';
 import budgetRoutes from './routes/budgets.js';
 import goalRoutes from './routes/goals.js';
 import recurringRoutes from './routes/recurring.js';
+import importRoutes from './routes/import.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,6 +72,7 @@ app.use('/api/advice', adviceRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/recurring', recurringRoutes);
+app.use('/api/import', importRoutes);
 
 // SPA fallback
 app.get('*', (req, res) => {

@@ -18,6 +18,7 @@ import EditProfile from './pages/EditProfile';
 import ChangePassword from './pages/ChangePassword';
 import Recurring from './pages/Recurring';
 import Categories from './pages/Categories';
+import ImportCsv from './pages/ImportCsv';
 
 function ProtectedRoute({ children, requireVerified }) {
   const { token, justRegistered } = useAuth();
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/recurring" element={<VerifiedRoute><Recurring /></VerifiedRoute>} />
             <Route path="/advice" element={<VerifiedRoute><Advice /></VerifiedRoute>} />
             <Route path="/categories" element={<VerifiedRoute><Categories /></VerifiedRoute>} />
+            <Route path="/import" element={<VerifiedRoute><ImportCsv /></VerifiedRoute>} />
             <Route path="/profile" element={<VerifiedRoute><Profile /></VerifiedRoute>} />
             <Route path="/profile/edit" element={<VerifiedRoute><EditProfile /></VerifiedRoute>} />
             <Route path="/profile/change-password" element={<VerifiedRoute><ChangePassword /></VerifiedRoute>} />
