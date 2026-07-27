@@ -126,19 +126,18 @@ router.post('/forgot-send-otp', (req, res) => {
   if (!email) return res.status(400).json({ error: 'Email richiesta' });
 
   const user = get('SELECT id, email, name FROM users WHERE email = ?', [email]);
-  if (!user) return res.status(404).json({ error: 'Nessun account con questa email' });
 
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-  run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, user.id]);
+  if (user) {
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, user.id]);
+    try {
+      const { text, html } = buildOtpEmail(user.name || 'Utente', otp);
+      sendEmail(email, 'Recupero password BalanceVision', text, html).catch(() => {});
+    } catch (e) {}
+  }
 
-  console.log('OTP reset password per', email, ':', otp);
-  try {
-    const { text, html } = buildOtpEmail(user.name || 'Utente', otp);
-    sendEmail(email, 'Recupero password BalanceVision', text, html).catch(() => {});
-  } catch (e) {}
-
-  res.json({ message: 'Codice inviato alla tua email' });
+  res.json({ message: 'Se l\'email esiste, riceverai un codice per il recupero password' });
 });
 
 router.post('/reset-password', (req, res) => {
@@ -149,8 +148,9 @@ router.post('/reset-password', (req, res) => {
   if (pwErrors.length > 0) return res.status(400).json({ error: pwErrors.join(', ') });
 
   const user = get('SELECT id, otp, otp_expiry FROM users WHERE email = ?', [email]);
-  if (!user) return res.status(404).json({ error: 'Nessun account con questa email' });
-  if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Nessun codice richiesto' });
+  if (!user || !user.otp || !user.otp_expiry) {
+    return res.status(400).json({ error: 'Nessuna richiesta di reset valida per questa email' });
+  }
   if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'Codice scaduto' });
   if (user.otp !== otp) return res.status(400).json({ error: 'Codice errato' });
 
