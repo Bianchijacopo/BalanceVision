@@ -96,6 +96,11 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [filterAmountMin, setFilterAmountMin] = useState('');
+  const [filterAmountMax, setFilterAmountMax] = useState('');
+  const [showAdvFilters, setShowAdvFilters] = useState(false);
   const [manageCats, setManageCats] = useState(false);
   const [clock, setClock] = useState(new Date());
   useEffect(() => { const id = setInterval(() => setClock(new Date()), 1000); return () => clearInterval(id); }, []);
@@ -236,12 +241,20 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterCategory && t.category !== filterCategory) return false;
     if (filterType && t.type !== filterType) return false;
+    if (filterDateFrom && t.date < filterDateFrom) return false;
+    if (filterDateTo && t.date > filterDateTo) return false;
+    if (filterAmountMin && t.amount < parseFloat(filterAmountMin)) return false;
+    if (filterAmountMax && t.amount > parseFloat(filterAmountMax)) return false;
     return true;
   });
   const filteredMonthly = monthlyTransactions.filter(t => {
     if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterCategory && t.category !== filterCategory) return false;
     if (filterType && t.type !== filterType) return false;
+    if (filterDateFrom && t.date < filterDateFrom) return false;
+    if (filterDateTo && t.date > filterDateTo) return false;
+    if (filterAmountMin && t.amount < parseFloat(filterAmountMin)) return false;
+    if (filterAmountMax && t.amount > parseFloat(filterAmountMax)) return false;
     return true;
   });
 
@@ -734,9 +747,14 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               <option value="income">Entrate</option>
               <option value="expense">Spese</option>
             </select>
-            {(searchQuery || filterCategory || filterType) && (
+            <button className="btn-tx-ghost" onClick={() => setShowAdvFilters(!showAdvFilters)}
+              style={{ background: showAdvFilters ? 'var(--brand)' : '', color: showAdvFilters ? 'var(--btn-primary-text)' : '' }}>
+              {showAdvFilters ? 'Filtri base' : 'Filtri avanzati'}
+            </button>
+            {(searchQuery || filterCategory || filterType || filterDateFrom || filterDateTo || filterAmountMin || filterAmountMax) && (
               <button className="btn-tx-clear"
-                onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterType(''); }}>
+                onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterType('');
+                  setFilterDateFrom(''); setFilterDateTo(''); setFilterAmountMin(''); setFilterAmountMax(''); }}>
                 Cancella filtri
               </button>
             )}
@@ -745,6 +763,31 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               Categorie
             </button>
           </div>
+
+          {showAdvFilters && (
+            <div className="tx-adv-filters">
+              <div className="tx-adv-row">
+                <div className="tx-adv-field">
+                  <label>Da data</label>
+                  <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+                </div>
+                <div className="tx-adv-field">
+                  <label>A data</label>
+                  <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+                </div>
+              </div>
+              <div className="tx-adv-row">
+                <div className="tx-adv-field">
+                  <label>Importo min (€)</label>
+                  <input type="number" step="0.01" min="0" placeholder="0" value={filterAmountMin} onChange={e => setFilterAmountMin(e.target.value)} />
+                </div>
+                <div className="tx-adv-field">
+                  <label>Importo max (€)</label>
+                  <input type="number" step="0.01" min="0" placeholder="99999" value={filterAmountMax} onChange={e => setFilterAmountMax(e.target.value)} />
+                </div>
+              </div>
+            </div>
+          )}
 
           {manageCats && (
             <div className="tx-cats">
@@ -780,7 +823,8 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             ))}
             {filteredTransactions.length === 0 && (
               <div className="tx-empty">
-                {searchQuery || filterCategory || filterType ? 'Nessuna transazione corrisponde ai filtri' : 'Nessuna transazione'}
+                {(searchQuery || filterCategory || filterType || filterDateFrom || filterDateTo || filterAmountMin || filterAmountMax)
+                  ? 'Nessuna transazione corrisponde ai filtri' : 'Nessuna transazione'}
               </div>
             )}
           </div>
