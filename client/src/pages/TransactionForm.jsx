@@ -12,7 +12,7 @@ export default function TransactionForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const [type, setType] = useState('expense');
   const [title, setTitle] = useState('');
@@ -155,7 +155,7 @@ export default function TransactionForm() {
                 onChange={e => setCategory(e.target.value)}
               >
                 {getAllCategories().map(c => (
-                  <option key={c} value={c}>{catName(c, t)}</option>
+                  <option key={c} value={c}>{catName(c, t, lang)}</option>
                 ))}
               </select>
               <div style={{ marginTop: 8 }}>

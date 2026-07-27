@@ -36,7 +36,7 @@ function formatCurrency(v) {
 export default function AnalisiAvanzata() {
   const { token } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [transactions, setTransactions] = useState([]);
   const [balance, setBalance] = useState(null);
   const [budgetData, setBudgetData] = useState(null);
@@ -171,7 +171,7 @@ export default function AnalisiAvanzata() {
                   return (
                     <div key={cat.category}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <span style={{ fontWeight: 600, fontSize: 13 }}>{catName(cat.category, t)}</span>
+                        <span style={{ fontWeight: 600, fontSize: 13 }}>{catName(cat.category, t, lang)}</span>
                         <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
                           <span style={{ fontWeight: 700 }}>€{formatCurrency(cat.total)}</span>
                           {hasBudget && (
@@ -245,7 +245,7 @@ export default function AnalisiAvanzata() {
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
                     <span className="modal-stat-label">{t('analytics.topCategory')}</span>
                     <span className="modal-stat-value" style={{ fontSize: 16 }}>
-                      {topCategory ? `${catName(topCategory.category, t)} (€${formatCurrency(topCategory.total)})` : '-'}
+                      {topCategory ? `${catName(topCategory.category, t, lang)} (€${formatCurrency(topCategory.total)})` : '-'}
                     </span>
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>

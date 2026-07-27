@@ -188,7 +188,7 @@ export default function Recurring() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{item.title}</div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      {item.category && <span className="badge">{catName(item.category, t)}</span>}
+                      {item.category && <span className="badge">{catName(item.category, t, lang)}</span>}
                       <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
                         {t('recurring.' + (FREQUENZE.find(f => f.value === item.frequency)?.label || item.frequency))}
                       </span>

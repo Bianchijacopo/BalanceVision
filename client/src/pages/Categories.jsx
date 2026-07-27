@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import {
   getAllCategories, getCustomCategories, addCustomCategory,
-  removeCustomCategory, isDefaultCategory, DEFAULT_CATEGORIES, catName
+  removeCustomCategory, isDefaultCategory, DEFAULT_CATEGORIES, catName,
+  getUntranslatedCategories, fetchCategoryTranslation
 } from '../utils/categoryManager';
 import {
   getCategoryColors, setCategoryColor, getUnusedColor, DEFAULT_COLORS
@@ -13,6 +15,7 @@ import {
 
 export default function Categories() {
   const { t, lang } = useLanguage();
+  const { token } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const [refresh, setRefresh] = useState(0);
@@ -25,6 +28,15 @@ export default function Categories() {
   function forceUpdate() {
     setRefresh(n => n + 1);
   }
+
+  useEffect(() => {
+    const untranslated = getUntranslatedCategories(lang);
+    if (untranslated.length === 0) return;
+    const from = lang === 'it' ? 'en' : 'it';
+    Promise.all(untranslated.map(cat => fetchCategoryTranslation(cat, from, lang, token)))
+      .then(() => forceUpdate())
+      .catch(() => {});
+  }, [lang, token]);
 
   function handleAdd() {
     const name = newName.trim();
@@ -94,7 +106,7 @@ export default function Categories() {
                   width: 10, height: 10, borderRadius: '50%', display: 'inline-block',
                   background: colors[c], flexShrink: 0
                 }} />
-                {catName(c, t)}
+                {catName(c, t, lang)}
               </span>
             ))}
           </div>
