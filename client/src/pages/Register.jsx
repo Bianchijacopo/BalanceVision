@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 export default function Register() {
   const { t } = useLanguage();
   const [name, setName] = useState('');
+  const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,7 +16,7 @@ export default function Register() {
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      await register(email, password, name);
+      await register(email, password, name, surname);
       navigate('/verify-email', { replace: true });
     } catch (err) {
       setError(err.message);
@@ -31,16 +32,29 @@ export default function Register() {
         </div>
         <form onSubmit={handleSubmit}>
           {error && <div className="alert-error">{error}</div>}
-          <div className="form-group">
-            <label className="form-label" htmlFor="name">{t('register.name')}</label>
-            <input
-              id="name"
-              type="text"
-              className="form-input"
-              placeholder={t('register.namePlaceholder')}
-              value={name}
-              onChange={e => setName(e.target.value)}
-            />
+          <div className="form-row" style={{ display: 'flex', gap: 8 }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label" htmlFor="name">{t('register.name')}</label>
+              <input
+                id="name"
+                type="text"
+                className="form-input"
+                placeholder={t('register.namePlaceholder')}
+                value={name}
+                onChange={e => setName(e.target.value)}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label" htmlFor="surname">{t('register.surname')}</label>
+              <input
+                id="surname"
+                type="text"
+                className="form-input"
+                placeholder={t('register.surnamePlaceholder')}
+                value={surname}
+                onChange={e => setSurname(e.target.value)}
+              />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="email">{t('register.email')}</label>

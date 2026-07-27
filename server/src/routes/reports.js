@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { get, run, all } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { validate, schemas } from '../utils/validate.js';
+import { sendEmail } from '../email.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -170,12 +171,12 @@ function checkAutoReports() {
   try {
     const today = new Date().toISOString().slice(0, 10);
     const day = new Date().getDate();
-    const users = all(`SELECT u.id, u.email, u.name, s.report_day, s.last_report_sent, s.lang
+    const users = all(`SELECT u.id, u.email, u.name, s.report_day, s.last_report_sent
       FROM user_settings s JOIN users u ON u.id = s.user_id
       WHERE s.report_enabled = 1 AND s.report_day = ?`, [day]);
     for (const user of users) {
       if (user.last_report_sent && user.last_report_sent === today) continue;
-      const lang = user.lang || 'it';
+      const lang = 'it';
       const email = buildReportEmail(user.id, lang);
       if (email) {
         sendEmail(email.to, email.subject, email.text, email.html).catch(() => {});

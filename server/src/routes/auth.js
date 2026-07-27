@@ -34,7 +34,7 @@ function getUser(id) {
 }
 
 router.post('/register', validate(schemas.register), async (req, res) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, surname } = req.body;
 
   const existing = get('SELECT id FROM users WHERE email = ?', [email]);
   if (existing) {
@@ -42,7 +42,7 @@ router.post('/register', validate(schemas.register), async (req, res) => {
   }
 
   const password_hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
-  const result = run('INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)', [email, password_hash, name || '']);
+  const result = run('INSERT INTO users (email, password_hash, name, surname) VALUES (?, ?, ?, ?)', [email, password_hash, name || '', surname || '']);
 
   const token = generateToken(result.lastInsertRowid);
   const refreshToken = generateRefreshToken(result.lastInsertRowid);
@@ -52,7 +52,8 @@ router.post('/register', validate(schemas.register), async (req, res) => {
   run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, result.lastInsertRowid]);
 
   try {
-    const { text, html } = buildOtpEmail(name || 'Utente', otp);
+    const fullName = [name, surname].filter(Boolean).join(' ') || 'Utente';
+    const { text, html } = buildOtpEmail(fullName, otp);
     await sendEmail(email, 'Codice di verifica BalanceVision', text, html);
   } catch (err) {
     console.error('Errore invio email di verifica:', err);
@@ -181,11 +182,6 @@ router.put('/profile', authMiddleware, verifiedMiddleware, validate(schemas.prof
 
 router.post('/change-password', authMiddleware, verifiedMiddleware, validate(schemas.changePassword), (req, res) => {
   const { oldPassword, newPassword } = req.body;
-
-  const pwErrors = validatePassword(newPassword);
-  if (pwErrors.length > 0) {
-    return res.status(400).json({ error: 'Password: ' + pwErrors.join(', ') });
-  }
 
   const user = get('SELECT password_hash FROM users WHERE id = ?', [req.userId]);
   if (!bcrypt.compareSync(oldPassword, user.password_hash)) {

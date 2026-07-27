@@ -43,7 +43,23 @@ export function AuthProvider({ children }) {
     if (!token && refreshToken) {
       doRefresh();
     }
-  }, []);
+    const refreshHandler = (e) => {
+      setToken(e.detail.token);
+      setRefreshToken(e.detail.refreshToken);
+    };
+    const expiredHandler = () => {
+      setToken(null);
+      setRefreshToken(null);
+      setUser(null);
+      setJustRegistered(false);
+    };
+    window.addEventListener('auth-refresh', refreshHandler);
+    window.addEventListener('auth-expired', expiredHandler);
+    return () => {
+      window.removeEventListener('auth-refresh', refreshHandler);
+      window.removeEventListener('auth-expired', expiredHandler);
+    };
+  }, [doRefresh, token, refreshToken]);
 
   async function login(email, password) {
     const res = await fetch(`${API}/auth/login`, {
@@ -60,11 +76,11 @@ export function AuthProvider({ children }) {
     return data;
   }
 
-  async function register(email, password, name) {
+  async function register(email, password, name, surname) {
     const res = await fetch(`${API}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name })
+      body: JSON.stringify({ email, password, name, surname })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Registrazione fallita');

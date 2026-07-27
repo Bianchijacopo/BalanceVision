@@ -1,9 +1,32 @@
 const { app, BrowserWindow, session } = require('electron');
 const { fork } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const SERVER_PORT = 3001;
+
+function loadEnv() {
+  try {
+    const envPath = path.join(__dirname, 'server', '.env');
+    const content = fs.readFileSync(envPath, 'utf-8');
+    const env = {};
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eq = trimmed.indexOf('=');
+      if (eq === -1) continue;
+      const key = trimmed.slice(0, eq).trim();
+      const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+      env[key] = val;
+    }
+    return env;
+  } catch {
+    return {};
+  }
+}
+
+const dotEnv = loadEnv();
 
 let serverProcess = null;
 
@@ -14,16 +37,16 @@ function startServer() {
 
     const serverEnv = {
       NODE_ENV: isDev ? 'development' : 'production',
-      JWT_SECRET: process.env.JWT_SECRET,
-      GMAIL_USER: process.env.GMAIL_USER || '',
-      GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD || '',
-      GROQ_API_KEY: process.env.GROQ_API_KEY || '',
+      JWT_SECRET: process.env.JWT_SECRET || dotEnv.JWT_SECRET,
+      GMAIL_USER: process.env.GMAIL_USER || dotEnv.GMAIL_USER || '',
+      GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD || dotEnv.GMAIL_APP_PASSWORD || '',
+      GROQ_API_KEY: process.env.GROQ_API_KEY || dotEnv.GROQ_API_KEY || '',
       PORT: String(SERVER_PORT),
       CORS_ORIGIN: 'http://localhost:' + SERVER_PORT,
     };
 
     if (!serverEnv.JWT_SECRET) {
-      console.error('ERRORE FATALE: JWT_SECRET non impostato');
+      console.error('ERRORE FATALE: JWT_SECRET non impostato. Inseriscilo in server/.env');
       app.quit();
       return;
     }
@@ -100,10 +123,10 @@ function createWindow() {
         'Content-Security-Policy': [
           "default-src 'self'; " +
           "script-src 'self'; " +
-          "style-src 'self' 'unsafe-inline'; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "img-src 'self' data: blob:; " +
           "connect-src 'self' http://localhost:" + SERVER_PORT + " https://api.groq.com; " +
-          "font-src 'self' data:; " +
+          "font-src 'self' data: https://fonts.gstatic.com; " +
           "object-src 'none'; " +
           "frame-src 'none'; " +
           "base-uri 'self'; " +
@@ -116,7 +139,7 @@ function createWindow() {
         'Strict-Transport-Security': ['max-age=31536000; includeSubDomains'],
         'Referrer-Policy': ['strict-origin-when-cross-origin'],
         'Permissions-Policy': [
-          'camera=(), microphone=(), geolocation=(), notifications=(), payment=(), usb=()'
+          'camera=(), microphone=(), geolocation=(), payment=(), usb=()'
         ],
       },
     });

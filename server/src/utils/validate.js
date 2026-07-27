@@ -8,6 +8,7 @@ export const schemas = {
       .regex(/[a-z]/, 'Almeno una minuscola')
       .regex(/[0-9]/, 'Almeno un numero'),
     name: z.string().max(100).optional(),
+    surname: z.string().max(100).optional(),
   }),
 
   login: z.object({
@@ -119,7 +120,7 @@ export function validate(schema) {
   return (req, res, next) => {
     const result = schema.safeParse(req.body);
     if (!result.success) {
-      const error = result.error.errors.map(e => e.message).join('. ');
+      const error = result.error.issues.map(e => e.message).join('. ');
       return res.status(400).json({ error: error || 'Dati non validi' });
     }
     req.body = result.data;
