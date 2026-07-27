@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
+import { validate, schemas } from '../utils/validate.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -8,11 +9,8 @@ router.use(verifiedMiddleware);
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-router.post('/', async (req, res) => {
+router.post('/', validate(schemas.translate), async (req, res) => {
   const { text, from, to } = req.body;
-  if (!text || !from || !to) {
-    return res.status(400).json({ error: 'Missing text, from, or to' });
-  }
 
   if (!GROQ_API_KEY) {
     return res.json({ translation: text });

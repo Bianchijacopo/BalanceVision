@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { get, run, all } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
+import { validate, schemas } from '../utils/validate.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -152,7 +153,7 @@ router.get('/settings', (req, res) => {
   });
 });
 
-router.put('/settings', (req, res) => {
+router.put('/settings', validate(schemas.reportSettings), (req, res) => {
   const { report_enabled, report_day } = req.body;
   const existing = get('SELECT id FROM user_settings WHERE user_id = ?', [req.userId]);
   if (existing) {

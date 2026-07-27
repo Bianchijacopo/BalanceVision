@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { all, get, run } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
+import { validate, schemas } from '../utils/validate.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -43,14 +44,8 @@ router.get('/', (req, res) => {
   res.json({ budgets: result, month: monthParam, totalBudget: budgets.reduce((s, b) => s + b.amount, 0) });
 });
 
-router.post('/', (req, res) => {
+router.post('/', validate(schemas.budget), (req, res) => {
   const { category, month, amount } = req.body;
-  if (!category || !month || !amount) {
-    return res.status(400).json({ error: 'Campi obbligatori: category, month, amount' });
-  }
-  if (amount <= 0) {
-    return res.status(400).json({ error: 'amount deve essere positivo' });
-  }
 
   const existing = get(
     'SELECT * FROM budgets WHERE user_id = ? AND category = ? AND month = ?',

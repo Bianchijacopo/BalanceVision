@@ -4,22 +4,16 @@ import crypto from 'crypto';
 import { get, run } from '../db/database.js';
 import { generateToken, authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { sendEmail, buildOtpEmail } from '../email.js';
+import { validate, schemas } from '../utils/validate.js';
+import { sanitize } from '../utils/sanitize.js';
 
 const router = Router();
-const PASSWORD_MIN = 8;
+const PASSWORD_MIN = 12;
+const BCRYPT_ROUNDS = 12;
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
-
-function validatePassword(password) {
-  const errors = [];
-  if (password.length < PASSWORD_MIN) errors.push('Minimo ' + PASSWORD_MIN + ' caratteri');
-  if (!/[A-Z]/.test(password)) errors.push('Almeno una lettera maiuscola');
-  if (!/[a-z]/.test(password)) errors.push('Almeno una lettera minuscola');
-  if (!/[0-9]/.test(password)) errors.push('Almeno un numero');
-  return errors;
-}
 
 function audit(userId, action, ip) {
   try {
@@ -39,29 +33,21 @@ function getUser(id) {
   return get('SELECT id, email, name, surname, email_verified, avatar, created_at FROM users WHERE id = ?', [id]);
 }
 
-router.post('/register', async (req, res) => {
+router.post('/register', validate(schemas.register), async (req, res) => {
   const { email, password, name } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email e password richieste' });
-  }
-
-  const pwErrors = validatePassword(password);
-  if (pwErrors.length > 0) {
-    return res.status(400).json({ error: 'Password: ' + pwErrors.join(', ') });
-  }
 
   const existing = get('SELECT id FROM users WHERE email = ?', [email]);
   if (existing) {
     return res.status(409).json({ error: 'Email gia registrata' });
   }
 
-  const password_hash = bcrypt.hashSync(password, 10);
+  const password_hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
   const result = run('INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)', [email, password_hash, name || '']);
 
   const token = generateToken(result.lastInsertRowid);
   const refreshToken = generateRefreshToken(result.lastInsertRowid);
 
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const otp = String(Math.floor(100000 + Math.random() * 900000)).padStart(6, '0');
   const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, result.lastInsertRowid]);
 
@@ -80,11 +66,8 @@ router.post('/register', async (req, res) => {
   });
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', validate(schemas.login), (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email e password richieste' });
-  }
 
   const user = get('SELECT id, email, name, surname, email_verified, avatar, password_hash, created_at, login_attempts, locked_until FROM users WHERE email = ?', [email]);
   if (!user) {
@@ -121,9 +104,8 @@ router.post('/login', (req, res) => {
   res.json({ token, refreshToken, user: safe });
 });
 
-router.post('/refresh', (req, res) => {
+router.post('/refresh', validate(schemas.refresh), (req, res) => {
   const { refreshToken } = req.body;
-  if (!refreshToken) return res.status(400).json({ error: 'Refresh token richiesto' });
 
   const hash = crypto.createHash('sha256').update(refreshToken).digest('hex');
   const stored = get('SELECT * FROM refresh_tokens WHERE token_hash = ?', [hash]);
@@ -141,9 +123,8 @@ router.post('/refresh', (req, res) => {
   res.json({ token, refreshToken: newRefreshToken, user });
 });
 
-router.post('/forgot-send-otp', (req, res) => {
+router.post('/forgot-send-otp', validate(schemas.forgotSendOtp), (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email richiesta' });
 
   const user = get('SELECT id, email, name FROM users WHERE email = ?', [email]);
 
@@ -160,12 +141,8 @@ router.post('/forgot-send-otp', (req, res) => {
   res.json({ message: 'Se l\'email esiste, riceverai un codice per il recupero password' });
 });
 
-router.post('/reset-password', (req, res) => {
+router.post('/reset-password', validate(schemas.resetPassword), (req, res) => {
   const { email, otp, newPassword } = req.body;
-  if (!email || !otp || !newPassword) return res.status(400).json({ error: 'Campi obbligatori: email, otp, newPassword' });
-
-  const pwErrors = validatePassword(newPassword);
-  if (pwErrors.length > 0) return res.status(400).json({ error: pwErrors.join(', ') });
 
   const user = get('SELECT id, otp, otp_expiry FROM users WHERE email = ?', [email]);
   if (!user || !user.otp || !user.otp_expiry) {
@@ -194,18 +171,16 @@ router.get('/profile', authMiddleware, verifiedMiddleware, (req, res) => {
   res.json(user);
 });
 
-router.put('/profile', authMiddleware, verifiedMiddleware, (req, res) => {
+router.put('/profile', authMiddleware, verifiedMiddleware, validate(schemas.profileUpdate), (req, res) => {
   const { name, surname } = req.body;
-  if (!name || !name.trim()) return res.status(400).json({ error: 'Il nome e obbligatorio' });
-  run('UPDATE users SET name = ?, surname = ? WHERE id = ?', [name.trim(), surname || '', req.userId]);
+  run('UPDATE users SET name = ?, surname = ? WHERE id = ?', [name, surname || '', req.userId]);
   const user = getUser(req.userId);
   audit(req.userId, 'profile_update', req.ip);
   res.json({ message: 'Profilo aggiornato', user });
 });
 
-router.post('/change-password', authMiddleware, verifiedMiddleware, (req, res) => {
+router.post('/change-password', authMiddleware, verifiedMiddleware, validate(schemas.changePassword), (req, res) => {
   const { oldPassword, newPassword } = req.body;
-  if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Campi obbligatori' });
 
   const pwErrors = validatePassword(newPassword);
   if (pwErrors.length > 0) {
@@ -242,9 +217,8 @@ router.post('/send-otp', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/verify-otp', authMiddleware, (req, res) => {
+router.post('/verify-otp', authMiddleware, validate(schemas.verifyOtp), (req, res) => {
   const { otp, newEmail } = req.body;
-  if (!otp) return res.status(400).json({ error: 'Codice OTP richiesto' });
 
   const user = get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
   if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Nessun OTP richiesto. Richiedine uno nuovo.' });
@@ -262,22 +236,15 @@ router.post('/verify-otp', authMiddleware, (req, res) => {
   res.json({ message: 'Verifica completata', user: updated });
 });
 
-router.put('/avatar', authMiddleware, verifiedMiddleware, (req, res) => {
+router.put('/avatar', authMiddleware, verifiedMiddleware, validate(schemas.avatar), (req, res) => {
   const { avatar } = req.body;
-  if (!avatar) return res.status(400).json({ error: 'Immagine richiesta' });
-  if (avatar.length > MAX_AVATAR_SIZE) return res.status(400).json({ error: 'Immagine troppo grande (max 2MB)' });
-  const mimeMatch = avatar.match(/^data:image\/(\w+);base64,/);
-  if (!mimeMatch) return res.status(400).json({ error: 'Formato immagine non valido. Usa data:image/...;base64,...' });
-  const mime = 'image/' + mimeMatch[1];
-  if (!ALLOWED_AVATAR_TYPES.includes(mime)) return res.status(400).json({ error: 'Tipo immagine non supportato. Usa JPEG, PNG, GIF o WebP.' });
   run('UPDATE users SET avatar = ? WHERE id = ?', [avatar, req.userId]);
   audit(req.userId, 'avatar_update', req.ip);
   res.json({ message: 'Avatar aggiornato', avatar });
 });
 
-router.delete('/account', authMiddleware, verifiedMiddleware, (req, res) => {
+router.delete('/account', authMiddleware, verifiedMiddleware, validate(schemas.deleteAccount), (req, res) => {
   const { otp } = req.body;
-  if (!otp) return res.status(400).json({ error: 'Codice OTP richiesto per eliminare l\'account' });
 
   const user = get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
   if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Richiedi prima un OTP' });

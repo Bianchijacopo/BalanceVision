@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { all, get, run } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
+import { validate, schemas } from '../utils/validate.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -65,23 +66,9 @@ router.get('/', (req, res) => {
   res.json(items);
 });
 
-router.post('/', (req, res) => {
+router.post('/', validate(schemas.recurring), (req, res) => {
   const { type, title, amount, category, note, frequency, start_date, end_date } = req.body;
   const lang = req.query.lang || 'it';
-
-  if (!type || !title || !amount || !start_date) {
-    return res.status(400).json({
-      error: lang === 'en'
-        ? 'Required fields: type, title, amount, start_date'
-        : 'Campi obbligatori: type, title, amount, start_date'
-    });
-  }
-
-  if (type !== 'income' && type !== 'expense') {
-    return res.status(400).json({
-      error: lang === 'en' ? 'type must be income or expense' : 'type deve essere income o expense'
-    });
-  }
 
   const cat = (category || '').trim() || 'Altro';
 

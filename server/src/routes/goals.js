@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { all, get, run } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
+import { validate, schemas } from '../utils/validate.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -31,18 +32,12 @@ router.get('/', (req, res) => {
   });
 });
 
-router.post('/', (req, res) => {
-  const { name, target_amount, deadline, category } = req.body;
-  if (!name || !target_amount) {
-    return res.status(400).json({ error: 'Campi obbligatori: name, target_amount' });
-  }
-  if (target_amount <= 0) {
-    return res.status(400).json({ error: 'target_amount deve essere positivo' });
-  }
+router.post('/', validate(schemas.goal), (req, res) => {
+  const { name, target_amount, current_amount, deadline, category } = req.body;
 
   const result = run(
-    'INSERT INTO goals (user_id, name, target_amount, deadline, category) VALUES (?, ?, ?, ?, ?)',
-    [req.userId, name, target_amount, deadline || '', category || '']
+    'INSERT INTO goals (user_id, name, target_amount, current_amount, deadline, category) VALUES (?, ?, ?, ?, ?, ?)',
+    [req.userId, name, target_amount, current_amount || 0, deadline || '', category || '']
   );
 
   const goal = get('SELECT * FROM goals WHERE id = ?', [result.lastInsertRowid]);
