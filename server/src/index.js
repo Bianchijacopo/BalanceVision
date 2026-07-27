@@ -66,6 +66,10 @@ app.get('/', (req, res) => {
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/send-otp', authLimiter);
+app.use('/api/auth/forgot-send-otp', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
+app.use('/api/auth/refresh', authLimiter);
+app.use('/api/auth/change-password', authLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
