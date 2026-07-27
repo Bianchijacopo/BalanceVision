@@ -8,7 +8,7 @@ import { ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, LabelList, X
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
-import { getAllCategories, isDefaultCategory, removeCustomCategory, catName, getUntranslatedCategories, fetchCategoryTranslation } from '../utils/categoryManager';
+import { getAllCategories, isDefaultCategory, removeCustomCategory, catName } from '../utils/categoryManager';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
@@ -140,15 +140,6 @@ export default function Dashboard() {
     }
     prevBalanceRef.current = balance?.current_balance;
   }, [balance?.current_balance]);
-
-  // fetch AI translations for custom categories when language changes
-  useEffect(() => {
-    const untranslated = getUntranslatedCategories(getAllCategories(), lang);
-    if (untranslated.length === 0) return;
-    for (const cat of untranslated) {
-      fetchCategoryTranslation(cat, token, lang).then(tr => { if (tr) forceUpdate(n => n + 1); });
-    }
-  }, [lang]);
 
   useEffect(() => {
     if (transactions.length > 0 && monthOffset === 0 && !sessionStorage.getItem('bv_nav')) {

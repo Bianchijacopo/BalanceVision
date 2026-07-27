@@ -1,13 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import {
   getAllCategories, getCustomCategories, addCustomCategory,
-  removeCustomCategory, isDefaultCategory, DEFAULT_CATEGORIES, catName,
-  getUntranslatedCategories, fetchCategoryTranslation
+  removeCustomCategory, isDefaultCategory, DEFAULT_CATEGORIES, catName
 } from '../utils/categoryManager';
 import {
   getCategoryColors, setCategoryColor, getUnusedColor, DEFAULT_COLORS
@@ -15,18 +13,10 @@ import {
 
 export default function Categories() {
   const { t, lang } = useLanguage();
-  const { token } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const [refresh, setRefresh] = useState(0);
   const [newName, setNewName] = useState('');
-
-  useEffect(() => {
-    const untranslated = getUntranslatedCategories(getAllCategories(), lang);
-    for (const cat of untranslated) {
-      fetchCategoryTranslation(cat, token, lang).then(tr => { if (tr) setRefresh(n => n + 1); });
-    }
-  }, [lang]);
 
   const colors = getCategoryColors();
   const allCats = getAllCategories();
