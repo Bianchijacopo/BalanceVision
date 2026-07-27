@@ -125,6 +125,19 @@ app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/auth/refresh', authLimiter);
 app.use('/api/auth/change-password', authLimiter);
 
+// Rate limiters for non-auth routes
+const writeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: 'Troppe richieste. Riprova tra un minuto.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/import', writeLimiter);
+app.use('/api/reports/send', writeLimiter);
+app.use('/api/translate', writeLimiter);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/balance', balanceRoutes);
