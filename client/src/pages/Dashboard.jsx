@@ -97,6 +97,8 @@ export default function Dashboard() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterType, setFilterType] = useState('');
   const [manageCats, setManageCats] = useState(false);
+  const [clock, setClock] = useState(new Date());
+  useEffect(() => { const id = setInterval(() => setClock(new Date()), 1000); return () => clearInterval(id); }, []);
   const chartRef = useRef(null);
   const [, forceUpdate] = useState(0);
   const { addToast } = useToast();
@@ -438,6 +440,10 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       <Topbar title="Dashboard" />
 
       <main className="main-content">
+          <div className="clock-wrap">
+            <div className="clock-date">{clock.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+            <div className="clock-time">{clock.toLocaleTimeString('it-IT')}</div>
+          </div>
           <div className={`balance-card clickable balance-countup ${animClass}`} onClick={() => setModal('balance')}>
             <p className="balance-label">{displayLabel}</p>
             <h2 className="balance-value">

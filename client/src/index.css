@@ -516,6 +516,30 @@ textarea.form-input {
 }
 
 /* ============================
+   CLOCK
+   ============================ */
+.clock-wrap {
+  text-align: center;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.clock-date {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.clock-time {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+
+/* ============================
    BALANCE CARD
    ============================ */
 .balance-card {
