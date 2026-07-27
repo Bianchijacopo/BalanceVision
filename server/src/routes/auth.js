@@ -7,6 +7,8 @@ import { sendEmail, buildOtpEmail } from '../email.js';
 
 const router = Router();
 const PASSWORD_MIN = 8;
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
 
 function validatePassword(password) {
   const errors = [];
@@ -82,19 +84,35 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ error: 'Email e password richieste' });
   }
 
-  const user = get('SELECT id, email, name, surname, email_verified, avatar, password_hash, created_at FROM users WHERE email = ?', [email]);
+  const user = get('SELECT id, email, name, surname, email_verified, avatar, password_hash, created_at, login_attempts, locked_until FROM users WHERE email = ?', [email]);
   if (!user) {
     return res.status(401).json({ error: 'Credenziali non valide' });
   }
 
+  if (user.locked_until) {
+    const lockTime = new Date(user.locked_until);
+    if (lockTime > new Date()) {
+      const remaining = Math.ceil((lockTime - new Date()) / 60000);
+      return res.status(429).json({ error: 'Account bloccato. Riprova tra ' + remaining + ' minuti.' });
+    }
+    run('UPDATE users SET login_attempts = 0, locked_until = NULL WHERE id = ?', [user.id]);
+  }
+
   if (!bcrypt.compareSync(password, user.password_hash)) {
     audit(user.id, 'login_failed', req.ip);
+    const attempts = (user.login_attempts || 0) + 1;
+    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000).toISOString();
+      run('UPDATE users SET login_attempts = ?, locked_until = ? WHERE id = ?', [attempts, lockUntil, user.id]);
+      return res.status(429).json({ error: 'Account bloccato per ' + LOCKOUT_MINUTES + ' minuti per troppi tentativi.' });
+    }
+    run('UPDATE users SET login_attempts = ? WHERE id = ?', [attempts, user.id]);
     return res.status(401).json({ error: 'Credenziali non valide' });
   }
 
   const token = generateToken(user.id);
   const refreshToken = generateRefreshToken(user.id);
-  run('UPDATE users SET last_login_ip = ?, last_login_at = datetime(\'now\') WHERE id = ?', [req.ip, user.id]);
+  run('UPDATE users SET login_attempts = 0, last_login_ip = ?, last_login_at = datetime(\'now\') WHERE id = ?', [req.ip, user.id]);
 
   audit(user.id, 'login', req.ip);
   const { password_hash, ...safe } = user;

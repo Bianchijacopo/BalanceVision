@@ -97,6 +97,8 @@ function migrate() {
     "ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT NULL",
     "ALTER TABLE users ADD COLUMN last_login_ip TEXT DEFAULT NULL",
     "ALTER TABLE users ADD COLUMN last_login_at TEXT DEFAULT NULL",
+    "ALTER TABLE users ADD COLUMN login_attempts INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN locked_until TEXT DEFAULT NULL",
   ];
   for (const sql of migrations) {
     try { db.run(sql); } catch (e) {}
