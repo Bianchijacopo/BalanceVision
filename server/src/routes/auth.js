@@ -63,18 +63,18 @@ router.post('/register', async (req, res) => {
   const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, result.lastInsertRowid]);
 
-  console.log('OTP per', email, ':', otp);
   try {
     const { text, html } = buildOtpEmail(name || 'Utente', otp);
     await sendEmail(email, 'Codice di verifica BalanceVision', text, html);
   } catch (err) {
-    console.error('Errore invio email:', err);
+    console.error('Errore invio email di verifica:', err);
   }
 
   audit(result.lastInsertRowid, 'register', req.ip);
+  const userData = getUser(result.lastInsertRowid);
   res.status(201).json({
     token, refreshToken,
-    user: getUser(result.lastInsertRowid),
+    user: userData,
   });
 });
 
@@ -229,14 +229,14 @@ router.post('/send-otp', authMiddleware, async (req, res) => {
   const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, req.userId]);
 
-  console.log('OTP per', user.email, ':', otp);
+  console.log('OTP inviato a', user.email);
   try {
     const { text, html } = buildOtpEmail(user.name || 'Utente', otp);
     await sendEmail(user.email, 'Codice di verifica BalanceVision', text, html);
     res.json({ message: 'Codice inviato alla tua email' });
   } catch (err) {
-    console.error('Errore invio email:', err);
-    res.json({ message: 'Codice generato (modalita test)', otp });
+    console.error('Errore invio email OTP:', err);
+    res.json({ message: 'Email non configurata. OTP generato in modalità test.', otp });
   }
 });
 
