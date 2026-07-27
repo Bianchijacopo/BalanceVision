@@ -488,3 +488,4 @@ icon.ico
 *.swp
 
 server/data/*.db
+db-backups/*.db
