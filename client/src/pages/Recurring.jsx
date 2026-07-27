@@ -28,7 +28,7 @@ const INITIAL_FORM = {
 };
 
 export default function Recurring() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { token } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
@@ -78,8 +78,8 @@ export default function Recurring() {
     e.preventDefault();
     const method = editId ? 'PUT' : 'POST';
     const url = editId
-      ? 'http://localhost:3001/api/recurring/' + editId
-      : 'http://localhost:3001/api/recurring';
+      ? 'http://localhost:3001/api/recurring/' + editId + '?lang=' + lang
+      : 'http://localhost:3001/api/recurring?lang=' + lang;
     try {
       const res = await fetch(url, {
         method,
@@ -109,7 +109,7 @@ export default function Recurring() {
 
   async function handleDelete(id) {
     try {
-      const res = await fetch('http://localhost:3001/api/recurring/' + id, {
+      const res = await fetch('http://localhost:3001/api/recurring/' + id + '?lang=' + lang, {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + token },
       });
@@ -144,7 +144,7 @@ export default function Recurring() {
   }
 
   function toggleActive(item) {
-    apiPut('/recurring/' + item.id, { active: !item.active }, token)
+    apiPut('/recurring/' + item.id + '?lang=' + lang, { active: !item.active }, token)
       .then(() => { addToast(item.active ? t('recurring.toastDeactivated') : t('recurring.toastActivated'), 'success'); load(); })
       .catch(e => addToast(e.message, 'error'));
   }

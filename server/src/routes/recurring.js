@@ -66,13 +66,20 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const { type, title, amount, category, note, frequency, start_date, end_date } = req.body;
+  const lang = req.query.lang || 'it';
 
   if (!type || !title || !amount || !start_date) {
-    return res.status(400).json({ error: 'Campi obbligatori: type, title, amount, start_date' });
+    return res.status(400).json({
+      error: lang === 'en'
+        ? 'Required fields: type, title, amount, start_date'
+        : 'Campi obbligatori: type, title, amount, start_date'
+    });
   }
 
   if (type !== 'income' && type !== 'expense') {
-    return res.status(400).json({ error: 'type deve essere income o expense' });
+    return res.status(400).json({
+      error: lang === 'en' ? 'type must be income or expense' : 'type deve essere income o expense'
+    });
   }
 
   const cat = (category || '').trim() || 'Altro';
@@ -89,7 +96,8 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   const existing = get(`SELECT * FROM recurring_transactions WHERE id = ? AND user_id = ?`,
     [req.params.id, req.userId]);
-  if (!existing) return res.status(404).json({ error: 'Non trovato' });
+  const lang = req.query.lang || 'it';
+  if (!existing) return res.status(404).json({ error: lang === 'en' ? 'Not found' : 'Non trovato' });
 
   const { type, title, amount, category, note, frequency, start_date, end_date, active } = req.body;
 
@@ -117,7 +125,7 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const existing = get(`SELECT * FROM recurring_transactions WHERE id = ? AND user_id = ?`,
     [req.params.id, req.userId]);
-  if (!existing) return res.status(404).json({ error: 'Non trovato' });
+  if (!existing) return res.status(404).json({ error: req.query.lang === 'en' ? 'Not found' : 'Non trovato' });
 
   run(`DELETE FROM recurring_transactions WHERE id = ?`, [req.params.id]);
   res.json({ success: true });
