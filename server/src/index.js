@@ -25,12 +25,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distDir = path.resolve(__dirname, '..', '..', 'client', 'dist');
 
-const REQUIRED_ENV = ['JWT_SECRET', 'GMAIL_USER', 'GMAIL_APP_PASSWORD'];
+const REQUIRED_ENV = ['JWT_SECRET'];
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
-    console.error('ERRORE: Variabile d\'ambiente mancante: ' + key);
+    console.error('ERRORE FATALE: Variabile d\'ambiente mancante: ' + key);
     process.exit(1);
   }
+}
+
+if (!process.env.GROQ_API_KEY) {
+  console.log('AVVISO: GROQ_API_KEY non impostata — funzionalità AI disabilitate');
+}
+if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+  console.log('AVVISO: GMAIL_USER/GMAIL_APP_PASSWORD non impostate — email disabilitate');
 }
 
 const app = express();
