@@ -19,6 +19,20 @@ function getHash(filePath) {
   }
 }
 
+function initBackups() {
+  if (!fs.existsSync(DB_PATH)) return;
+  const current = getHash(DB_PATH);
+  if (!current) return;
+
+  for (let i = 1; i <= MAX_COPIES; i++) {
+    const dest = path.join(BACKUP_DIR, `balance-backup-${i}.db`);
+    try { fs.copyFileSync(DB_PATH, dest); } catch {}
+  }
+  lastHash = current.hash;
+  lastSize = current.size;
+  console.log(`[backup] Inizializzate ${MAX_COPIES} copie`);
+}
+
 function rotateBackups() {
   if (!fs.existsSync(DB_PATH)) return;
 
@@ -29,7 +43,7 @@ function rotateBackups() {
   lastHash = current.hash;
   lastSize = current.size;
 
-  // Shift copies: 3→2, 2→1
+  // Shift copies: 2→3, 1→2
   for (let i = MAX_COPIES - 1; i >= 1; i--) {
     const src = path.join(BACKUP_DIR, `balance-backup-${i}.db`);
     const dst = path.join(BACKUP_DIR, `balance-backup-${i + 1}.db`);
@@ -91,7 +105,7 @@ console.log(`[backup] Monitoring ${DB_PATH}`);
 console.log(`[backup] Backups in ${BACKUP_DIR}/`);
 console.log(`[backup] Polling every ${POLL_MS / 1000}s`);
 
-// Initial backup
-rotateBackups();
+// Initial: crea tutte 3 le copie
+initBackups();
 
 setInterval(rotateBackups, POLL_MS);
