@@ -61,7 +61,23 @@ app.use(helmet({
       upgradeInsecureRequests: [],
     },
   },
+  strictTransportSecurity: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xFrameOptions: { action: 'deny' },
+  xContentTypeOptions: true,
+  xDnsPrefetchControl: { allow: false },
+  xDownloadOptions: true,
+  xPermittedCrossDomainPolicies: { permittedPolicies: 'none' },
 }));
+
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), notifications=(), payment=(), usb=()');
+  next();
+});
 const corsOrigin = process.env.CORS_ORIGIN || '*';
 app.use(cors({
   origin: corsOrigin === '*' ? true : corsOrigin.split(',').map(s => s.trim()),
