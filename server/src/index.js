@@ -9,6 +9,7 @@ import http from 'http';
 import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
 import { getDb, run } from './db/database.js';
+import { sanitizeBody } from './utils/sanitize.js';
 import authRoutes from './routes/auth.js';
 import transactionRoutes from './routes/transactions.js';
 import balanceRoutes from './routes/balance.js';
@@ -42,6 +43,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json({ limit: '5mb' }));
+app.use(sanitizeBody);
 
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
