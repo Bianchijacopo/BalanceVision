@@ -509,7 +509,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             </h2>
           </div>
 
-          {ticker && currency !== 'EUR' && (
+          {ticker && (
             <div className="insight-card" style={{ marginTop: 16, textAlign: 'center' }}>
               <div className="insight-label" style={{ fontSize: 11 }}>USD/{currency}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
