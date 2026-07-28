@@ -32,10 +32,18 @@ export async function getHistoricalRate(from, to, date) {
 const tickerPrev = {};
 
 export async function getTicker(from, to) {
-  const res = await fetch(`${API}/latest?from=${from}&to=${to}`);
-  if (!res.ok) throw new Error('Failed to fetch ticker rate');
-  const data = await res.json();
-  const currentRate = data.rates[to];
+  let currentRate;
+  try {
+    const res = await fetch(`${API}/latest?from=${from}&to=${to}`);
+    if (res.ok) {
+      const data = await res.json();
+      currentRate = data.rates[to];
+    } else {
+      currentRate = await getRate(from, to);
+    }
+  } catch {
+    currentRate = await getRate(from, to);
+  }
 
   const key = `${from}_${to}`;
   const prevRate = tickerPrev[key] != null ? tickerPrev[key] : null;
