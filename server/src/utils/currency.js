@@ -1,7 +1,7 @@
 const API = 'https://api.frankfurter.app';
 let cache = null;
 let cacheTime = 0;
-const CACHE_TTL = 3600000;
+const CACHE_TTL = 300000;
 
 export async function getRates() {
   if (cache && Date.now() - cacheTime < CACHE_TTL) return cache;
@@ -32,30 +32,15 @@ export async function getHistoricalRate(from, to, date) {
 const tickerPrev = {};
 
 export async function getTicker(from, to) {
-  let currentRate;
-  try {
-    const res = await fetch(`${API}/latest?from=${from}&to=${to}`);
-    if (res.ok) {
-      const data = await res.json();
-      currentRate = data.rates[to];
-    } else {
-      currentRate = await getRate(from, to);
-    }
-  } catch {
-    currentRate = await getRate(from, to);
-  }
+  const currentRate = await getRate(from, to);
 
   const key = `${from}_${to}`;
   let prevRate = tickerPrev[key] != null ? tickerPrev[key] : null;
 
   if (prevRate == null) {
-    const today = new Date();
-    for (let i = 1; i <= 7; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      prevRate = await getHistoricalRate(from, to, d.toISOString().slice(0, 10));
-      if (prevRate != null) break;
-    }
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    prevRate = await getHistoricalRate(from, to, d.toISOString().slice(0, 10));
   }
 
   tickerPrev[key] = currentRate;
