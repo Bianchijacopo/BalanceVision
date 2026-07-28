@@ -147,6 +147,30 @@ Il backend AI usa **Groq** (cloud, gratuito, senza bisogno di carta di credito):
 - **Step 3**: imposta la nuova password
 - L'OTP scade dopo 10 minuti
 
+### Multi-valuta (EUR/USD/GBP/CHF/...)
+- Supporta **30 valute** tra cui EUR, USD, GBP, CHF, JPY, CAD, AUD, CNY, INR, BRL, SEK, NOK, DKK, PLN, CZK, HUF, TRY, ILS, ZAR, MXN, SGD, HKD, KRW, NZD, THB, MYR, PHP, IDR, RON, BGN
+- Tutti gli importi sono memorizzati in EUR, convertiti automaticamente al cambio al momento della visualizzazione
+- Cambio valuta: vai su **Profilo** → seleziona la valuta preferita dal menu a tendina
+- Tassi di cambio aggiornati da **frankfurter.app** (gratuito, senza API key)
+- Cache tassi: 5 minuti per la dashboard, 1 ora per le conversioni nelle pagine
+
+### Ticker USD sulla Dashboard
+- Mostra il rapporto **USD/valuta-selezionata** (es. USD/EUR = 0.8791)
+- **Percentuale di variazione** aggiornata ogni 5 minuti quando la cache dei tassi si aggiorna
+- ▲ verde se il rapporto aumenta, ▼ rosso se diminuisce, 0.00% grigio se invariato
+- Animazione **RollingNumber** sul valore del tasso
+
+### Protezione Scoperto (Overdraft Protection)
+- Impedisce di creare una **spesa** (transazione manuale) se il saldo diventerebbe negativo
+- Mostra errore `"Saldo insufficiente"` se l'importo supera il saldo disponibile
+- Le **transazioni ricorrenti** (generate automaticamente) possono andare in negativo — non bloccate
+
+### Backup Automatico del Database
+- **db-backups/** contiene le copie di backup del database
+- **Rotation automatica**: mantiene al massimo 3 backup, elimina i più vecchi
+- Il watcher monitora il database e crea un backup a ogni modifica
+- I backup sono esclusi dal repository (`.gitignore`)
+
 ### Esportazione PDF
 - Dalla Dashboard clicca il pulsante **Scarica** (↓)
 - Il PDF include:
@@ -436,7 +460,7 @@ BalanceVision/
 │   │   │   ├── Register.jsx         # Registrazione
 │   │   │   ├── ForgotPassword.jsx   # Recupero password
 │   │   │   └── ...                  # Altre pagine (VerifyEmail, EditProfile, ChangePassword)
-│   │   ├── utils/                   # Utility (categorie, colori, ecc.)
+│   │   ├── utils/                   # Utility (categorie, colori, currency, ecc.)
 │   │   ├── index.css                # Stili globali
 │   │   ├── App.jsx                  # Router principale
 │   │   └── main.jsx                 # Entry point
@@ -465,6 +489,7 @@ BalanceVision/
 │   │   └── index.js                 # Entry point server
 │   └── .env                         # CHIAVI SEGRETE (NON su GitHub!)
 │
+├── backup-db.js                     # Backup automatico database con rotation
 ├── electron.js                      # Avvio Electron (fork del server + finestra)
 ├── launch.bat                       # Script per il collegamento desktop
 ├── icon.svg                         # Icona dell'app
@@ -486,6 +511,8 @@ BalanceVision/
 - **Frontend (dev)**: Vite su porta 5173 (con proxy verso :3001)
 - **Electron**: usa `fork()` per avviare il server Express, poi carica `http://localhost:3001`
 - **AI**: modello `llama-3.3-70b-versatile` su Groq cloud
+- **Multi-valuta**: tassi da frankfurter.app, cache 5 min (ticker) / 1h (conversioni), 30 valute supportate
+- **Backup DB**: `backup-db.js` — rotation automatica (3 backup), watcher su modifiche
 - **PDF**: generato con jsPDF + autoTable + html2canvas
 - **Grafici**: Recharts (basato su React)
 - **Tema**: CSS custom properties, alternanza scuro/chiaro via class su `<body>`

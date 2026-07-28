@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
-import PasswordInput from '../components/PasswordInput';
 
 export default function Login() {
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -45,13 +45,19 @@ export default function Login() {
               onChange={e => setEmail(e.target.value)}
             />
           </div>
-          <PasswordInput
-            id="password"
-            label={t('login.password')}
-            placeholder={t('login.passwordPlaceholder')}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
+          <div className="form-group">
+            <label className="form-label" htmlFor="password">{t('login.password')}</label>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+              <input
+                id="password" type={showPw ? 'text' : 'password'} className="form-input"
+                placeholder={t('login.passwordPlaceholder')} value={password}
+                onChange={e => setPassword(e.target.value)} style={{ flex: 1 }}
+              />
+              <button type="button" onClick={() => setShowPw(!showPw)}
+                style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, whiteSpace: 'nowrap' }}
+              >{showPw ? 'Nascondi' : 'Mostra'}</button>
+            </div>
+          </div>
           <button type="submit" className="btn btn-primary btn-full">
             {t('login.submit')}
           </button>
