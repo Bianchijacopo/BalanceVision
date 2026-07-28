@@ -504,7 +504,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           <div className={`balance-card clickable balance-countup ${animClass}`} onClick={() => setModal('balance')}>
             <p className="balance-label">{displayLabel}</p>
             <h2 className="balance-value">
-              {displayBalance != null ? <span className="dollar-brand">{fmt(displayBalance)}</span> : '...'}
+              {displayBalance != null ? <span className="dollar-brand"><RollingNumber value={fmt(displayBalance)} height="1.3em" /></span> : '...'}
             </h2>
           </div>
 
