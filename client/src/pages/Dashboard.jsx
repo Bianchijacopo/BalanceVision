@@ -83,7 +83,7 @@ export default function Dashboard() {
   const { token } = useAuth();
   const { theme } = useTheme();
   const { t, lang } = useLanguage();
-  const { fmt } = useCurrency();
+  const { fmt, currency } = useCurrency();
   const locale = lang === 'en' ? 'en-US' : 'it-IT';
   const timeOpts = lang === 'en' ? { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true } : { hour: '2-digit', minute: '2-digit', second: '2-digit' };
   const navigate = useNavigate();
@@ -111,6 +111,13 @@ export default function Dashboard() {
   const { addToast } = useToast();
   const prevBalanceRef = useRef(null);
   const [animClass, setAnimClass] = useState('');
+  const [ticker, setTicker] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/settings/ticker', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json()).then(setTicker).catch(() => {});
+  }, [token]);
 
   async function deleteTransaction(id) {
     const res = await fetch('http://localhost:3001/api/transactions/' + id, {
@@ -500,6 +507,23 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               {displayBalance != null ? <span className="dollar-brand">{fmt(displayBalance)}</span> : '...'}
             </h2>
           </div>
+
+          {ticker && currency !== 'EUR' && (
+            <div className="insight-card" style={{ marginTop: 16, textAlign: 'center' }}>
+              <div className="insight-label" style={{ fontSize: 11 }}>USD/{currency}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <span className="insight-value" style={{ fontSize: 18 }}>
+                  {ticker.rate.toFixed(4)}
+                </span>
+                <span style={{
+                  fontSize: 14, fontWeight: 700,
+                  color: ticker.change >= 0 ? 'var(--success, #00b45a)' : 'var(--danger, #dc0032)',
+                }}>
+                  {ticker.change >= 0 ? '▲' : '▼'} {ticker.changePct.toFixed(2)}%
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="insights-grid">
             {monthlyTransactions.length > 0 && (

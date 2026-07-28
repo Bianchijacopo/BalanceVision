@@ -18,6 +18,35 @@ export async function getRates() {
   }
 }
 
+export async function getHistoricalRate(from, to, date) {
+  try {
+    const res = await fetch(`${API}/${date}?from=${from}&to=${to}`);
+    if (!res.ok) throw new Error('Failed to fetch historical rate');
+    const data = await res.json();
+    return data.rates[to];
+  } catch {
+    return null;
+  }
+}
+
+export async function getTicker(from, to) {
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yestStr = yesterday.toISOString().slice(0, 10);
+
+  const [currentRate, prevRate] = await Promise.all([
+    getRate(from, to),
+    getHistoricalRate(from, to, yestStr),
+  ]);
+
+  const change = prevRate ? currentRate - prevRate : 0;
+  const changePct = prevRate && prevRate !== 0 ? (change / prevRate) * 100 : 0;
+
+  return { rate: currentRate, change, changePct, prevRate };
+}
+
 export async function convert(amount, from, to) {
   if (from === to) return amount;
   const rates = await getRates();

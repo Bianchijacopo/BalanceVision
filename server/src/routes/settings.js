@@ -1,15 +1,21 @@
 import { Router } from 'express';
 import { get, run, localNow } from '../db/database.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { getRate, SUPPORTED } from '../utils/currency.js';
+import { getRate, getTicker, SUPPORTED } from '../utils/currency.js';
 
 const router = Router();
 router.use(authMiddleware);
 
-router.get('/currency', (req, res) => {
+router.get('/currency', async (req, res) => {
   const settings = get('SELECT currency FROM user_settings WHERE user_id = ?', [req.userId]);
   const currency = settings?.currency || 'EUR';
-  res.json({ currency, supported: SUPPORTED });
+  let usdRate = 1;
+  try {
+    const eurToUsd = await getRate('EUR', 'USD');
+    const eurToCur = await getRate('EUR', currency);
+    usdRate = currency === 'USD' ? 1 : eurToCur / eurToUsd;
+  } catch {}
+  res.json({ currency, usdRate, supported: SUPPORTED });
 });
 
 router.put('/currency', async (req, res) => {
@@ -23,19 +29,36 @@ router.put('/currency', async (req, res) => {
   } else {
     run('INSERT INTO user_settings (user_id, currency) VALUES (?, ?)', [req.userId, currency]);
   }
-  let rate = 1;
-  try { rate = await getRate('EUR', currency); } catch {}
-  res.json({ currency, rate, supported: SUPPORTED });
+  let rate = 1, usdRate = 1;
+  try {
+    rate = await getRate('EUR', currency);
+    const eurToUsd = await getRate('EUR', 'USD');
+    usdRate = currency === 'USD' ? 1 : rate / eurToUsd;
+  } catch {}
+  res.json({ currency, rate, usdRate, supported: SUPPORTED });
 });
 
 router.get('/rate', async (req, res) => {
-  const { to } = req.query;
+  const { from, to } = req.query;
+  const base = from || 'EUR';
   if (!to) return res.status(400).json({ error: 'Parametro to richiesto' });
   try {
-    const rate = await getRate('EUR', to);
-    res.json({ from: 'EUR', to, rate });
+    const rate = await getRate(base, to);
+    res.json({ from: base, to, rate });
   } catch {
     res.status(502).json({ error: 'Errore nel recupero tasso di cambio' });
+  }
+});
+
+router.get('/ticker', async (req, res) => {
+  const settings = get('SELECT currency FROM user_settings WHERE user_id = ?', [req.userId]);
+  const currency = settings?.currency || 'EUR';
+  if (currency === 'USD') return res.json({ rate: 1, change: 0, changePct: 0 });
+  try {
+    const ticker = await getTicker('USD', currency);
+    res.json(ticker);
+  } catch {
+    res.status(502).json({ error: 'Errore nel recupero ticker' });
   }
 });
 

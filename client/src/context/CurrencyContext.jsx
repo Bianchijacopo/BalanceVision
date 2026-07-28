@@ -7,6 +7,7 @@ export function CurrencyProvider({ children }) {
   const { token } = useAuth();
   const [currency, setCurrency] = useState('EUR');
   const [rate, setRate] = useState(1);
+  const [usdRate, setUsdRate] = useState(1);
   const [supported, setSupported] = useState(['EUR']);
   const [loading, setLoading] = useState(true);
 
@@ -18,6 +19,7 @@ export function CurrencyProvider({ children }) {
       .then(r => r.json())
       .then(d => {
         setCurrency(d.currency || 'EUR');
+        setUsdRate(d.usdRate || 1);
         setSupported(d.supported || ['EUR']);
         setLoading(false);
       })
@@ -44,6 +46,7 @@ export function CurrencyProvider({ children }) {
     if (res.ok) {
       setCurrency(data.currency);
       setRate(data.rate || 1);
+      setUsdRate(data.usdRate || 1);
     }
     return data;
   }, [token]);
@@ -59,7 +62,7 @@ export function CurrencyProvider({ children }) {
   }, [currency, rate]);
 
   return (
-    <CurrencyContext.Provider value={{ currency, rate, supported, loading, changeCurrency, fmt }}>
+    <CurrencyContext.Provider value={{ currency, rate, usdRate, supported, loading, changeCurrency, fmt }}>
       {children}
     </CurrencyContext.Provider>
   );
