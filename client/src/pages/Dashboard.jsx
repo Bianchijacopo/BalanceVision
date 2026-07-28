@@ -117,7 +117,11 @@ export default function Dashboard() {
   const [ticker, setTicker] = useState(null);
 
   useEffect(() => {
-    apiGet('/settings/ticker', token).then(setTicker).catch(() => {});
+    if (!token) return;
+    const fetchTicker = () => apiGet('/settings/ticker', token).then(setTicker).catch(() => {});
+    fetchTicker();
+    const id = setInterval(fetchTicker, 30000);
+    return () => clearInterval(id);
   }, [token, currency]);
 
   async function deleteTransaction(id) {

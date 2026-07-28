@@ -3,6 +3,8 @@ let cache = null;
 let cacheTime = 0;
 const CACHE_TTL = 3600000;
 
+const prevRates = {};
+
 export async function getRates() {
   if (cache && Date.now() - cacheTime < CACHE_TTL) return cache;
   try {
@@ -30,19 +32,14 @@ export async function getHistoricalRate(from, to, date) {
 }
 
 export async function getTicker(from, to) {
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yestStr = yesterday.toISOString().slice(0, 10);
+  const key = `${from}_${to}`;
+  const currentRate = await getRate(from, to);
 
-  const [currentRate, prevRate] = await Promise.all([
-    getRate(from, to),
-    getHistoricalRate(from, to, yestStr),
-  ]);
+  const prevRate = prevRates[key] != null ? prevRates[key] : null;
+  prevRates[key] = currentRate;
 
-  const change = prevRate ? currentRate - prevRate : 0;
-  const changePct = prevRate && prevRate !== 0 ? (change / prevRate) * 100 : 0;
+  const change = prevRate != null ? currentRate - prevRate : 0;
+  const changePct = prevRate != null && prevRate !== 0 ? (change / prevRate) * 100 : 0;
 
   return { rate: currentRate, change, changePct, prevRate };
 }
