@@ -55,7 +55,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "http://localhost:3001", "https://api.groq.com"],
+      connectSrc: ["'self'", "http://localhost:3001", "https://api.groq.com", "https://api.frankfurter.app"],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'none'"],
