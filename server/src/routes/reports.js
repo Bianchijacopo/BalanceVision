@@ -20,6 +20,14 @@ function buildReportEmail(userId, lang) {
   const user = get('SELECT email, name FROM users WHERE id = ?', [userId]);
   if (!user) return null;
 
+  const settings = get('SELECT currency FROM user_settings WHERE user_id = ?', [userId]);
+  const currency = settings?.currency || 'EUR';
+
+  const fmt = (v) => new Intl.NumberFormat('en-US', {
+    style: 'currency', currency,
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  }).format(v);
+
   const now = new Date();
   const curMonth = now.toISOString().slice(0, 7);
 
@@ -52,7 +60,7 @@ function buildReportEmail(userId, lang) {
     : `BalanceVision - Report finanziario ${monthDisplay}`;
 
   const catRows = (topCats || []).map(c =>
-    `<tr><td style="padding:6px 12px;border-bottom:1px solid #eee;color:#4D4D4D">${c.category}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:600">€${c.total.toFixed(2)}</td></tr>`
+    <tr><td style="padding:6px 12px;border-bottom:1px solid #eee;color:#4D4D4D">${c.category}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${fmt(c.total)}</td></tr>
   ).join('');
 
   const html = `<!DOCTYPE html>
@@ -85,19 +93,19 @@ function buildReportEmail(userId, lang) {
     <div class="summary">
       <div class="summary-row">
         <span class="summary-label">${isEn ? 'Balance' : 'Saldo'}</span>
-        <span class="summary-value">€${balance.toFixed(2)}</span>
+        <span class="summary-value">${fmt(balance)}</span>
       </div>
       <div class="summary-row">
         <span class="summary-label">${isEn ? 'Income' : 'Entrate'}</span>
-        <span class="summary-value positive">+€${totals.income.toFixed(2)}</span>
+        <span class="summary-value positive">+${fmt(totals.income)}</span>
       </div>
       <div class="summary-row">
         <span class="summary-label">${isEn ? 'Expenses' : 'Spese'}</span>
-        <span class="summary-value negative">-€${totals.expenses.toFixed(2)}</span>
+        <span class="summary-value negative">-${fmt(totals.expenses)}</span>
       </div>
       <div class="summary-row">
         <span class="summary-label">${isEn ? 'Savings' : 'Risparmio'}</span>
-        <span class="summary-value ${savings >= 0 ? 'positive' : 'negative'}">${savings >= 0 ? '+' : ''}€${savings.toFixed(2)}</span>
+        <span class="summary-value ${savings >= 0 ? 'positive' : 'negative'}">${savings >= 0 ? '+' : ''}${fmt(savings)}</span>
       </div>
     </div>
     ${(topCats || []).length > 0 ? `
@@ -115,8 +123,8 @@ function buildReportEmail(userId, lang) {
 </html>`;
 
   const text = isEn
-    ? `BalanceVision - ${monthDisplay} Report\n\nBalance: €${balance.toFixed(2)}\nIncome: €${totals.income.toFixed(2)}\nExpenses: €${totals.expenses.toFixed(2)}\nSavings: €${savings.toFixed(2)}`
-    : `BalanceVision - Report ${monthDisplay}\n\nSaldo: €${balance.toFixed(2)}\nEntrate: €${totals.income.toFixed(2)}\nSpese: €${totals.expenses.toFixed(2)}\nRisparmio: €${savings.toFixed(2)}`;
+    ? `BalanceVision - ${monthDisplay} Report\n\nBalance: ${fmt(balance)}\nIncome: ${fmt(totals.income)}\nExpenses: ${fmt(totals.expenses)}\nSavings: ${fmt(savings)}`
+    : `BalanceVision - Report ${monthDisplay}\n\nSaldo: ${fmt(balance)}\nEntrate: ${fmt(totals.income)}\nSpese: ${fmt(totals.expenses)}\nRisparmio: ${fmt(savings)}`;
 
   return { to: user.email, subject, text, html };
 }

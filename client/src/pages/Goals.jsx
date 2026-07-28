@@ -4,23 +4,12 @@ import { apiGet } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { useLanguage } from '../context/LanguageContext';
-
-function formatCurrency(v) {
-  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function Goals() {
   const { token } = useAuth();
-  const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [name, setName] = useState('');
-  const [target, setTarget] = useState('');
-  const [current, setCurrent] = useState('');
-  const [deadline, setDeadline] = useState('');
   const { t } = useLanguage();
+  const { fmt } = useCurrency();
   const [category, setCategory] = useState('');
 
   async function load() {
@@ -125,7 +114,7 @@ export default function Goals() {
           <div className="insights-grid" style={{ marginBottom: 20 }}>
             <div className="insight-card">
               <div className="insight-label">{t('goals.currentBalance')}</div>
-              <div className="insight-value">€{formatCurrency(data.currentBalance)}</div>
+              <div className="insight-value">{fmt(data.currentBalance)}</div>
             </div>
             <div className="insight-card">
               <div className="insight-label">{t('goals.goals')}</div>
@@ -134,7 +123,7 @@ export default function Goals() {
             <div className="insight-card">
               <div className="insight-label">{t('goals.totalSaved')}</div>
               <div className="insight-value">
-                €{formatCurrency(data.goals.reduce((s, g) => s + g.current_amount, 0))}
+                {fmt(data.goals.reduce((s, g) => s + g.current_amount, 0))}
               </div>
             </div>
           </div>
@@ -178,13 +167,13 @@ export default function Goals() {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontWeight: 700, fontSize: 16, fontVariantNumeric: 'tabular-nums' }}>
-                        €{formatCurrency(g.current_amount)}
+                        {fmt(g.current_amount)}
                         <span style={{ color: 'var(--text-tertiary)', fontWeight: 500, fontSize: 13 }}>
-                          {' / '}€{formatCurrency(g.target_amount)}
+                          {' / '}{fmt(g.target_amount)}
                         </span>
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
-                        {achieved ? t('goals.achieved') : t('goals.remaining', { amount: '€' + formatCurrency(g.remaining) })}
+                        {achieved ? t('goals.achieved') : t('goals.remaining', { amount: fmt(g.remaining) })}
                       </div>
                     </div>
                     <button className="btn-icon" onClick={() => handleEdit(g)} title={t('goals.editGoal')}>&#9998;</button>

@@ -3,11 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import { apiGet } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 import Topbar from '../components/Topbar';
 import { BarChart, Bar, LineChart, Line, ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { catName } from '../utils/categoryManager';
 
 function ChartTooltip({ active, payload, label }) {
+  const { fmt } = useCurrency();
   if (!active || !payload) return null;
   return (
     <div style={{
@@ -22,21 +24,18 @@ function ChartTooltip({ active, payload, label }) {
       <div style={{ color: 'var(--text-secondary)', marginBottom: 2, fontSize: 11 }}>{label}</div>
       {payload.filter(p => p.value != null).map((p, i) => (
         <div key={i} style={{ fontWeight: 600, color: p.color }}>
-          {p.name}: €{typeof p.value === 'number' ? p.value.toFixed(2) : p.value}
+          {p.name}: {fmt(typeof p.value === 'number' ? p.value : parseFloat(p.value))}
         </div>
       ))}
     </div>
   );
 }
 
-function formatCurrency(v) {
-  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 export default function AnalisiAvanzata() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
+  const { fmt } = useCurrency();
   const [transactions, setTransactions] = useState([]);
   const [balance, setBalance] = useState(null);
   const [budgetData, setBudgetData] = useState(null);
@@ -93,11 +92,11 @@ export default function AnalisiAvanzata() {
         <div className="summary-grid" style={{ marginBottom: 24 }}>
           <div className="summary-item">
             <span className="summary-label">{t('analytics.totalIncome')}</span>
-            <span className="summary-value text-success">€{formatCurrency(totalIncome)}</span>
+            <span className="summary-value text-success">{fmt(totalIncome)}</span>
           </div>
           <div className="summary-item">
             <span className="summary-label">{t('analytics.totalExpenses')}</span>
-            <span className="summary-value text-danger">€{formatCurrency(totalExpenses)}</span>
+            <span className="summary-value text-danger">{fmt(totalExpenses)}</span>
           </div>
           <div className="summary-item">
             <span className="summary-label">{t('analytics.savingsRate')}</span>
@@ -125,7 +124,7 @@ export default function AnalisiAvanzata() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="month" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => fmt(v)} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend />
                   <Bar dataKey="income" name={t('analytics.income')} fill="var(--success)" radius={[4, 4, 0, 0]} />
@@ -144,7 +143,7 @@ export default function AnalisiAvanzata() {
                 <LineChart data={filteredDaily}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => fmt(v)} />
                   <Tooltip content={<ChartTooltip />} />
                   <Area type="monotone" dataKey="balance" fill="var(--chart-line)" fillOpacity={0.08} stroke="none" />
                   <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} />
@@ -173,10 +172,10 @@ export default function AnalisiAvanzata() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                         <span style={{ fontWeight: 600, fontSize: 13 }}>{catName(cat.category, t, lang)}</span>
                         <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
-                          <span style={{ fontWeight: 700 }}>€{formatCurrency(cat.total)}</span>
+                          <span style={{ fontWeight: 700 }}>{fmt(cat.total)}</span>
                           {hasBudget && (
                             <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>
-                              {' / '}€{formatCurrency(budget.amount)}
+                              {' / '}{fmt(budget.amount)}
                               <span style={{
                                 marginLeft: 6, fontWeight: 700, fontSize: 12,
                                 color: aIsOver ? 'var(--danger)' : aRem >= 40 ? 'var(--success)' : aRem >= 20 ? 'var(--warning)' : 'var(--danger)'
@@ -232,7 +231,7 @@ export default function AnalisiAvanzata() {
                 <>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
                     <span className="modal-stat-label">{t('analytics.currentBalance')}</span>
-                    <span className="modal-stat-value">€{formatCurrency(balance.current_balance)}</span>
+                    <span className="modal-stat-value">{fmt(balance.current_balance)}</span>
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
                     <span className="modal-stat-label">{t('analytics.totalTransactions')}</span>
@@ -240,12 +239,12 @@ export default function AnalisiAvanzata() {
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
                     <span className="modal-stat-label">{t('analytics.avgTransaction')}</span>
-                    <span className="modal-stat-value">€{formatCurrency(avgTransaction)}</span>
+                    <span className="modal-stat-value">{fmt(avgTransaction)}</span>
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
                     <span className="modal-stat-label">{t('analytics.topCategory')}</span>
                     <span className="modal-stat-value" style={{ fontSize: 16 }}>
-                      {topCategory ? `${catName(topCategory.category, t, lang)} (€${formatCurrency(topCategory.total)})` : '-'}
+                      {topCategory ? `${catName(topCategory.category, t, lang)} (${fmt(topCategory.total)})` : '-'}
                     </span>
                   </div>
                   <div className="modal-stat" style={{ marginBottom: 16 }}>
@@ -255,7 +254,7 @@ export default function AnalisiAvanzata() {
                   <div className="modal-stat">
                     <span className="modal-stat-label">{t('analytics.avgMonthlyExpenses')}</span>
                     <span className="modal-stat-value">
-                      €{formatCurrency(monthlyData.length > 0 ? totalExpenses / monthlyData.length : 0)}
+                      {fmt(monthlyData.length > 0 ? totalExpenses / monthlyData.length : 0)}
                     </span>
                   </div>
                 </>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { apiGet } from '../context/ApiContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useToast } from '../context/ToastContext';
 import { ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, LabelList, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,7 @@ function CustomCursor({ points, height }) {
 }
 
 function ChartTooltip({ active, payload, label }) {
+  const { fmt } = useCurrency();
   if (!active || !payload) return null;
   return (
     <div style={{
@@ -39,7 +40,7 @@ function ChartTooltip({ active, payload, label }) {
       <div style={{ color: 'var(--text-secondary)', marginBottom: 2, fontSize: 11 }}>{label}</div>
       {payload.filter(p => p.value != null).map((p, i) => (
         <div key={i} style={{ fontWeight: 600, color: p.color }}>
-          {p.name}: €{typeof p.value === 'number' ? p.value.toFixed(2) : p.value}
+          {p.name}: {fmt(typeof p.value === 'number' ? p.value : parseFloat(p.value))}
         </div>
       ))}
     </div>
@@ -47,6 +48,7 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 function PieTooltip({ active, payload }) {
+  const { fmt } = useCurrency();
   if (!active || !payload || !payload[0]) return null;
   const total = payload[0]?.payload?.total || 1;
   const pct = ((payload[0].value / total) * 100).toFixed(1);
@@ -61,7 +63,7 @@ function PieTooltip({ active, payload }) {
       boxShadow: 'var(--shadow-md)'
     }}>
       <div style={{ fontWeight: 600 }}>{payload[0].name}</div>
-      <div>€{payload[0].value?.toFixed(2)} ({pct}%)</div>
+      <div>{fmt(payload[0].value)} ({pct}%)</div>
     </div>
   );
 }
@@ -77,15 +79,11 @@ function PiePercentLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }
     </text>
   );
 }
-
-function formatCurrency(value) {
-  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 export default function Dashboard() {
   const { token } = useAuth();
   const { theme } = useTheme();
   const { t, lang } = useLanguage();
+  const { fmt } = useCurrency();
   const locale = lang === 'en' ? 'en-US' : 'it-IT';
   const timeOpts = lang === 'en' ? { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true } : { hour: '2-digit', minute: '2-digit', second: '2-digit' };
   const navigate = useNavigate();
@@ -341,10 +339,10 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     doc.setTextColor(textMed[0], textMed[1], textMed[2]);
 
     const summaryData = [
-      { label: t('dashboard.pdfInitialBalance'), value: '€' + formatCurrency(monthStartBalance), color: textDark },
-      { label: t('dashboard.pdfMonthlyIncome'), value: '+€' + formatCurrency(monthlyIncome), color: brandColor },
-      { label: t('dashboard.pdfMonthlyExpenses'), value: '-€' + formatCurrency(monthlyExpenses), color: dangerColor },
-      { label: t('dashboard.pdfFinalBalance'), value: '€' + formatCurrency(balance?.current_balance || 0), color: textDark },
+      { label: t('dashboard.pdfInitialBalance'), value: fmt(monthStartBalance), color: textDark },
+      { label: t('dashboard.pdfMonthlyIncome'), value: '+' + fmt(monthlyIncome), color: brandColor },
+      { label: t('dashboard.pdfMonthlyExpenses'), value: '-' + fmt(monthlyExpenses), color: dangerColor },
+      { label: t('dashboard.pdfFinalBalance'), value: fmt(balance?.current_balance || 0), color: textDark },
     ];
 
     doc.setFontSize(9);
@@ -382,7 +380,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
         doc.text(t('dashboard.pdfPeak'), margin + 4, y + 3);
         doc.setFontSize(10);
         doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
-        doc.text('€' + formatCurrency(peak.balance), pageW - margin - 4, y + 3, { align: 'right' });
+        doc.text(fmt(peak.balance), pageW - margin - 4, y + 3, { align: 'right' });
         doc.setFontSize(8);
         doc.setTextColor(textMed[0], textMed[1], textMed[2]);
         doc.text(peak.date, pageW - margin - 4, y + 8, { align: 'right' });
@@ -395,7 +393,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
         doc.text(t('dashboard.pdfLow'), margin + 4, y + 3);
         doc.setFontSize(10);
         doc.setTextColor(dangerColor[0], dangerColor[1], dangerColor[2]);
-        doc.text('€' + formatCurrency(low.balance), pageW - margin - 4, y + 3, { align: 'right' });
+        doc.text(fmt(low.balance), pageW - margin - 4, y + 3, { align: 'right' });
         doc.setFontSize(8);
         doc.setTextColor(textMed[0], textMed[1], textMed[2]);
         doc.text(low.date, pageW - margin - 4, y + 8, { align: 'right' });
@@ -418,7 +416,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       autoTable(doc, {
         startY: y,
         head: [[t('dashboard.pdfTableDate'), t('dashboard.pdfTableDesc'), t('dashboard.pdfTableCategory'), t('dashboard.pdfTableAmount')]],
-        body: expenses.map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]),
+        body: expenses.map(t => [t.date, t.title, t.category, fmt(t.amount)]),
         theme: 'grid',
         headStyles: { fillColor: dangerColor, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
         bodyStyles: { fontSize: 8, textColor: textDark },
@@ -440,7 +438,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       autoTable(doc, {
         startY: y,
         head: [[t('dashboard.pdfTableDate'), t('dashboard.pdfTableDesc'), t('dashboard.pdfTableCategory'), t('dashboard.pdfTableAmount')]],
-        body: incomes.map(t => [t.date, t.title, t.category, '€' + t.amount.toFixed(2)]),
+        body: incomes.map(t => [t.date, t.title, t.category, fmt(t.amount)]),
         theme: 'grid',
         headStyles: { fillColor: brandColor, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
         bodyStyles: { fontSize: 8, textColor: textDark },
@@ -499,7 +497,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           <div className={`balance-card clickable balance-countup ${animClass}`} onClick={() => setModal('balance')}>
             <p className="balance-label">{displayLabel}</p>
             <h2 className="balance-value">
-              {displayBalance != null ? <><span className="dollar-brand">€</span>{formatCurrency(displayBalance)}</> : '...'}
+              {displayBalance != null ? <span className="dollar-brand">{fmt(displayBalance)}</span> : '...'}
             </h2>
           </div>
 
@@ -508,7 +506,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               <>
               <div className="insight-card">
                 <div className="insight-label">{t('dashboard.dailyAvg')}</div>
-                <div className="insight-value">€{formatCurrency(dailyAvg)}</div>
+                <div className="insight-value">{fmt(dailyAvg)}</div>
               </div>
               <div className="insight-card">
                 <div className="insight-label">{t('dashboard.topCategory')}</div>
@@ -522,7 +520,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               </div>
               <div className="insight-card">
                 <div className="insight-label">{t('dashboard.projection')}</div>
-                <div className="insight-value">€{formatCurrency(projectedEndBalance)}</div>
+                <div className="insight-value">{fmt(projectedEndBalance)}</div>
               </div>
               </>
             )}
@@ -544,7 +542,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                         <span style={{ fontWeight: 600 }}>{catName(b.category, t, lang)}</span>
                         <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
-                          €{b.spent.toFixed(0)} / €{b.amount.toFixed(0)}
+                          {fmt(b.spent)} / {fmt(b.amount)}
                           <span style={{ marginLeft: 6, fontWeight: 700, fontSize: 11,
                             color: b.spent > b.amount ? 'var(--danger)' : bRem >= 40 ? 'var(--success)' : bRem >= 20 ? 'var(--warning)' : 'var(--danger)'
                           }}>
@@ -587,7 +585,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                         <span style={{ fontWeight: 600 }}>{g.name}</span>
                         <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
-                          €{g.current_amount.toFixed(0)} / €{g.target_amount.toFixed(0)}
+                          {fmt(g.current_amount)} / {fmt(g.target_amount)}
                           <span style={{ marginLeft: 6, fontWeight: 700, color: achieved ? 'var(--success)' : 'var(--brand)' }}>
                             {pct}%
                           </span>
@@ -622,16 +620,16 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             <div className="monthly-grid" key={displayMonth}>
               <div className="monthly-item">
                 <span className="monthly-item-label">{t('dashboard.income')}</span>
-                <span className="monthly-item-value text-success">{hasMonthlyIncome ? '+€' + formatCurrency(monthlyIncome) : '-'}</span>
+                <span className="monthly-item-value text-success">{hasMonthlyIncome ? '+' + fmt(monthlyIncome) : '-'}</span>
               </div>
               <div className="monthly-item">
                 <span className="monthly-item-label">{t('dashboard.expenses')}</span>
-                <span className="monthly-item-value text-danger">{hasMonthlyExpense ? '-€' + formatCurrency(monthlyExpenses) : '-'}</span>
+                <span className="monthly-item-value text-danger">{hasMonthlyExpense ? '-' + fmt(monthlyExpenses) : '-'}</span>
               </div>
               <div className="monthly-item">
                 <span className="monthly-item-label">{t('dashboard.monthBalance')}</span>
                 <span className={`monthly-item-value ${monthlyIncome >= monthlyExpenses ? 'text-success' : 'text-danger'}`}>
-                  {(hasMonthlyIncome || hasMonthlyExpense) ? '€' + formatCurrency(monthlyIncome - monthlyExpenses) : '-'}
+                  {(hasMonthlyIncome || hasMonthlyExpense) ? fmt(monthlyIncome - monthlyExpenses) : '-'}
                 </span>
               </div>
             </div>
@@ -651,7 +649,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => fmt(v)} />
                   <Tooltip content={<ChartTooltip />} cursor={<CustomCursor />} />
                   <Area type="monotone" dataKey="balance" fill="url(#balanceFill)" stroke="none" />
                   <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--chart-line)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
@@ -701,7 +699,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                           {entry.name}
                         </span>
                         <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                          €{entry.value.toFixed(2)}
+                          {fmt(entry.value)}
                         </span>
                         <span style={{ color: 'var(--text-tertiary)', fontSize: 10, fontWeight: 600, minWidth: 32, textAlign: 'right' }}>
                           {((entry.value / total) * 100).toFixed(0)}%
@@ -725,7 +723,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                 <LineChart data={projectionData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                  <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => fmt(v)} />
                   <Tooltip content={<ChartTooltip />} cursor={<CustomCursor />} />
                   <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--chart-line)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
                   <Line type="monotone" dataKey="projected" stroke="var(--brand-deep)" strokeWidth={2} strokeDasharray="5 5" dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--brand-deep)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
@@ -744,13 +742,13 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                   <div style={{ marginBottom: 20 }}>
                     <div className="summary-label">{t('dashboard.totalIncome')}</div>
                     <div className="summary-value text-success" style={{ fontSize: 24 }}>
-                      €{formatCurrency(balance.total_income)}
+                      {fmt(balance.total_income)}
                     </div>
                   </div>
                   <div style={{ marginBottom: 20 }}>
                     <div className="summary-label">{t('dashboard.totalExpenses')}</div>
                     <div className="summary-value text-danger" style={{ fontSize: 24 }}>
-                      €{formatCurrency(balance.total_expenses)}
+                      {fmt(balance.total_expenses)}
                     </div>
                   </div>
                   <div>
@@ -852,7 +850,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                   <span className="tx-card-title">{tx.title}</span>
                 </div>
                 <span className={`tx-card-amount ${tx.type === 'income' ? 'text-success' : 'text-danger'}`}>
-                  {tx.type === 'income' ? '+' : '-'}€{tx.amount.toFixed(2)}
+                  {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
                 </span>
                 <div className="tx-card-actions">
                   <button className="btn-edit" onClick={() => navigate('/transactions/edit/' + tx.id)} title={t('dashboard.editBtn')}>&#9998;</button>
@@ -906,12 +904,12 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               <div key={tx.id} className="modal-entry">
                 <span className="modal-entry-date">{tx.date}</span>
                 <span className="modal-entry-title">{tx.title}</span>
-                <span className="text-danger">-€{tx.amount.toFixed(2)}</span>
+                  <span className="text-danger">-{fmt(tx.amount)}</span>
               </div>
             ))}
           </div>
           <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', textAlign: 'right' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('dashboard.modalTotal')} €{categoryModal.total.toFixed(2)}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('dashboard.modalTotal')} {fmt(categoryModal.total)}</span>
           </div>
         </div>
       </div>
@@ -938,14 +936,11 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 }
 
 function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTransactions, balanceHistory, projectionData, topExpenses, categoryColors, balanceStats, projStats }) {
+  const { fmt } = useCurrency();
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
-
-  function formatCurrency(v) {
-    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
 
   let title, content;
 
@@ -957,13 +952,13 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
       <>
         <div className="modal-balance-total">
           <span className="modal-balance-label">{t('dashboard.modalTotalBalance')}</span>
-          <span className="modal-balance-value">€{formatCurrency(balance?.current_balance || 0)}</span>
+          <span className="modal-balance-value">{fmt(balance?.current_balance || 0)}</span>
         </div>
         <div className="modal-split">
           <div className="modal-column modal-column-income">
             <div className="modal-column-header">
               <span>{t('dashboard.income')}</span>
-              <span className="text-success">€{formatCurrency(totalIncome)}</span>
+              <span className="text-success">{fmt(totalIncome)}</span>
             </div>
             <div className="modal-column-list">
               {incomeTransactions.map(tx => (
@@ -971,7 +966,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                   <span className="modal-entry-date">{tx.date}</span>
                   <span className="modal-entry-title">{tx.title}</span>
                   <span className="badge">{catName(tx.category, t, lang)}</span>
-                  <span className="text-success">+€{tx.amount.toFixed(2)}</span>
+                  <span className="text-success">+{fmt(tx.amount)}</span>
                 </div>
               ))}
               {incomeTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>{t('dashboard.modalNoIncome')}</p>}
@@ -980,7 +975,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
           <div className="modal-column modal-column-expense">
             <div className="modal-column-header">
               <span>{t('dashboard.modalExpenses')}</span>
-              <span className="text-danger">€{formatCurrency(totalExpenses)}</span>
+              <span className="text-danger">{fmt(totalExpenses)}</span>
             </div>
             <div className="modal-column-list">
               {expenseTransactions.map(tx => (
@@ -988,7 +983,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                   <span className="modal-entry-date">{tx.date}</span>
                   <span className="modal-entry-title">{tx.title}</span>
                   <span className="badge">{catName(tx.category, t, lang)}</span>
-                  <span className="text-danger">-€{tx.amount.toFixed(2)}</span>
+                <span className="text-danger">-{fmt(tx.amount)}</span>
                 </div>
               ))}
               {expenseTransactions.length === 0 && <p className="text-secondary text-center" style={{ padding: 24 }}>{t('dashboard.modalNoExpense')}</p>}
@@ -1007,7 +1002,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
               <LineChart data={balanceHistory}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                 <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => fmt(v)} />
                 <Tooltip content={<ChartTooltip />} cursor={<CustomCursor />} />
                 <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--chart-line)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
               </LineChart>
@@ -1019,19 +1014,19 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
         <div className="modal-chart-sidebar">
           <div className="modal-stat">
             <span className="modal-stat-label">{t('dashboard.pdfInitialBalance')}</span>
-            <span className="modal-stat-value">€{formatCurrency(balanceStats?.start || 0)}</span>
+            <span className="modal-stat-value">{fmt(balanceStats?.start || 0)}</span>
           </div>
           <div className="modal-stat">
             <span className="modal-stat-label">{t('dashboard.modalCurrentBalance')}</span>
-            <span className="modal-stat-value">€{formatCurrency(balanceStats?.end || 0)}</span>
+            <span className="modal-stat-value">{fmt(balanceStats?.end || 0)}</span>
           </div>
           <div className="modal-stat">
             <span className="modal-stat-label">{t('dashboard.modalMin')}</span>
-            <span className="modal-stat-value text-danger">€{formatCurrency(balanceStats?.min || 0)}</span>
+            <span className="modal-stat-value text-danger">{fmt(balanceStats?.min || 0)}</span>
           </div>
           <div className="modal-stat">
             <span className="modal-stat-label">{t('dashboard.modalMax')}</span>
-            <span className="modal-stat-value text-success">€{formatCurrency(balanceStats?.max || 0)}</span>
+            <span className="modal-stat-value text-success">{fmt(balanceStats?.max || 0)}</span>
           </div>
           <div className="modal-stat">
             <span className="modal-stat-label">{t('dashboard.totalTransactions')}</span>
@@ -1065,7 +1060,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
         <div className="modal-chart-sidebar">
           <div className="modal-stat">
             <span className="modal-stat-label">{t('dashboard.modalTotalExpenses')}</span>
-            <span className="modal-stat-value">€{formatCurrency(totalExpenseAmount)}</span>
+            <span className="modal-stat-value">{fmt(totalExpenseAmount)}</span>
           </div>
           {topExpenses.map(entry => (
             <div key={entry.name} className="modal-stat">
@@ -1074,7 +1069,7 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                 <span className="modal-stat-label">{entry.name}</span>
               </div>
               <span className="modal-stat-value">
-                €{formatCurrency(entry.value)}
+                {fmt(entry.value)}
                 <span className="text-secondary" style={{ fontSize: 11, marginLeft: 4 }}>
                   ({((entry.value / totalExpenseAmount) * 100).toFixed(1)}%)
                 </span>
@@ -1097,29 +1092,24 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
               <LineChart data={projectionData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                 <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+                <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => fmt(v)} />
                 <Tooltip content={<ChartTooltip />} cursor={<CustomCursor />} />
-                <Line type="monotone" dataKey="balance" stroke="var(--chart-line)" strokeWidth={2} dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--chart-line)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
-                <Line type="monotone" dataKey="projected" stroke="var(--brand-deep)" strokeWidth={2} strokeDasharray="5 5" dot={false} animationDuration={800} activeDot={{ r: 4, fill: 'var(--brand-deep)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
               </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="chart-empty">{t('dashboard.insufficientData')}</p>
           )}
         </div>
         <div className="modal-chart-sidebar">
           <div className="modal-stat">
             <span className="modal-stat-label">{t('dashboard.modalCurrentBalance')}</span>
-            <span className="modal-stat-value">€{formatCurrency(balanceStats?.end || 0)}</span>
+            <span className="modal-stat-value">{fmt(balanceStats?.end || 0)}</span>
           </div>
           <div className="modal-stat">
             <span className="modal-stat-label">{t('dashboard.modalProjected')}</span>
-            <span className="modal-stat-value">€{formatCurrency(projStats?.end || 0)}</span>
+            <span className="modal-stat-value">{fmt(projStats?.end || 0)}</span>
           </div>
           <div className="modal-stat">
             <span className="modal-stat-label">{t('dashboard.modalDailyChange')}</span>
             <span className={`modal-stat-value ${dailyChange >= 0 ? 'text-success' : 'text-danger'}`}>
-              €{formatCurrency(Math.abs(dailyChange))}/g
+              {fmt(Math.abs(dailyChange))}/g
             </span>
           </div>
           <div className="modal-stat">

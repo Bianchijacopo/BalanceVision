@@ -379,5 +379,11 @@ const en = {
     saveSettings: 'Save settings',
     settingsSaved: 'Settings saved',
   },
+  currency: {
+    title: 'Currency',
+    subtitle: 'Choose the currency for displaying amounts',
+    label: 'Preferred currency',
+    saved: 'Currency updated',
+  },
 };
 export default en;

@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { apiGet, apiPost, apiPut } from '../context/ApiContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { catName } from '../utils/categoryManager';
-
-function formatCurrency(v) {
-  return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 const FREQUENZE = [
   { value: 'weekly', label: 'weekly' },
@@ -31,6 +28,7 @@ const INITIAL_FORM = {
 export default function Recurring() {
   const { t, lang } = useLanguage();
   const { token } = useAuth();
+  const { fmt } = useCurrency();
   const navigate = useNavigate();
   const { addToast } = useToast();
 
@@ -214,7 +212,7 @@ export default function Recurring() {
                       fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums',
                       color: item.type === 'income' ? 'var(--success)' : 'var(--danger)',
                     }}>
-                      {item.type === 'income' ? '+' : '–'}€{formatCurrency(item.amount)}
+                      {item.type === 'income' ? '+' : '–'}{fmt(item.amount)}
                     </div>
                   </div>
                   <button

@@ -176,6 +176,19 @@ function migrate() {
     )`);
   } catch(e) {}
 
+  try {
+    db.run("ALTER TABLE user_settings ADD COLUMN currency TEXT NOT NULL DEFAULT 'EUR'");
+  } catch(e) {}
+  try {
+    db.run(`CREATE TABLE IF NOT EXISTS exchange_rates (
+      base_currency TEXT NOT NULL DEFAULT 'EUR',
+      target_currency TEXT NOT NULL,
+      rate REAL NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (base_currency, target_currency)
+    )`);
+  } catch(e) {}
+
   fixTimezones();
 
   save();

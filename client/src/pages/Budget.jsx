@@ -6,8 +6,9 @@ import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
 import { getAllCategories, catName } from '../utils/categoryManager';
 import { useLanguage } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 
-function formatCurrency(v) {
+function fmt(v) {
   return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -15,6 +16,7 @@ export default function Budget() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
+  const { fmt } = useCurrency();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editCategory, setEditCategory] = useState(null);
@@ -77,7 +79,7 @@ export default function Budget() {
         <div className="section-header" style={{ marginBottom: 20 }}>
           <h3 className="section-title">{monthName}</h3>
           <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>
-            {data ? '€' + formatCurrency(data.totalBudget) + ' ' + t('budgets.totalBudget') : ''}
+            {data ? fmt(data.totalBudget) + ' ' + t('budgets.totalBudget') : ''}
           </span>
         </div>
 
@@ -98,9 +100,9 @@ export default function Budget() {
                     }} />
                     <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>{catName(b.category, t, lang)}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                      €{formatCurrency(b.spent)}
+                      {fmt(b.spent)}
                       <span style={{ color: 'var(--text-tertiary)', fontWeight: 500, fontSize: 12 }}>
-                        {' / '}€{formatCurrency(b.amount)}
+                        {' / '}{fmt(b.amount)}
                       </span>
                     </span>
                     <span style={{

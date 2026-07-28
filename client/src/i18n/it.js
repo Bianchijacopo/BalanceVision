@@ -379,5 +379,11 @@ const it = {
     saveSettings: 'Salva impostazioni',
     settingsSaved: 'Impostazioni salvate',
   },
+  currency: {
+    title: 'Valuta',
+    subtitle: 'Scegli la valuta per visualizzare gli importi',
+    label: 'Valuta preferita',
+    saved: 'Valuta aggiornata',
+  },
 };
 export default it;

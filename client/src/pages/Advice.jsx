@@ -4,9 +4,11 @@ import { apiGet } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { useLanguage } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function Advice() {
   const { token } = useAuth();
+  const { fmt } = useCurrency();
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
   const [data, setData] = useState(null);
@@ -70,15 +72,15 @@ export default function Advice() {
             <div className="summary-grid">
               <div className="summary-item">
                 <span className="summary-label">{t('advice.balance')}</span>
-                <span className="summary-value">€{data.summary.current_balance.toFixed(2)}</span>
+                <span className="summary-value">{fmt(data.summary.current_balance)}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-label">{t('advice.totalIncome')}</span>
-                <span className="summary-value text-success">€{data.summary.total_income.toFixed(2)}</span>
+                <span className="summary-value text-success">{fmt(data.summary.total_income)}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-label">{t('advice.totalExpenses')}</span>
-                <span className="summary-value text-danger">€{data.summary.total_expenses.toFixed(2)}</span>
+                <span className="summary-value text-danger">{fmt(data.summary.total_expenses)}</span>
               </div>
             </div>
           )}
