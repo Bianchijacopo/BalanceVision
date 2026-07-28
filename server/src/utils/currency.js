@@ -29,18 +29,17 @@ export async function getHistoricalRate(from, to, date) {
   }
 }
 
-export async function getTicker(from, to) {
-  const currentRate = await getRate(from, to);
+const tickerPrev = {};
 
-  let prevRate = null;
-  const today = new Date();
-  for (let i = 1; i <= 7; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0, 10);
-    prevRate = await getHistoricalRate(from, to, dateStr);
-    if (prevRate != null) break;
-  }
+export async function getTicker(from, to) {
+  const res = await fetch(`${API}/latest?from=${from}&to=${to}`);
+  if (!res.ok) throw new Error('Failed to fetch ticker rate');
+  const data = await res.json();
+  const currentRate = data.rates[to];
+
+  const key = `${from}_${to}`;
+  const prevRate = tickerPrev[key] != null ? tickerPrev[key] : null;
+  tickerPrev[key] = currentRate;
 
   const change = prevRate != null ? currentRate - prevRate : 0;
   const changePct = prevRate != null && prevRate !== 0 ? (change / prevRate) * 100 : 0;
