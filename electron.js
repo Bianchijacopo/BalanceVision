@@ -130,8 +130,7 @@ function createWindow() {
           "object-src 'none'; " +
           "frame-src 'none'; " +
           "base-uri 'self'; " +
-          "form-action 'self'; " +
-          "upgrade-insecure-requests",
+          "form-action 'self'; ",
         ],
         'X-Content-Type-Options': ['nosniff'],
         'X-Frame-Options': ['DENY'],

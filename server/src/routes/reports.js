@@ -60,7 +60,7 @@ function buildReportEmail(userId, lang) {
     : `BalanceVision - Report finanziario ${monthDisplay}`;
 
   const catRows = (topCats || []).map(c =>
-    <tr><td style="padding:6px 12px;border-bottom:1px solid #eee;color:#4D4D4D">${c.category}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${fmt(c.total)}</td></tr>
+    `<tr><td style="padding:6px 12px;border-bottom:1px solid #eee;color:#4D4D4D">${c.category}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${fmt(c.total)}</td></tr>`
   ).join('');
 
   const html = `<!DOCTYPE html>
