@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, LabelList, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
+import RollingNumber from '../components/RollingNumber';
 import { getCategoryColors } from '../utils/categoryColors';
 import { getAllCategories, isDefaultCategory, removeCustomCategory, catName, getUntranslatedCategories, fetchCategoryTranslation } from '../utils/categoryManager';
 import { jsPDF } from 'jspdf';
@@ -512,9 +513,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             <div className="insight-card" style={{ marginTop: 16, textAlign: 'center' }}>
               <div className="insight-label" style={{ fontSize: 11 }}>USD/{currency}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <span className="insight-value" style={{ fontSize: 18 }}>
-                  {ticker.rate.toFixed(4)}
-                </span>
+                <RollingNumber value={ticker.rate.toFixed(4)} height="1.3em" className="insight-value" />
                 <span style={{
                   fontSize: 14, fontWeight: 700,
                   color: ticker.change >= 0 ? 'var(--success, #00b45a)' : 'var(--danger, #dc0032)',
