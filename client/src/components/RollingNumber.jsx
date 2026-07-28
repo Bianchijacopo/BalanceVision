@@ -1,12 +1,9 @@
-import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
+import { useRef } from 'react';
 
-const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-
-function ExitingDigit({ digit, height, onDone }) {
+function ExitingDigit({ digit, height }) {
   return (
     <span
       className="rolling-digit-exit"
-      onAnimationEnd={onDone}
       style={{
         display: 'block',
         height,
@@ -17,6 +14,7 @@ function ExitingDigit({ digit, height, onDone }) {
         position: 'absolute',
         top: 0, left: 0, right: 0,
         animation: 'rollOut 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+        willChange: 'transform',
       }}
     >
       {digit}
@@ -24,23 +22,7 @@ function ExitingDigit({ digit, height, onDone }) {
   );
 }
 
-function RollingDigit({ digit, prevDigit, height }) {
-  const [exiting, setExiting] = useState(null);
-  const prevRef = useRef(digit);
-  const animKeyRef = useRef(0);
-
-  useEffect(() => {
-    if (prevRef.current !== digit) {
-      animKeyRef.current += 1;
-      setExiting(prevRef.current);
-      prevRef.current = digit;
-    }
-  }, [digit]);
-
-  const handleExitDone = useCallback(() => {
-    setExiting(null);
-  }, []);
-
+function RollingDigit({ digit, prevDigit, height, exitKey }) {
   return (
     <span
       className="rolling-digit"
@@ -50,12 +32,12 @@ function RollingDigit({ digit, prevDigit, height }) {
         verticalAlign: 'middle',
         lineHeight: 1,
         height,
-        width: height ? `${parseFloat(height) * 0.6}px` : 'auto',
+        width: '0.6em',
         position: 'relative',
       }}
     >
       <span
-        key={`${digit}-${animKeyRef.current}`}
+        key={digit}
         className="rolling-digit-inner"
         style={{
           display: 'block',
@@ -64,59 +46,71 @@ function RollingDigit({ digit, prevDigit, height }) {
           textAlign: 'center',
           fontWeight: 700,
           fontVariantNumeric: 'tabular-nums',
-          animation: exiting ? 'rollIn 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+          animation: prevDigit != null ? 'rollIn 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+          willChange: 'transform',
         }}
       >
         {digit}
       </span>
-      {exiting && (
-        <ExitingDigit digit={exiting} height={height} onDone={handleExitDone} />
+      {exitKey != null && (
+        <span key={exitKey} className="rolling-digit-exit" style={{
+          display: 'block',
+          height,
+          lineHeight: height,
+          textAlign: 'center',
+          fontWeight: 700,
+          fontVariantNumeric: 'tabular-nums',
+          position: 'absolute',
+          top: 0, left: 0, right: 0,
+          animation: 'rollOut 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+          willChange: 'transform',
+        }}>
+          {prevDigit}
+        </span>
       )}
     </span>
   );
 }
 
 export default function RollingNumber({ value, height = '1.2em', className = '' }) {
-  const formatted = useMemo(() => {
-    if (value == null) return [];
-    return String(value).split('').map(ch => ({ ch, isDigit: /^[0-9]$/.test(ch) }));
-  }, [value]);
-
+  const formatted = String(value == null ? '' : value).split('');
   const prevRef = useRef(null);
-  const [prevArr, setPrevArr] = useState(null);
+  const prevChars = prevRef.current;
+  prevRef.current = formatted;
 
-  useEffect(() => {
-    const arr = formatted.map(f => (f.isDigit ? f.ch : null));
-    if (prevRef.current) {
-      setPrevArr(prevRef.current);
-    } else {
-      setPrevArr(null);
-    }
-    prevRef.current = arr;
-  }, [formatted]);
+  const exitRef = useRef({});
 
   return (
     <span
       className={`rolling-number ${className}`}
       style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}
     >
-      {formatted.map((f, i) => {
-        if (f.isDigit) {
-          const pd = prevArr ? prevArr[i] : null;
-          const changed = pd !== null && pd !== f.ch;
+      {formatted.map((ch, i) => {
+        const isDigit = /^[0-9]$/.test(ch);
+        if (!isDigit) {
           return (
-            <RollingDigit
-              key={`${i}`}
-              digit={f.ch}
-              prevDigit={changed ? pd : null}
-              height={height}
-            />
+            <span key={`s${i}`} className="rolling-static" style={{ display: 'inline-block', lineHeight: height, fontWeight: 700 }}>
+              {ch}
+            </span>
           );
         }
+        const prevCh = prevChars ? prevChars[i] : undefined;
+        const changed = prevCh !== undefined && prevCh !== ch;
+        let exitKey = null;
+        if (changed) {
+          const entry = exitRef.current[i];
+          const nextKey = (entry?.key || 0) + 1;
+          exitRef.current[i] = { digit: prevCh, key: nextKey };
+          exitKey = nextKey;
+        }
         return (
-          <span key={i} className="rolling-static" style={{ display: 'inline-block', lineHeight: height, fontWeight: 700 }}>
-            {f.ch}
-          </span>
+          <RollingDigit
+            key={`d${i}`}
+            digit={ch}
+            prevDigit={changed ? prevCh : null}
+            height={height}
+            exitKey={exitKey}
+          />
         );
       })}
     </span>
