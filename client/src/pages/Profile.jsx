@@ -170,6 +170,8 @@ export default function Profile() {
               )}
               <div className="profile-avatar-overlay">
                 {uploading ? t('profile.uploading') : t('profile.changePhoto')}
+              </div>
+            </div>
           </div>
         </div>
 

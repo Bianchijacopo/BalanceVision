@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { apiGet } from '../context/ApiContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -115,9 +116,7 @@ export default function Dashboard() {
   const [ticker, setTicker] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/settings/ticker', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    }).then(r => r.json()).then(setTicker).catch(() => {});
+    apiGet('/settings/ticker', token).then(setTicker).catch(() => {});
   }, [token, currency]);
 
   async function deleteTransaction(id) {
@@ -1118,6 +1117,9 @@ function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTra
                 <YAxis stroke="var(--text-tertiary)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => fmt(v)} />
                 <Tooltip content={<ChartTooltip />} cursor={<CustomCursor />} />
               </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="chart-empty">{t('dashboard.insufficientData')}</p>
           )}
         </div>
         <div className="modal-chart-sidebar">
