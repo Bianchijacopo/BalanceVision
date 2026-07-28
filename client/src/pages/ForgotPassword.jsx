@@ -95,14 +95,14 @@ export default function ForgotPassword() {
           <form onSubmit={resetPassword}>
             <div className="form-group">
               <label className="form-label" htmlFor="password">{t('forgotPassword.newPasswordTitle')}</label>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+              <div style={{ position: 'relative' }}>
                 <input id="password" type={showPw ? 'text' : 'password'} className="form-input"
                   placeholder={t('forgotPassword.newPasswordPlaceholder')} value={password}
-                  onChange={e => setPassword(e.target.value)} required style={{ flex: 1 }}
+                  onChange={e => setPassword(e.target.value)} required style={{ paddingRight: 80 }}
                 />
-                <button type="button" onClick={() => setShowPw(!showPw)}
-                  style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, whiteSpace: 'nowrap' }}
-                >{showPw ? 'Nascondi' : 'Mostra'}</button>
+                <span onClick={() => setShowPw(!showPw)}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: 12, color: '#888', userSelect: 'none', zIndex: 1 }}
+                >{showPw ? 'NASCONDI' : 'MOSTRA'}</span>
               </div>
             </div>
             <button type="submit" className="btn btn-primary btn-full">

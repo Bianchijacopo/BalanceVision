@@ -68,29 +68,29 @@ export default function ChangePassword() {
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label" htmlFor="oldPassword">{t('profile.currentPassword')}</label>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
-                <input id="oldPassword" type={showOld ? 'text' : 'password'} className="form-input" value={oldPassword} onChange={e => setOldPassword(e.target.value)} required style={{ flex: 1 }} />
-                <button type="button" onClick={() => setShowOld(!showOld)}
-                  style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, whiteSpace: 'nowrap' }}
-                >{showOld ? 'Nascondi' : 'Mostra'}</button>
+              <div style={{ position: 'relative' }}>
+                <input id="oldPassword" type={showOld ? 'text' : 'password'} className="form-input" value={oldPassword} onChange={e => setOldPassword(e.target.value)} required style={{ paddingRight: 80 }} />
+                <span onClick={() => setShowOld(!showOld)}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: 12, color: '#888', userSelect: 'none', zIndex: 1 }}
+                >{showOld ? 'NASCONDI' : 'MOSTRA'}</span>
               </div>
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="newPassword">{t('profile.newPassword')}</label>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
-                <input id="newPassword" type={showNew ? 'text' : 'password'} className="form-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} required style={{ flex: 1 }} />
-                <button type="button" onClick={() => setShowNew(!showNew)}
-                  style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, whiteSpace: 'nowrap' }}
-                >{showNew ? 'Nascondi' : 'Mostra'}</button>
+              <div style={{ position: 'relative' }}>
+                <input id="newPassword" type={showNew ? 'text' : 'password'} className="form-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} required style={{ paddingRight: 80 }} />
+                <span onClick={() => setShowNew(!showNew)}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: 12, color: '#888', userSelect: 'none', zIndex: 1 }}
+                >{showNew ? 'NASCONDI' : 'MOSTRA'}</span>
               </div>
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="confirmPassword">{t('profile.confirmPassword')}</label>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
-                <input id="confirmPassword" type={showConfirm ? 'text' : 'password'} className="form-input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required style={{ flex: 1 }} />
-                <button type="button" onClick={() => setShowConfirm(!showConfirm)}
-                  style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, whiteSpace: 'nowrap' }}
-                >{showConfirm ? 'Nascondi' : 'Mostra'}</button>
+              <div style={{ position: 'relative' }}>
+                <input id="confirmPassword" type={showConfirm ? 'text' : 'password'} className="form-input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required style={{ paddingRight: 80 }} />
+                <span onClick={() => setShowConfirm(!showConfirm)}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: 12, color: '#888', userSelect: 'none', zIndex: 1 }}
+                >{showConfirm ? 'NASCONDI' : 'MOSTRA'}</span>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
