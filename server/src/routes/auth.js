@@ -38,7 +38,7 @@ router.post('/register', validate(schemas.register), async (req, res) => {
 
   const existing = get('SELECT id FROM users WHERE email = ?', [email]);
   if (existing) {
-    return res.status(409).json({ error: 'Email gia registrata' });
+    return res.status(409).json({ error: 'Se l\'email e disponibile, riceverai una conferma' });
   }
 
   const password_hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
@@ -48,8 +48,9 @@ router.post('/register', validate(schemas.register), async (req, res) => {
   const refreshToken = generateRefreshToken(result.lastInsertRowid);
 
   const otp = String(Math.floor(100000 + Math.random() * 900000)).padStart(6, '0');
+  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
   const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-  run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, result.lastInsertRowid]);
+  run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, result.lastInsertRowid]);
 
   try {
     const fullName = [name, surname].filter(Boolean).join(' ') || 'Utente';
@@ -131,8 +132,9 @@ router.post('/forgot-send-otp', validate(schemas.forgotSendOtp), (req, res) => {
 
   if (user) {
     const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
     const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, user.id]);
+    run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, user.id]);
     try {
       const { text, html } = buildOtpEmail(user.name || 'Utente', otp);
       sendEmail(email, 'Recupero password BalanceVision', text, html).catch(() => {});
@@ -150,9 +152,12 @@ router.post('/reset-password', validate(schemas.resetPassword), (req, res) => {
     return res.status(400).json({ error: 'Nessuna richiesta di reset valida per questa email' });
   }
   if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'Codice scaduto' });
-  if (user.otp !== otp) return res.status(400).json({ error: 'Codice errato' });
+  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otpHash))) {
+    return res.status(400).json({ error: 'Codice errato' });
+  }
 
-  const hash = bcrypt.hashSync(newPassword, 10);
+  const hash = bcrypt.hashSync(newPassword, BCRYPT_ROUNDS);
   run('UPDATE users SET password_hash = ?, otp = NULL, otp_expiry = NULL WHERE id = ?', [hash, user.id]);
   run('DELETE FROM refresh_tokens WHERE user_id = ?', [user.id]);
 
@@ -188,7 +193,7 @@ router.post('/change-password', authMiddleware, verifiedMiddleware, validate(sch
     return res.status(400).json({ error: 'Password attuale errata' });
   }
 
-  const hash = bcrypt.hashSync(newPassword, 10);
+  const hash = bcrypt.hashSync(newPassword, BCRYPT_ROUNDS);
   run('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.userId]);
   run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.userId]);
 
@@ -199,17 +204,17 @@ router.post('/change-password', authMiddleware, verifiedMiddleware, validate(sch
 router.post('/send-otp', authMiddleware, async (req, res) => {
   const user = get('SELECT email, name FROM users WHERE id = ?', [req.userId]);
   const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
   const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-  run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otp, expiry, req.userId]);
+  run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, req.userId]);
 
-  console.log('OTP inviato a', user.email);
   try {
     const { text, html } = buildOtpEmail(user.name || 'Utente', otp);
     await sendEmail(user.email, 'Codice di verifica BalanceVision', text, html);
     res.json({ message: 'Codice inviato alla tua email' });
   } catch (err) {
     console.error('Errore invio email OTP:', err);
-    res.json({ message: 'Email non configurata. OTP generato in modalità test.', otp });
+    res.json({ message: 'Email non configurata. Contatta l\'amministratore.' });
   }
 });
 
@@ -219,7 +224,10 @@ router.post('/verify-otp', authMiddleware, validate(schemas.verifyOtp), (req, re
   const user = get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
   if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Nessun OTP richiesto. Richiedine uno nuovo.' });
   if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'OTP scaduto. Richiedine uno nuovo.' });
-  if (user.otp !== otp) return res.status(400).json({ error: 'Codice OTP errato' });
+  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otpHash))) {
+    return res.status(400).json({ error: 'Codice OTP errato' });
+  }
 
   if (newEmail) {
     run('UPDATE users SET email = ?, email_verified = 1, otp = NULL, otp_expiry = NULL WHERE id = ?', [newEmail, req.userId]);
@@ -245,7 +253,10 @@ router.delete('/account', authMiddleware, verifiedMiddleware, validate(schemas.d
   const user = get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
   if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Richiedi prima un OTP' });
   if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'OTP scaduto' });
-  if (user.otp !== otp) return res.status(400).json({ error: 'Codice OTP errato' });
+  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otpHash))) {
+    return res.status(400).json({ error: 'Codice OTP errato' });
+  }
 
   audit(req.userId, 'account_deleted', req.ip);
   run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.userId]);

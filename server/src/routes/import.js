@@ -62,6 +62,8 @@ function guessColumn(aliases, headers) {
   return -1;
 }
 
+const MAX_CSV_ROWS = 10000;
+
 router.post('/csv', (req, res) => {
   try {
     const { csv } = req.body;
@@ -72,6 +74,9 @@ router.post('/csv', (req, res) => {
     const { headers, rows } = parseCSV(csv);
     if (rows.length === 0) {
       return res.status(400).json({ error: 'Nessuna riga valida nel CSV' });
+    }
+    if (rows.length > MAX_CSV_ROWS) {
+      return res.status(400).json({ error: 'Troppe righe. Massimo ' + MAX_CSV_ROWS });
     }
 
     const dateIdx = guessColumn(['data', 'date', 'giorno', 'day'], headers);

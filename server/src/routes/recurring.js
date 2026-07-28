@@ -115,7 +115,7 @@ router.delete('/:id', (req, res) => {
     [req.params.id, req.userId]);
   if (!existing) return res.status(404).json({ error: req.query.lang === 'en' ? 'Not found' : 'Non trovato' });
 
-  run(`DELETE FROM recurring_transactions WHERE id = ?`, [req.params.id]);
+  run(`DELETE FROM recurring_transactions WHERE id = ? AND user_id = ?`, [req.params.id, req.userId]);
   res.json({ success: true });
 });
 

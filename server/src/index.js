@@ -50,6 +50,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
@@ -60,6 +61,8 @@ app.use(helmet({
       objectSrc: ["'none'"],
       mediaSrc: ["'none'"],
       frameSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
       upgradeInsecureRequests: [],
     },
   },
@@ -80,9 +83,10 @@ app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
   next();
 });
-const corsOrigin = process.env.CORS_ORIGIN || '*';
+app.set('trust proxy', 1);
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3001';
 app.use(cors({
-  origin: corsOrigin === '*' ? true : corsOrigin.split(',').map(s => s.trim()),
+  origin: corsOrigin.split(',').map(s => s.trim()),
   credentials: true
 }));
 app.use(express.json({ limit: '5mb' }));
@@ -121,6 +125,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/send-otp', authLimiter);
+app.use('/api/auth/verify-otp', authLimiter);
 app.use('/api/auth/forgot-send-otp', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/auth/refresh', authLimiter);

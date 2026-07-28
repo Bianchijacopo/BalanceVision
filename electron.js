@@ -128,6 +128,7 @@ function createWindow() {
           "connect-src 'self' http://localhost:" + SERVER_PORT + " https://api.groq.com https://api.frankfurter.app; " +
           "font-src 'self' data: https://fonts.gstatic.com; " +
           "object-src 'none'; " +
+          "media-src 'none'; " +
           "frame-src 'none'; " +
           "base-uri 'self'; " +
           "form-action 'self'; ",

@@ -1,6 +1,12 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { get, run, localNow } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
+import { validate } from '../utils/validate.js';
+
+const initialBalanceSchema = z.object({
+  amount: z.number().nonnegative('amount deve essere >= 0'),
+});
 
 const router = Router();
 router.use(authMiddleware);
@@ -27,11 +33,8 @@ router.get('/', (req, res) => {
   });
 });
 
-router.post('/initial-balance', (req, res) => {
+router.post('/initial-balance', validate(initialBalanceSchema), (req, res) => {
   const { amount } = req.body;
-  if (amount === undefined || amount < 0) {
-    return res.status(400).json({ error: 'amount richiesto e deve essere >= 0' });
-  }
 
   const existing = get('SELECT id FROM initial_balance WHERE user_id = ?', [req.userId]);
   if (existing) {

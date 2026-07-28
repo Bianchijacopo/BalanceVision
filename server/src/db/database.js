@@ -272,7 +272,7 @@ export function run(sql, params = []) {
   return { lastInsertRowid: lastId };
 }
 
-export function exec(sql) {
+function execInternal(sql) {
   db.run(sql);
   save();
 }

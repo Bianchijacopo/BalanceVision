@@ -1,10 +1,12 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { get } from '../db/database.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export function generateToken(userId) {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '15m' });
+  const jti = crypto.randomBytes(16).toString('hex');
+  return jwt.sign({ userId, jti }, JWT_SECRET, { expiresIn: '15m' });
 }
 
 export function authMiddleware(req, res, next) {

@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const schemas = {
   register: z.object({
     email: z.string().email('Email non valida').max(255),
-    password: z.string().min(8, 'Minimo 8 caratteri')
+    password: z.string().min(12, 'Minimo 12 caratteri')
       .regex(/[A-Z]/, 'Almeno una maiuscola')
       .regex(/[a-z]/, 'Almeno una minuscola')
       .regex(/[0-9]/, 'Almeno un numero'),
@@ -27,7 +27,7 @@ export const schemas = {
   resetPassword: z.object({
     email: z.string().email('Email non valida'),
     otp: z.string().length(6, 'OTP deve essere di 6 cifre'),
-    newPassword: z.string().min(8, 'Minimo 8 caratteri')
+    newPassword: z.string().min(12, 'Minimo 12 caratteri')
       .regex(/[A-Z]/, 'Almeno una maiuscola')
       .regex(/[a-z]/, 'Almeno una minuscola')
       .regex(/[0-9]/, 'Almeno un numero'),
@@ -40,7 +40,7 @@ export const schemas = {
 
   changePassword: z.object({
     oldPassword: z.string().min(1, 'Password attuale richiesta'),
-    newPassword: z.string().min(8, 'Minimo 8 caratteri')
+    newPassword: z.string().min(12, 'Minimo 12 caratteri')
       .regex(/[A-Z]/, 'Almeno una maiuscola')
       .regex(/[a-z]/, 'Almeno una minuscola')
       .regex(/[0-9]/, 'Almeno un numero'),
