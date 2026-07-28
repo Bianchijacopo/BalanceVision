@@ -93,14 +93,15 @@ export default function Profile() {
     if (file.size > 4 * 1024 * 1024) { alert('Immagine troppo grande (max 4MB)'); return; }
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result;
-        const data = await apiPut('/auth/avatar', { avatar: base64 }, token);
-        setProfile(p => ({ ...p, avatar: base64 }));
-        setUser(p => ({ ...p, avatar: base64 }));
-      };
-      reader.readAsDataURL(file);
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      await apiPut('/auth/avatar', { avatar: base64 }, token);
+      setProfile(p => ({ ...p, avatar: base64 }));
+      setUser(p => ({ ...p, avatar: base64 }));
     } catch (err) {
       alert(err.message);
     } finally {

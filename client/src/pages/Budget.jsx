@@ -8,10 +8,6 @@ import { getAllCategories, catName } from '../utils/categoryManager';
 import { useLanguage } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
 
-function fmt(v) {
-  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 export default function Budget() {
   const { token } = useAuth();
   const navigate = useNavigate();
