@@ -525,12 +525,14 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               <div className="insight-label" style={{ fontSize: 11 }}>USD/{currency}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 <RollingNumber value={ticker.rate.toFixed(4)} height="1.3em" className="insight-value" />
-                <span style={{
-                  fontSize: 14, fontWeight: 700,
-                  color: ticker.change >= 0 ? 'var(--success, #00b45a)' : 'var(--danger, #dc0032)',
-                }}>
-                  {ticker.change >= 0 ? '▲' : '▼'} {ticker.changePct.toFixed(2)}%
-                </span>
+                {ticker.change !== 0 && (
+                  <span style={{
+                    fontSize: 14, fontWeight: 700,
+                    color: ticker.change > 0 ? 'var(--success, #00b45a)' : 'var(--danger, #dc0032)',
+                  }}>
+                    {ticker.change > 0 ? '▲' : '▼'} {ticker.changePct.toFixed(2)}%
+                  </span>
+                )}
               </div>
             </div>
           )}

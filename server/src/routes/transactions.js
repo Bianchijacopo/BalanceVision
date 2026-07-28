@@ -8,6 +8,18 @@ const router = Router();
 router.use(authMiddleware);
 router.use(verifiedMiddleware);
 
+function getBalance(userId) {
+  const initial = get('SELECT amount FROM initial_balance WHERE user_id = ?', [userId]);
+  const initialAmount = initial ? initial.amount : 0;
+  const totals = get(`
+    SELECT
+      COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
+      COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expenses
+    FROM transactions WHERE user_id = ?
+  `, [userId]);
+  return initialAmount + totals.total_income - totals.total_expenses;
+}
+
 router.get('/', (req, res) => {
   try { processRecurring(req.userId); } catch (e) { console.error('[recurring process error]', e); }
   const transactions = all(
@@ -19,6 +31,13 @@ router.get('/', (req, res) => {
 
 router.post('/', validate(schemas.transaction), (req, res) => {
   const { type, title, amount, category, date, note } = req.body;
+
+  if (type === 'expense') {
+    const currentBalance = getBalance(req.userId);
+    if (currentBalance - amount < 0) {
+      return res.status(400).json({ error: 'Saldo insufficiente' });
+    }
+  }
 
   const result = run(
     'INSERT INTO transactions (user_id, type, title, amount, category, date, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
