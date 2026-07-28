@@ -118,7 +118,7 @@ export default function Dashboard() {
     fetch('http://localhost:3001/api/settings/ticker', {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(r => r.json()).then(setTicker).catch(() => {});
-  }, [token]);
+  }, [token, currency]);
 
   async function deleteTransaction(id) {
     const res = await fetch('http://localhost:3001/api/transactions/' + id, {
