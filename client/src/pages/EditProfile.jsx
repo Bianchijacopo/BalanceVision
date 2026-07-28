@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { apiGet, apiPost } from '../context/ApiContext';
+import { apiGet, apiPost, apiPut } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 
@@ -49,13 +49,7 @@ export default function EditProfile() {
         return;
       }
 
-      const res = await fetch('http://localhost:3001/api/auth/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ name: name.trim(), surname: surname.trim() })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      await apiPut('/auth/profile', { name: name.trim(), surname: surname.trim() }, token);
       setSuccess(t('profile.profileUpdated'));
       setTimeout(() => navigate('/profile'), 1200);
     } catch (err) {
@@ -69,21 +63,9 @@ export default function EditProfile() {
     setError('');
     setSaving(true);
     try {
-      const res = await fetch('http://localhost:3001/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ otp, newEmail: pendingEmail })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      await apiPost('/auth/verify-otp', { otp, newEmail: pendingEmail }, token);
 
-      const profileRes = await fetch('http://localhost:3001/api/auth/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ name: name.trim(), surname: surname.trim() })
-      });
-      const profileData = await profileRes.json();
-      if (!profileRes.ok) throw new Error(profileData.error);
+      await apiPut('/auth/profile', { name: name.trim(), surname: surname.trim() }, token);
 
       setSuccess(t('profile.emailVerified'));
       setTimeout(() => navigate('/profile'), 1200);

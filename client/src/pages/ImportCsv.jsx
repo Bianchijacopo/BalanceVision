@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { apiPost } from '../context/ApiContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
@@ -21,16 +22,7 @@ export default function ImportCsv() {
     setResult(null);
     try {
       const text = await file.text();
-      const res = await fetch('http://localhost:3001/api/import/csv', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ csv: text }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: t('importCsv.error') }));
-        throw new Error(err.error);
-      }
-      const json = await res.json();
+      const json = await apiPost('/import/csv', { csv: text }, token);
       setResult(json);
       if (json.created > 0) {
         addToast(t('importCsv.created').replace('{n}', json.created), 'success');

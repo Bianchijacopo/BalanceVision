@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { apiGet } from '../context/ApiContext';
+import { apiGet, apiPost } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { useLanguage } from '../context/LanguageContext';
@@ -35,13 +35,7 @@ export default function Advice() {
     setChat(c => [...c, { role: 'user', text: msg }]);
     setChatLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/api/advice/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ message: msg, lang }),
-      });
-      if (!res.ok) throw new Error('Errore');
-      const json = await res.json();
+      const json = await apiPost('/advice/chat', { message: msg, lang }, token);
       setChat(c => [...c, { role: 'ai', text: json.reply }]);
     } catch (e) {
       setChat(c => [...c, { role: 'ai', text: (lang === 'en' ? 'Error: ' : 'Errore: ') + e.message }]);

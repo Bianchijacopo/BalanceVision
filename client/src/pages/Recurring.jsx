@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { apiGet, apiPost, apiPut } from '../context/ApiContext';
+import { apiGet, apiPost, apiPut, apiDelete } from '../context/ApiContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
@@ -75,28 +75,21 @@ export default function Recurring() {
 
   async function handleSave(e) {
     e.preventDefault();
-    const method = editId ? 'PUT' : 'POST';
-    const url = editId
-      ? 'http://localhost:3001/api/recurring/' + editId + '?lang=' + lang
-      : 'http://localhost:3001/api/recurring?lang=' + lang;
+    const body = {
+      type: form.type,
+      title: form.title,
+      amount: parseFloat(form.amount),
+      category: form.category || null,
+      note: form.note || null,
+      frequency: form.frequency,
+      start_date: form.start_date || null,
+      end_date: form.end_date || null,
+    };
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({
-          type: form.type,
-          title: form.title,
-          amount: parseFloat(form.amount),
-          category: form.category || null,
-          note: form.note || null,
-          frequency: form.frequency,
-          start_date: form.start_date || null,
-          end_date: form.end_date || null,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: t('recurring.errorSave') }));
-        throw new Error(err.error);
+      if (editId) {
+        await apiPut('/recurring/' + editId + '?lang=' + lang, body, token);
+      } else {
+        await apiPost('/recurring?lang=' + lang, body, token);
       }
       addToast(editId ? t('recurring.toastUpdated') : t('recurring.toastCreated'), 'success');
       resetForm();
@@ -108,14 +101,7 @@ export default function Recurring() {
 
   async function handleDelete(id) {
     try {
-      const res = await fetch('http://localhost:3001/api/recurring/' + id + '?lang=' + lang, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: t('recurring.errorDelete') }));
-        throw new Error(err.error);
-      }
+      await apiDelete('/recurring/' + id + '?lang=' + lang, token);
       addToast(t('recurring.toastDeleted'), 'success');
       load();
     } catch (e) {
@@ -126,14 +112,7 @@ export default function Recurring() {
   async function handleProcess() {
     setProcessing(true);
     try {
-      const res = await fetch('http://localhost:3001/api/recurring/process', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: t('recurring.errorGenerate') }));
-        throw new Error(err.error);
-      }
+      await apiPost('/recurring/process', {}, token);
       addToast(t('recurring.toastGenerated'), 'success');
       load();
     } catch (e) {

@@ -52,6 +52,9 @@ export function AuthProvider({ children }) {
       setRefreshToken(null);
       setUser(null);
       setJustRegistered(false);
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     };
     window.addEventListener('auth-refresh', refreshHandler);
     window.addEventListener('auth-expired', expiredHandler);

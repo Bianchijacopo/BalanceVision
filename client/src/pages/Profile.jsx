@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { apiGet, apiPost, apiPut, apiDelete } from '../context/ApiContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -36,43 +37,29 @@ export default function Profile() {
   const [sendingReport, setSendingReport] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/auth/profile', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    })
-      .then(r => r.json())
+    apiGet('/auth/profile', token)
       .then(p => { setProfile(p); setUser(p); })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [token]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/reports/settings', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    })
-      .then(r => r.json())
+    apiGet('/reports/settings', token)
       .then(s => { setReportEnabled(s.report_enabled); setReportDay(s.report_day); setLastReport(s.last_report_sent); })
       .catch(() => {});
   }, [token]);
 
   async function handleSaveReportSettings() {
     try {
-      const res = await fetch('http://localhost:3001/api/reports/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ report_enabled: reportEnabled, report_day: reportDay }),
-      });
-      if (res.ok) addToast(t('reports.settingsSaved'), 'success');
+      await apiPut('/reports/settings', { report_enabled: reportEnabled, report_day: reportDay }, token);
+      addToast(t('reports.settingsSaved'), 'success');
     } catch (e) { addToast(e.message, 'error'); }
   }
 
   async function handleSendReport() {
     setSendingReport(true);
     try {
-      const res = await fetch('http://localhost:3001/api/reports/send?lang=' + lang, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      if (!res.ok) throw new Error('Error');
+      await apiPost('/reports/send?lang=' + lang, {}, token);
       addToast(t('reports.sent'), 'success');
       const now = new Date().toISOString().slice(0, 10);
       setLastReport(now);
@@ -82,11 +69,7 @@ export default function Profile() {
 
   async function handleDeleteRequest() {
     try {
-      const res = await fetch('http://localhost:3001/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      const data = await res.json();
+      const data = await apiPost('/auth/send-otp', {}, token);
       setDeleteStep('otp');
       if (data.otp) alert('OTP di test: ' + data.otp);
     } catch (err) {
@@ -96,13 +79,7 @@ export default function Profile() {
 
   async function handleDeleteConfirm() {
     try {
-      const res = await fetch('http://localhost:3001/api/auth/account', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ otp: deleteOtp })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      await apiDelete('/auth/account?otp=' + encodeURIComponent(deleteOtp), token);
       logout();
       navigate('/login');
     } catch (err) {
@@ -119,13 +96,7 @@ export default function Profile() {
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = reader.result;
-        const res = await fetch('http://localhost:3001/api/auth/avatar', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: JSON.stringify({ avatar: base64 })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        const data = await apiPut('/auth/avatar', { avatar: base64 }, token);
         setProfile(p => ({ ...p, avatar: base64 }));
         setUser(p => ({ ...p, avatar: base64 }));
       };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { apiGet } from '../context/ApiContext';
+import { apiGet, apiPost, apiDelete } from '../context/ApiContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -97,6 +97,7 @@ export default function Dashboard() {
   const [categoryModal, setCategoryModal] = useState(null);
   const [budgetData, setBudgetData] = useState(null);
   const [goalData, setGoalData] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -120,21 +121,29 @@ export default function Dashboard() {
   }, [token, currency]);
 
   async function deleteTransaction(id) {
-    const res = await fetch('http://localhost:3001/api/transactions/' + id, {
-      method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (res.ok) {
+    try {
+      await apiDelete('/transactions/' + id, token);
       setTransactions(prev => prev.filter(t => t.id !== id));
       apiGet('/balance', token).then(setBalance).catch(console.error);
-    }
+    } catch (e) { console.error(e); }
   }
 
   useEffect(() => {
-    apiGet('/balance', token).then(setBalance).catch(console.error);
-    apiGet('/transactions', token).then(setTransactions).catch(console.error);
-    apiGet('/budgets', token).then(setBudgetData).catch(console.error);
-    apiGet('/goals', token).then(setGoalData).catch(console.error);
+    setInitialLoading(true);
+    Promise.all([
+      apiGet('/balance', token).then(setBalance).catch(console.error),
+      apiGet('/transactions', token).then(setTransactions).catch(console.error),
+      apiGet('/budgets', token).then(setBudgetData).catch(console.error),
+      apiGet('/goals', token).then(setGoalData).catch(console.error),
+    ]).finally(() => setInitialLoading(false));
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const id = setInterval(() => {
+      apiGet('/balance', token).then(setBalance).catch(() => {});
+    }, 30000);
+    return () => clearInterval(id);
   }, [token]);
 
   useEffect(() => {
@@ -256,11 +265,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       label: t('dashboard.undo'),
       onClick: async () => {
         try {
-          await fetch('http://localhost:3001/api/transactions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify(tx),
-          });
+          await apiPost('/transactions', tx, token);
           apiGet('/transactions', token).then(setTransactions).catch(console.error);
           apiGet('/balance', token).then(setBalance).catch(console.error);
         } catch (e) {
@@ -490,6 +495,13 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     doc.save('BalanceVision_Report_' + displayMonth + '.pdf');
     addToast(t('dashboard.pdfSuccess'), 'success');
   }
+
+  if (initialLoading) return (
+    <div className="layout">
+      <Topbar title={t('nav.dashboard')} />
+      <main className="main-content"><div className="loading">{t('dashboard.loading')}</div></main>
+    </div>
+  );
 
   return (
     <>

@@ -31,7 +31,12 @@ async function tryRefresh() {
     localStorage.setItem('refreshToken', data.refreshToken);
     window.dispatchEvent(new CustomEvent('auth-refresh', { detail: { token: data.token, refreshToken: data.refreshToken } }));
     return true;
-  } catch { return false; }
+  } catch {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    window.dispatchEvent(new CustomEvent('auth-expired'));
+    return false;
+  }
 }
 
 async function request(method, path, body, token) {
@@ -65,4 +70,8 @@ export async function apiPost(path, body, token) {
 
 export async function apiPut(path, body, token) {
   return request('PUT', path, body, token);
+}
+
+export async function apiDelete(path, token) {
+  return request('DELETE', path, null, token);
 }

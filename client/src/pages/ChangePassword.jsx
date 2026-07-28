@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiPost } from '../context/ApiContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
@@ -35,13 +36,7 @@ export default function ChangePassword() {
 
     setSaving(true);
     try {
-      const res = await fetch('http://localhost:3001/api/auth/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ oldPassword, newPassword })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      await apiPost('/auth/change-password', { oldPassword, newPassword }, token);
       setSuccess(t('profile.passwordChanged'));
       setOldPassword('');
       setNewPassword('');

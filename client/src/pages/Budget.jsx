@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { apiGet } from '../context/ApiContext';
+import { apiGet, apiPost, apiDelete } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { getCategoryColors } from '../utils/categoryColors';
@@ -44,16 +44,10 @@ export default function Budget() {
 
   async function handleSave(category) {
     try {
-      const res = await fetch('http://localhost:3001/api/budgets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ category, month: currentMonth, amount: parseFloat(editAmount) })
-      });
-      if (res.ok) {
-        setEditCategory(null);
-        setEditAmount('');
-        loadBudgets();
-      }
+      await apiPost('/budgets', { category, month: currentMonth, amount: parseFloat(editAmount) }, token);
+      setEditCategory(null);
+      setEditAmount('');
+      loadBudgets();
     } catch (e) {
       console.error(e);
     }
@@ -61,10 +55,7 @@ export default function Budget() {
 
   async function handleDelete(id) {
     try {
-      await fetch('http://localhost:3001/api/budgets/' + id, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
+      await apiDelete('/budgets/' + id, token);
       loadBudgets();
     } catch (e) {
       console.error(e);

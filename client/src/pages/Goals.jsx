@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { apiGet } from '../context/ApiContext';
+import { apiGet, apiPost, apiPut, apiDelete } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,6 +11,15 @@ export default function Goals() {
   const { t } = useLanguage();
   const { fmt } = useCurrency();
   const [category, setCategory] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [name, setName] = useState('');
+  const [target, setTarget] = useState('');
+  const [current, setCurrent] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const navigate = useNavigate();
 
   async function load() {
     setLoading(true);
@@ -35,35 +44,27 @@ export default function Goals() {
 
   async function handleSave(e) {
     e.preventDefault();
-    const method = editId ? 'PUT' : 'POST';
-    const url = editId
-      ? 'http://localhost:3001/api/goals/' + editId
-      : 'http://localhost:3001/api/goals';
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({
-          name,
-          target_amount: parseFloat(target),
-          current_amount: parseFloat(current || '0'),
-          deadline: deadline || '',
-          category: category || '',
-        }),
-      });
-      if (res.ok) {
-        resetForm();
-        load();
+      const body = {
+        name,
+        target_amount: parseFloat(target),
+        current_amount: parseFloat(current || '0'),
+        deadline: deadline || '',
+        category: category || '',
+      };
+      if (editId) {
+        await apiPut('/goals/' + editId, body, token);
+      } else {
+        await apiPost('/goals', body, token);
       }
+      resetForm();
+      load();
     } catch (e) { console.error(e); }
   }
 
   async function handleDelete(id) {
     try {
-      await fetch('http://localhost:3001/api/goals/' + id, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
+      await apiDelete('/goals/' + id, token);
       load();
     } catch (e) { console.error(e); }
   }
@@ -83,17 +84,13 @@ export default function Goals() {
     const goal = data.goals.find(g => g.id === goalId);
     if (!goal) return;
     try {
-      await fetch('http://localhost:3001/api/goals/' + goalId, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({
-          name: goal.name,
-          target_amount: goal.target_amount,
-          current_amount: data.currentBalance,
-          deadline: goal.deadline || '',
-          category: goal.category || '',
-        }),
-      });
+      await apiPut('/goals/' + goalId, {
+        name: goal.name,
+        target_amount: goal.target_amount,
+        current_amount: data.currentBalance,
+        deadline: goal.deadline || '',
+        category: goal.category || '',
+      }, token);
       load();
     } catch (e) { console.error(e); }
   }

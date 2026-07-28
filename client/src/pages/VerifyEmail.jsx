@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiPost } from '../context/ApiContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
@@ -21,13 +22,7 @@ export default function VerifyEmail() {
     if (!otp || otp.length < 6) { setError(t('verifyEmail.error')); return; }
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ otp })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = await apiPost('/auth/verify-otp', { otp }, token);
       setSuccess(t('verifyEmail.success'));
       if (data.user) setUser(data.user);
       setJustRegistered(false);
@@ -43,12 +38,7 @@ export default function VerifyEmail() {
     setError('');
     setOtp('');
     try {
-      const res = await fetch('http://localhost:3001/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = await apiPost('/auth/send-otp', {}, token);
       if (data.otp) alert('OTP di test: ' + data.otp);
       setSuccess(t('verifyEmail.codeSent'));
     } catch (err) {
