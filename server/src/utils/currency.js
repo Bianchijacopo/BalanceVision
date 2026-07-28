@@ -46,7 +46,18 @@ export async function getTicker(from, to) {
   }
 
   const key = `${from}_${to}`;
-  const prevRate = tickerPrev[key] != null ? tickerPrev[key] : null;
+  let prevRate = tickerPrev[key] != null ? tickerPrev[key] : null;
+
+  if (prevRate == null) {
+    const today = new Date();
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      prevRate = await getHistoricalRate(from, to, d.toISOString().slice(0, 10));
+      if (prevRate != null) break;
+    }
+  }
+
   tickerPrev[key] = currentRate;
 
   const change = prevRate != null ? currentRate - prevRate : 0;
