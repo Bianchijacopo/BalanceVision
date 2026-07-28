@@ -2241,3 +2241,25 @@ textarea.form-input {
 [data-theme="light"] .tx-new-btn:hover {
   box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
 }
+
+@keyframes rollIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes rollOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
