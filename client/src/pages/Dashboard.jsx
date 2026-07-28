@@ -975,6 +975,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 }
 
 function DashboardModal({ type, onClose, balance, incomeTransactions, expenseTransactions, balanceHistory, projectionData, topExpenses, categoryColors, balanceStats, projStats }) {
+  const { t, lang } = useLanguage();
   const { fmt } = useCurrency();
   useEffect(() => {
     document.body.style.overflow = 'hidden';
