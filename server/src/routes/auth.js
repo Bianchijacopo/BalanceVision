@@ -8,7 +8,7 @@ import { validate, schemas } from '../utils/validate.js';
 import { sanitize } from '../utils/sanitize.js';
 
 const router = Router();
-const PASSWORD_MIN = 12;
+const PASSWORD_MIN = 8;
 const BCRYPT_ROUNDS = 12;
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;

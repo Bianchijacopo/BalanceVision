@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
+import PasswordInput from '../components/PasswordInput';
 
 export default function ChangePassword() {
   const { t } = useLanguage();
@@ -25,7 +26,7 @@ export default function ChangePassword() {
       setError(t('profile.allFieldsRequired'));
       return;
     }
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       setError(t('profile.passwordMinLength'));
       return;
     }
@@ -63,18 +64,9 @@ export default function ChangePassword() {
           {success && <div className="alert-success">{success}</div>}
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="oldPassword">{t('profile.currentPassword')}</label>
-              <input id="oldPassword" type="password" className="form-input" value={oldPassword} onChange={e => setOldPassword(e.target.value)} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="newPassword">{t('profile.newPassword')}</label>
-              <input id="newPassword" type="password" className="form-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="confirmPassword">{t('profile.confirmPassword')}</label>
-              <input id="confirmPassword" type="password" className="form-input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
-            </div>
+            <PasswordInput id="oldPassword" label={t('profile.currentPassword')} value={oldPassword} onChange={e => setOldPassword(e.target.value)} required />
+            <PasswordInput id="newPassword" label={t('profile.newPassword')} value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+            <PasswordInput id="confirmPassword" label={t('profile.confirmPassword')} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button type="button" onClick={() => navigate('/profile')} className="btn btn-secondary" style={{ flex: 1 }}>
                 {t('profile.cancel')}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
+import PasswordInput from '../components/PasswordInput';
 
 export default function ForgotPassword() {
   const { t } = useLanguage();
@@ -92,12 +93,9 @@ export default function ForgotPassword() {
 
         {step === 3 && (
           <form onSubmit={resetPassword}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">{t('forgotPassword.newPasswordTitle')}</label>
-              <input id="password" type="password" className="form-input"
-                placeholder={t('forgotPassword.newPasswordPlaceholder')} value={password}
-                onChange={e => setPassword(e.target.value)} required />
-            </div>
+            <PasswordInput id="password" label={t('forgotPassword.newPasswordTitle')}
+              placeholder={t('forgotPassword.newPasswordPlaceholder')} value={password}
+              onChange={e => setPassword(e.target.value)} required />
             <button type="submit" className="btn btn-primary btn-full">
               {t('forgotPassword.changePassword')}
             </button>

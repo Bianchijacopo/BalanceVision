@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Register() {
   const { t } = useLanguage();
@@ -67,17 +68,13 @@ export default function Register() {
               onChange={e => setEmail(e.target.value)}
             />
           </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="password">{t('register.password')}</label>
-            <input
-              id="password"
-              type="password"
-              className="form-input"
-              placeholder={t('register.passwordHint')}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-          </div>
+          <PasswordInput
+            id="password"
+            label={t('register.password')}
+            placeholder={t('register.passwordHint')}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
           <button type="submit" className="btn btn-primary btn-full">
             {t('register.submit')}
           </button>
