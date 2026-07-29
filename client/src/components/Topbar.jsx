@@ -62,6 +62,11 @@ export default function Topbar({ title }) {
           </>
         )}
       </div>
+      <div className="topbar-center">
+        <button onClick={() => setCircularOpen(true)} className="theme-toggle" title="Menu" style={{ fontWeight: 700, fontSize: 13, letterSpacing: 0.5 }}>
+          ☰  Menu
+        </button>
+      </div>
       <div className="topbar-right">
         <button onClick={() => setLang(lang === 'it' ? 'en' : 'it')} className="theme-toggle"
           title={lang === 'it' ? 'Switch to English' : 'Passa all\'italiano'}
@@ -70,9 +75,6 @@ export default function Topbar({ title }) {
         </button>
         <button onClick={toggle} className="theme-toggle" title={theme === 'light' ? 'Dark theme' : 'Light theme'}>
           {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-        </button>
-        <button onClick={() => setCircularOpen(true)} className="theme-toggle" title="Menu" style={{ fontWeight: 700, fontSize: 13, letterSpacing: 0.5 }}>
-          Menu
         </button>
         <button onClick={() => navigate('/profile')} className="avatar-btn" title={t('nav.profile')}>
           <div className="avatar">

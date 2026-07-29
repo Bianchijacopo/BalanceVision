@@ -243,6 +243,17 @@ a:hover { text-decoration: underline; }
   background: var(--border);
 }
 
+.topbar-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.topbar-center .theme-toggle {
+  min-width: 80px;
+}
+
 .topbar-right {
   display: flex;
   align-items: center;
