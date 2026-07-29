@@ -2,10 +2,13 @@ import 'dotenv/config';
 import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'balance.db');
+const BACKUP_DIR = path.join(__dirname, '..', '..', '..', 'db-backups');
+const MAX_BACKUPS = 3;
 
 let db = null;
 let SQL = null;
@@ -233,11 +236,26 @@ function fixTimezones() {
   try { db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('tz_fixed', '1')"); } catch(e) {}
 }
 
+function rotateBackups() {
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    for (let i = MAX_BACKUPS - 1; i >= 1; i--) {
+      const src = path.join(BACKUP_DIR, `balance-backup-${i}.db`);
+      const dst = path.join(BACKUP_DIR, `balance-backup-${i + 1}.db`);
+      if (fs.existsSync(src)) fs.copyFileSync(src, dst);
+    }
+    fs.copyFileSync(DB_PATH, path.join(BACKUP_DIR, 'balance-backup-1.db'));
+  } catch (e) {
+    console.error('[backup error]', e.message);
+  }
+}
+
 function save() {
   if (db) {
     const data = db.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_PATH, buffer);
+    rotateBackups();
   }
 }
 
