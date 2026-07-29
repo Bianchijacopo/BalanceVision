@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { CurrencyProvider } from './context/CurrencyContext';
+import SplashScreen from './components/SplashScreen';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -41,6 +42,12 @@ function PublicRoute({ children }) {
   return children;
 }
 
+function GuestRoute({ children }) {
+  const { token } = useAuth();
+  if (token) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -50,8 +57,8 @@ export default function App() {
           <LanguageProvider>
           <CurrencyProvider>
           <Routes>
-            <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/" element={<GuestRoute><SplashScreen /></GuestRoute>} />
+            <Route path="/login" element={<GuestRoute><SplashScreen /></GuestRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
