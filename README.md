@@ -223,6 +223,55 @@ Il backend AI usa **Groq** (cloud, gratuito, senza bisogno di carta di credito):
   - `otp_codes` — email, codice, scadenza
   - `user_settings` — report attivo, giorno report, data ultimo invio
 
+---
+
+## 🚀 Come Usare l'App (Tutorial Veloce)
+
+### Prima apertura
+1. Avvia l'app (doppio click su `launch.bat` o sul collegamento sul desktop)
+2. Clicca **Registrati** in basso
+3. Inserisci email e password → fatto, sei dentro!
+
+### Dashboard — Cosa vedi appena entri
+- **Saldo** in alto — cliccabile per vedere storico
+- **Transazioni** del mese — scorri per vedere tutte
+- **Grafici** — andamento saldo, spese per categoria, proiezione
+- **Insight rapidi** — spesa media, categoria dominante, tasso risparmio
+
+### Aggiungere una transazione
+1. Clicca il **pulsante +** o vai su "Nuova transazione"
+2. Inserisci titolo, importo, categoria, tipo (entrata/spesa)
+3. Salva — appare subito in dashboard
+
+### Navigare tra i mesi
+Usa le frecce **← →** in alto nella dashboard.
+
+### Menu circolare
+Clicca **Menu** al centro della barra in alto per:
+- **Analisi** — grafici e statistiche avanzate
+- **Budget** — limita spese per categoria
+- **Obiettivi** — traguardi di risparmio
+- **Ricorrenti** — transazioni automatiche (affitto, bollette)
+- **Consigli AI** — chat con intelligenza artificiale
+- **Categorie** — gestisci categorie personalizzate
+- **Import CSV** — carica transazioni da file
+- **Esci** — logout
+
+### Tema e lingua
+- **Tema**: clicca ☀️/🌙 in alto a destra
+- **Lingua**: clicca **IT/EN** in alto a destra
+
+### Password dimenticata
+Nella pagina di login clicca "Password dimenticata?" → codice via email → nuova password.
+
+### Dati di test
+```bash
+cd server && npm run seed:test
+# Account: test@example.com / test123
+```
+
+---
+
 ### localStorage (Browser)
 - `bv-lang` — lingua scelta
 - `bv_custom_categories` — categorie personalizzate
