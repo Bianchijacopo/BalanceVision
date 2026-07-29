@@ -182,21 +182,6 @@ export default function Dashboard() {
       .catch(() => {});
   }, [lang, token]);
 
-  useEffect(() => {
-    const cards = document.querySelectorAll('.tx-card');
-    if (cards.length === 0) return;
-    const observer = new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('scroll-in--visible');
-          observer.unobserve(entry.target);
-        }
-      }
-    }, { threshold: 0.15 });
-    for (const card of cards) observer.observe(card);
-    return () => observer.disconnect();
-  }, [filteredTransactions]);
-
   const balanceHistory = buildBalanceHistory(transactions, balance?.initial_balance || 0);
   const projectionData = buildProjection(transactions, balance);
 
@@ -310,6 +295,22 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     if (filterAmountMax && t.amount > parseFloat(filterAmountMax)) return false;
     return true;
   });
+
+  useEffect(() => {
+    const cards = document.querySelectorAll('.tx-card');
+    if (cards.length === 0) return;
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('scroll-in--visible');
+          observer.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.15 });
+    for (const card of cards) observer.observe(card);
+    return () => observer.disconnect();
+  }, [filteredTransactions]);
+
   const filteredMonthly = monthlyTransactions.filter(t => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();

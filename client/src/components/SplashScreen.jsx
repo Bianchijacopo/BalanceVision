@@ -4,8 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function SplashScreen() {
-  const [phase, setPhase] = useState('logo');
-  const [lettersDone, setLettersDone] = useState(false);
+  const [visible, setVisible] = useState(false);
   const { t } = useLanguage();
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -17,17 +16,12 @@ export default function SplashScreen() {
   const firstInputRef = useRef(null);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase('tagline'), 2400);
-    const t2 = setTimeout(() => setPhase('form'), 3800);
-    const t3 = setTimeout(() => setLettersDone(true), 2800);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    const t1 = setTimeout(() => {
+      setVisible(true);
+      if (firstInputRef.current) firstInputRef.current.focus();
+    }, 500);
+    return () => clearTimeout(t1);
   }, []);
-
-  useEffect(() => {
-    if (phase === 'form' && firstInputRef.current) {
-      firstInputRef.current.focus();
-    }
-  }, [phase]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -42,12 +36,6 @@ export default function SplashScreen() {
     }
   }
 
-  const showForm = phase === 'form' || phase === 'done';
-
-  function letterCls(base) {
-    return `splash-name-letter${base === 'V' ? ' splash-name-accent' : ''}${lettersDone ? ' splash-name--visible' : ''}`;
-  }
-
   const LETTERS = ['B','a','l','a','n','c','e','V','i','s','i','o','n'];
   const DELAYS = ['0.0s','0.12s','0.24s','0.36s','0.48s','0.60s','0.72s','0.88s','1.00s','1.12s','1.24s','1.36s','1.48s'];
 
@@ -55,19 +43,19 @@ export default function SplashScreen() {
     <div className="splash-root">
       <div className="splash-bg-glow" />
 
-      <div className={`splash-top ${showForm ? 'splash-top--compact' : ''}`}>
-        <h1 className={`splash-name ${phase !== 'done' ? 'splash-name--enter' : ''}`}>
+      <div className={`splash-top ${visible ? 'splash-top--compact' : ''}`}>
+        <h1 className="splash-name splash-name--enter">
           {LETTERS.map((l, i) => (
-            <span key={i} className={letterCls(l)} style={{ animationDelay: DELAYS[i] }}>{l}</span>
+            <span key={i} className={`splash-name-letter${l === 'V' ? ' splash-name-accent' : ''}`} style={{ animationDelay: DELAYS[i] }}>{l}</span>
           ))}
         </h1>
 
-        <p className={`splash-tagline ${phase === 'tagline' || showForm ? 'splash-tagline--visible' : ''}`}>
+        <p className={`splash-tagline ${visible ? 'splash-tagline--visible' : ''}`}>
           {t('login.welcomeSubtitle')}
         </p>
       </div>
 
-      <div className={`splash-form-wrap ${showForm ? 'splash-form-wrap--visible' : ''}`}>
+      <div className={`splash-form-wrap ${visible ? 'splash-form-wrap--visible' : ''}`}>
         <div className="card splash-card">
           <div className="card-header">
             <p className="card-subtitle">{t('login.accessAccount')}</p>

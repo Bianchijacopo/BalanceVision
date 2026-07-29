@@ -72,9 +72,6 @@ export default function Topbar({ title }) {
         <button onClick={toggle} className="theme-toggle" title={theme === 'light' ? 'Dark theme' : 'Light theme'}>
           {theme === 'light' ? <MoonIcon /> : <SunIcon />}
         </button>
-        <button onClick={() => setCircularOpen(true)} className="circular-menu-btn" title="Menu">
-          <Menu size={20} />
-        </button>
         <button onClick={() => navigate('/profile')} className="avatar-btn" title={t('nav.profile')}>
           <div className="avatar">
             {user?.avatar ? (
@@ -85,6 +82,13 @@ export default function Topbar({ title }) {
           </div>
         </button>
       </div>
+      <button
+        onClick={() => setCircularOpen(true)}
+        className="fab-menu"
+        title="Menu"
+      >
+        <Menu size={24} />
+      </button>
       <CircularNavigation
         isOpen={circularOpen}
         onClose={() => setCircularOpen(false)}
