@@ -109,12 +109,9 @@ function createWindow() {
   win.loadURL('http://localhost:' + SERVER_PORT);
 
   win.once('ready-to-show', () => {
+    win.maximize();
     win.show();
   });
-
-  if (isDev) {
-    win.webContents.openDevTools({ mode: 'right' });
-  }
 
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
