@@ -4,7 +4,7 @@ const it = {
     recurring: 'Ricorrenti', advice: 'Consigli', categories: 'Categorie', import: 'Importa CSV', profile: 'Profilo', logout: 'Esci' },
   login: { title: 'Accedi', email: 'Email', password: 'Password', submit: 'Accedi',
     noAccount: 'Non hai un account?', register: 'Registrati', forgotPw: 'Password dimenticata?',
-    welcomeSubtitle: 'Benvenuto su BalanceVision. Il tuo controllo finanziario, semplice e professionale.',
+    welcomeSubtitle: 'Il tuo controllo finanziario, semplice e professionale.',
     accessAccount: 'Accedi al tuo account',
     passwordPlaceholder: 'Inserisci la password' },
   register: { title: 'Crea account', name: 'Nome', surname: 'Cognome', email: 'Email', password: 'Password',
