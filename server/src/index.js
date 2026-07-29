@@ -162,7 +162,7 @@ app.use('/api/transactions/suggest-category', suggestCategoryRoutes);
 app.use('/api', errorHandler);
 app.use('/api', notFoundHandler);
 
-// SPA fallback
+// SPA fallback — send index.html for all non-API, non-static routes
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Not found' });
@@ -175,6 +175,7 @@ app.get('*', (req, res) => {
 });
 
 getDb().then(() => {
+  console.log('DB ready, starting server...');
   const sslKeyPath = process.env.SSL_KEY_PATH;
   const sslCertPath = process.env.SSL_CERT_PATH;
 
@@ -187,8 +188,16 @@ getDb().then(() => {
       console.log('BalanceVision server running on https://localhost:' + PORT);
     });
   } else {
-    http.createServer(app).listen(PORT, '0.0.0.0', () => {
+    const server = http.createServer(app);
+    console.log('Created HTTP server, calling listen...');
+    server.listen(PORT, '0.0.0.0', () => {
       console.log('BalanceVision server running on http://localhost:' + PORT);
     });
+    server.on('error', (err) => {
+      console.error('SERVER ERROR:', err.message);
+    });
   }
+}).catch(err => {
+  console.error('FATAL: getDb() failed:', err.message);
+  process.exit(1);
 });

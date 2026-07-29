@@ -61,7 +61,7 @@ function startServer() {
     const timeout = setTimeout(() => {
       console.error('[server] timeout avvio server');
       resolve();
-    }, 15000);
+    }, 30000);
 
     serverProcess.stdout.on('data', (data) => {
       const msg = data.toString();

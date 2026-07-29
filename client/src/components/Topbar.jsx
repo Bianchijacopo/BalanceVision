@@ -3,6 +3,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import { Menu } from 'lucide-react';
+import CircularNavigation from './CircularNavigation';
 
 function SunIcon() {
   return (
@@ -43,7 +45,7 @@ export default function Topbar({ title }) {
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useLanguage();
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [circularOpen, setCircularOpen] = useState(false);
 
   function handleLogout() {
     logout();
@@ -70,11 +72,10 @@ export default function Topbar({ title }) {
         <button onClick={toggle} className="theme-toggle" title={theme === 'light' ? 'Dark theme' : 'Light theme'}>
           {theme === 'light' ? <MoonIcon /> : <SunIcon />}
         </button>
-        <div
-          className="user-menu"
-          onMouseEnter={() => setMenuOpen(true)}
-          onMouseLeave={() => setMenuOpen(false)}
-        >
+        <button onClick={() => setCircularOpen(true)} className="circular-menu-btn" title="Menu">
+          <Menu size={20} />
+        </button>
+        <button onClick={() => navigate('/profile')} className="avatar-btn" title={t('nav.profile')}>
           <div className="avatar">
             {user?.avatar ? (
               <img src={user.avatar} alt="" className="avatar-img" />
@@ -82,43 +83,13 @@ export default function Topbar({ title }) {
               <DefaultAvatar />
             )}
           </div>
-          <span className="text-sm text-secondary">{user?.name || user?.email}</span>
-          <div className={`dropdown-menu ${menuOpen ? 'dropdown-visible' : ''}`}>
-            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/dashboard'); }}>
-              {t('nav.dashboard')}
-            </button>
-            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/analytics'); }}>
-              {t('nav.analytics')}
-            </button>
-            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/budgets'); }}>
-              {t('nav.budgets')}
-            </button>
-            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/goals'); }}>
-              {t('nav.goals')}
-            </button>
-            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/recurring'); }}>
-              {t('nav.recurring')}
-            </button>
-            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/advice'); }}>
-              {t('nav.advice')}
-            </button>
-            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/categories'); }}>
-              {t('nav.categories')}
-            </button>
-            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/import'); }}>
-              {t('nav.import')}
-            </button>
-            <div className="dropdown-divider" />
-            <button className="dropdown-item" onClick={() => { setMenuOpen(false); navigate('/profile'); }}>
-              {t('nav.profile')}
-            </button>
-            <div className="dropdown-divider" />
-            <button className="dropdown-item" onClick={handleLogout}>
-              {t('nav.logout')}
-            </button>
-          </div>
-        </div>
+        </button>
       </div>
+      <CircularNavigation
+        isOpen={circularOpen}
+        onClose={() => setCircularOpen(false)}
+        onLogout={handleLogout}
+      />
     </header>
   );
 }
