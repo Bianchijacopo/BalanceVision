@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiGet, apiPost, apiPut } from '../context/ApiContext';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -25,8 +25,11 @@ export default function TransactionForm() {
   const [success, setSuccess] = useState('');
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLORS[0]);
   const [loading, setLoading] = useState(isEdit);
+  const [suggesting, setSuggesting] = useState(false);
 
   const showColorPicker = customCategory.trim().length > 0;
+  const userChangedCategory = useRef(false);
+  const suggestTimer = useRef(null);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -38,6 +41,7 @@ export default function TransactionForm() {
         setCategory(t.category);
         setDate(t.date);
         setNote(t.note || '');
+        userChangedCategory.current = true;
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -54,6 +58,27 @@ export default function TransactionForm() {
       }
     }
   }, [customCategory]);
+
+  useEffect(() => {
+    if (isEdit) return;
+    if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    if (!title.trim()) return;
+    suggestTimer.current = setTimeout(async () => {
+      setSuggesting(true);
+      try {
+        const res = await apiPost('/transactions/suggest-category', { title, lang }, token);
+        if (res.category && !userChangedCategory.current) {
+          setCategory(res.category);
+        }
+      } catch {
+      } finally {
+        setSuggesting(false);
+      }
+    }, 500);
+    return () => {
+      if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    };
+  }, [title, isEdit]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -147,12 +172,18 @@ export default function TransactionForm() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="category">{t('transactionForm.category')}</label>
+              <label className="form-label" htmlFor="category">
+                {t('transactionForm.category')}
+                {suggesting && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-secondary)' }}>suggerendo...</span>}
+              </label>
               <select
                 id="category"
                 className="form-input"
                 value={category}
-                onChange={e => setCategory(e.target.value)}
+                onChange={e => {
+                  userChangedCategory.current = true;
+                  setCategory(e.target.value);
+                }}
               >
                 {getAllCategories().map(c => (
                   <option key={c} value={c}>{catName(c, t, lang)}</option>

@@ -22,6 +22,7 @@ import importRoutes from './routes/import.js';
 import reportRoutes from './routes/reports.js';
 import translateRoutes from './routes/translate.js';
 import settingsRoutes from './routes/settings.js';
+import suggestCategoryRoutes from './routes/suggestCategory.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -102,7 +103,7 @@ const globalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: 10,
   message: { error: 'Troppe richieste. Riprova tra un minuto.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -155,6 +156,7 @@ app.use('/api/import', importRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/translate', translateRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/transactions/suggest-category', suggestCategoryRoutes);
 
 // Error handling
 app.use('/api', errorHandler);
