@@ -7,7 +7,7 @@
     "build": "cd client && npx vite build",
     "electron-start": "npx electron .",
     "electron-build": "npm run build && electron .",
-    "release-win": "npx @electron/packager . BalanceVision --platform=win32 --arch=x64 --out=release --overwrite"
+    "release-win": "npx @electron/packager . BalanceVision --platform=win32 --arch=x64 --out=release --overwrite --asar.unpackDir=\"server|client/dist\""
   },
   "devDependencies": {
     "@electron/packager": "^20.0.4",

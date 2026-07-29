@@ -19,7 +19,7 @@ export default function SplashScreen() {
     const t1 = setTimeout(() => {
       setVisible(true);
       if (firstInputRef.current) firstInputRef.current.focus();
-    }, 500);
+    }, 3000);
     return () => clearTimeout(t1);
   }, []);
 
