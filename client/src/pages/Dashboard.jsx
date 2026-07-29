@@ -513,33 +513,40 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       <Topbar title={t('nav.dashboard')} />
 
       <main className="main-content">
-          <div className="clock-wrap">
-            <div className="clock-date">{clock.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
-            <div className="clock-time">{clock.toLocaleTimeString(locale, timeOpts)}</div>
+          <div className="cascade-item" style={{ '--i': 0 }}>
+            <div className="clock-wrap">
+              <div className="clock-date">{clock.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+              <div className="clock-time">{clock.toLocaleTimeString(locale, timeOpts)}</div>
+            </div>
           </div>
-          <div className={`balance-card clickable balance-countup ${animClass}`} onClick={() => setModal('balance')}>
-            <p className="balance-label">{displayLabel}</p>
-            <h2 className="balance-value">
-              {displayBalance != null ? <span className={`dollar-brand ${displayBalance < 0 ? 'text-danger' : ''}`}><RollingNumber value={fmt(displayBalance)} height="1.3em" /></span> : '...'}
-            </h2>
+          <div className="cascade-item" style={{ '--i': 1 }}>
+            <div className={`balance-card clickable balance-countup ${animClass}`} onClick={() => setModal('balance')}>
+              <p className="balance-label">{displayLabel}</p>
+              <h2 className="balance-value">
+                {displayBalance != null ? <span className={`dollar-brand ${displayBalance < 0 ? 'text-danger' : ''}`}><RollingNumber value={fmt(displayBalance)} height="1.3em" /></span> : '...'}
+              </h2>
+            </div>
           </div>
 
           {ticker && (
-            <div className="insight-card" style={{ marginTop: 16, textAlign: 'center' }}>
-              <div className="insight-label" style={{ fontSize: 11 }}>USD/{currency}</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <RollingNumber value={ticker.rate.toFixed(4)} height="1.3em" className="insight-value" />
-                <span style={{
-                  fontSize: 14, fontWeight: 700,
-                  color: ticker.change > 0 ? 'var(--success, #00b45a)' : ticker.change < 0 ? 'var(--danger, #dc0032)' : 'var(--text-secondary)',
-                }}>
-                  {ticker.change !== 0 && (ticker.change > 0 ? '▲ ' : '▼ ')}
-                  {ticker.changePct.toFixed(2)}%
-                </span>
+            <div className="cascade-item" style={{ '--i': 2 }}>
+              <div className="insight-card" style={{ marginTop: 16, textAlign: 'center' }}>
+                <div className="insight-label" style={{ fontSize: 11 }}>USD/{currency}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <RollingNumber value={ticker.rate.toFixed(4)} height="1.3em" className="insight-value" />
+                  <span style={{
+                    fontSize: 14, fontWeight: 700,
+                    color: ticker.change > 0 ? 'var(--success, #00b45a)' : ticker.change < 0 ? 'var(--danger, #dc0032)' : 'var(--text-secondary)',
+                  }}>
+                    {ticker.change !== 0 && (ticker.change > 0 ? '▲ ' : '▼ ')}
+                    {ticker.changePct.toFixed(2)}%
+                  </span>
+                </div>
               </div>
             </div>
           )}
 
+          <div className="cascade-item" style={{ '--i': 3 }}>
           <div className="insights-grid">
             {monthlyTransactions.length > 0 && (
               <>
@@ -564,8 +571,10 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               </>
             )}
           </div>
+          </div>
 
           {budgetData?.budgets?.length > 0 && (
+            <div className="cascade-item" style={{ '--i': 4 }}>
             <div className="card-chart" style={{ marginBottom: 24 }}>
               <div className="section-header">
                 <h3 className="chart-title" style={{ margin: 0 }}>{t('dashboard.budgetTitle')} {monthName}</h3>
@@ -607,9 +616,11 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                 )}
               </div>
             </div>
+          </div>
           )}
 
           {goalData?.goals?.length > 0 && (
+            <div className="cascade-item" style={{ '--i': 5 }}>
             <div className="card-chart" style={{ marginBottom: 24 }}>
               <div className="section-header">
                 <h3 className="chart-title" style={{ margin: 0 }}>{t('dashboard.goalsTitle')}</h3>
@@ -648,8 +659,10 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
                 )}
               </div>
             </div>
+          </div>
           )}
 
+          <div className="cascade-item" style={{ '--i': 6 }}>
           <div className="monthly-summary">
             <div className="monthly-header">
               <button className="monthly-arrow" onClick={() => setMonthOffset(prev => prev - 1)}>←</button>
@@ -673,7 +686,9 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               </div>
             </div>
           </div>
+          </div>
 
+        <div className="cascade-item" style={{ '--i': 7 }}>
         <div className="grid-2">
           <div ref={chartRef} className="card-chart clickable" onClick={() => setModal('chart-line')}>
             <h3 className="chart-title">{t('dashboard.chartBalance')}</h3>
@@ -753,7 +768,9 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             )}
           </div>
         </div>
+        </div>
 
+        <div className="cascade-item" style={{ '--i': 8 }}>
         <div className="grid-2">
           <div className="card-chart clickable" onClick={() => setModal('chart-projection')}>
             <h3 className="chart-title">{t('dashboard.chartProjection')}</h3>
@@ -802,6 +819,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           </div>
         </div>
 
+        <div className="cascade-item" style={{ '--i': 9 }}>
         <div className="tx-block">
           <div className="tx-header">
             <h3>{t('dashboard.totalTransactions')}</h3>
@@ -912,6 +930,10 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           </div>
         </div>
 
+        </div>
+        </div>
+
+        <div className="cascade-item" style={{ '--i': 10 }}>
         <div className="section" style={{ textAlign: 'center' }}>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/analytics')} className="btn btn-secondary">{t('analytics.title')}</button>
@@ -919,6 +941,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             <button onClick={() => navigate('/goals')} className="btn btn-secondary">{t('nav.goals')}</button>
             <button onClick={() => navigate('/advice')} className="btn btn-secondary">{t('nav.advice')}</button>
           </div>
+        </div>
         </div>
       </main>
     </div>
