@@ -2265,6 +2265,16 @@ textarea.form-input {
 }
 
 /* ============================
+   BUTTON BOUNCE ON CLICK
+   ============================ */
+.btn:active,
+.btn-glassed:active,
+.toggle-btn:active,
+.tx-new-btn:active {
+  transform: scale(0.96);
+}
+
+/* ============================
    CASCADE ANIMATION (all pages)
    ============================ */
 .main-content > * {
