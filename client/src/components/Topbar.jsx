@@ -3,7 +3,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
-import { Menu } from 'lucide-react';
 import CircularNavigation from './CircularNavigation';
 
 function SunIcon() {
@@ -72,6 +71,9 @@ export default function Topbar({ title }) {
         <button onClick={toggle} className="theme-toggle" title={theme === 'light' ? 'Dark theme' : 'Light theme'}>
           {theme === 'light' ? <MoonIcon /> : <SunIcon />}
         </button>
+        <button onClick={() => setCircularOpen(true)} className="theme-toggle" title="Menu" style={{ fontWeight: 700, fontSize: 13, letterSpacing: 0.5 }}>
+          Menu
+        </button>
         <button onClick={() => navigate('/profile')} className="avatar-btn" title={t('nav.profile')}>
           <div className="avatar">
             {user?.avatar ? (
@@ -82,13 +84,6 @@ export default function Topbar({ title }) {
           </div>
         </button>
       </div>
-      <button
-        onClick={() => setCircularOpen(true)}
-        className="fab-menu"
-        title="Menu"
-      >
-        <Menu size={24} />
-      </button>
       <CircularNavigation
         isOpen={circularOpen}
         onClose={() => setCircularOpen(false)}

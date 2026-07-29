@@ -2740,34 +2740,3 @@ textarea.form-input {
     font-size: 10px;
   }
 }
-
-/* ============================
-   FAB MENU BUTTON
-   ============================ */
-.fab-menu {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--brand);
-  color: #000;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 8000;
-  box-shadow: 0 4px 20px rgba(0, 255, 90, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.fab-menu:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 28px rgba(0, 255, 90, 0.45);
-}
-
-.fab-menu:active {
-  transform: scale(0.95);
-}
