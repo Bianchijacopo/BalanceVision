@@ -144,7 +144,35 @@ export default function Profile() {
                 {uploading ? t('profile.uploading') : t('profile.changePhoto')}
               </div>
             </div>
+            <input type="file" ref={fileRef} hidden accept="image/*" onChange={handleAvatarChange} />
           </div>
+          <div className="profile-info">
+            <div className="profile-row">
+              <span className="profile-label">{t('profile.name')}</span>
+              <span className="profile-value">{profile?.name || '—'}</span>
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">{t('profile.surname')}</span>
+              <span className="profile-value">{profile?.surname || '—'}</span>
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">{t('profile.email')}</span>
+              <span className="profile-value">{profile?.email}</span>
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">{t('profile.registrationDate')}</span>
+              <span className="profile-value">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString(locale) : '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="profile-actions" style={{ marginTop: 16 }}>
+          <button onClick={() => navigate('/profile/edit')} className="btn btn-primary" style={{ width: '100%' }}>
+            {t('profile.editData')}
+          </button>
+          <button onClick={() => navigate('/profile/change-password')} className="btn btn-secondary" style={{ width: '100%', marginTop: 8 }}>
+            {t('profile.changePassword')}
+          </button>
         </div>
 
         <div className="card" style={{ marginTop: 16 }}>
@@ -160,6 +188,27 @@ export default function Profile() {
               </select>
             </div>
           </div>
+        </div>
+
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-header">
+            <h3 className="card-title" style={{ fontSize: 15 }}>{t('profile.deleteAccount')}</h3>
+          </div>
+          {deleteStep === 'confirm' ? (
+            <button onClick={handleDeleteRequest} className="btn btn-danger" style={{ width: '100%' }}>
+              {t('profile.deleteAccount')}
+            </button>
+          ) : (
+            <div>
+              <p style={{ fontSize: 13, marginBottom: 8 }}>{t('profile.deleteOtpMessage')}</p>
+              {deleteError && <div className="alert-error">{deleteError}</div>}
+              <input className="form-input" placeholder={t('profile.otpPlaceholder')} value={deleteOtp} onChange={e => setDeleteOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} style={{ textAlign: 'center', letterSpacing: 8, fontSize: 22, fontWeight: 700, fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace" }} />
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button onClick={() => { setDeleteStep('confirm'); setDeleteOtp(''); setDeleteError(''); }} className="btn btn-secondary" style={{ flex: 1 }}>{t('profile.cancel')}</button>
+                <button onClick={handleDeleteConfirm} className="btn btn-danger" style={{ flex: 1 }}>{t('profile.delete')}</button>
+              </div>
+            </div>
+          )}
         </div>
 
       </main>

@@ -512,6 +512,19 @@ textarea.form-input {
   transform: scale(0.98);
 }
 
+.btn-danger {
+  background: var(--danger, #e53e3e);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: var(--danger-hover, #c53030);
+}
+
+.btn-danger:active {
+  transform: scale(0.98);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
