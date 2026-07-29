@@ -223,6 +223,7 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
 }
 
 .topbar-logo {
@@ -257,7 +258,9 @@ a:hover { text-decoration: underline; }
 .topbar-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
+  flex: 1;
 }
 
 .avatar {
