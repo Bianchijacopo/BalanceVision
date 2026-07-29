@@ -62,11 +62,6 @@ export default function SplashScreen() {
           ))}
         </h1>
 
-        <div className={`splash-accent ${phase === 'tagline' || showForm ? 'splash-accent--visible' : ''}`}>
-          <div className="splash-accent-line" />
-          <div className="splash-accent-dot" />
-        </div>
-
         <p className={`splash-tagline ${phase === 'tagline' || showForm ? 'splash-tagline--visible' : ''}`}>
           {t('login.welcomeSubtitle')}
         </p>

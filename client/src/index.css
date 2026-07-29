@@ -2359,37 +2359,6 @@ textarea.form-input {
   }
 }
 
-.splash-accent {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 6px;
-  opacity: 0;
-  transform: scaleX(0);
-  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform-origin: center;
-}
-
-.splash-accent--visible {
-  opacity: 1;
-  transform: scaleX(1);
-}
-
-.splash-accent-line {
-  width: 60px;
-  height: 1.5px;
-  background: var(--brand);
-  border-radius: 2px;
-}
-
-.splash-accent-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-
 .splash-tagline {
   font-size: 13px;
   color: var(--text-secondary);
