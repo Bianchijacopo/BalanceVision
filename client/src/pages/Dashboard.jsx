@@ -182,6 +182,21 @@ export default function Dashboard() {
       .catch(() => {});
   }, [lang, token]);
 
+  useEffect(() => {
+    const cards = document.querySelectorAll('.tx-card');
+    if (cards.length === 0) return;
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('scroll-in--visible');
+          observer.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.15 });
+    for (const card of cards) observer.observe(card);
+    return () => observer.disconnect();
+  }, [filteredTransactions]);
+
   const balanceHistory = buildBalanceHistory(transactions, balance?.initial_balance || 0);
   const projectionData = buildProjection(transactions, balance);
 
@@ -503,7 +518,28 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
   if (initialLoading) return (
     <div className="layout">
       <Topbar title={t('nav.dashboard')} />
-      <main className="main-content"><div className="loading">{t('dashboard.loading')}</div></main>
+      <main className="main-content">
+        <div className="clock-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <div className="skeleton skeleton-sm" style={{ width: 160 }} />
+          <div className="skeleton skeleton-md" style={{ width: 100 }} />
+        </div>
+        <div className="balance-card" style={{ textAlign: 'center', padding: 32 }}>
+          <div className="skeleton skeleton-sm" style={{ margin: '0 auto 12px' }} />
+          <div className="skeleton skeleton-md" style={{ margin: '0 auto' }} />
+        </div>
+        <div className="insights-grid">
+          <div className="skeleton skeleton-chart" />
+          <div className="skeleton skeleton-chart" />
+          <div className="skeleton skeleton-chart" />
+          <div className="skeleton skeleton-chart" />
+        </div>
+        <div className="skeleton skeleton-chart" />
+        <div className="grid-2">
+          <div className="skeleton skeleton-chart" />
+          <div className="skeleton skeleton-chart" />
+        </div>
+        <div className="skeleton skeleton-chart" />
+      </main>
     </div>
   );
 
@@ -882,7 +918,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
 
           <div className="tx-list">
             {filteredTransactions.map(tx => (
-              <div key={tx.id} className="tx-card">
+              <div key={tx.id} className="tx-card scroll-in">
                 <span className="tx-card-date">{tx.date}</span>
                 <div className="tx-card-body">
                   <span className="tx-card-category">{catName(tx.category, t, lang)}</span>

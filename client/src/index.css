@@ -2265,6 +2265,128 @@ textarea.form-input {
 }
 
 /* ============================
+   CUSTOM SCROLLBAR
+   ============================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* ============================
+   ELEVATED CARD HOVER
+   ============================ */
+.balance-card:hover,
+.card-chart:hover,
+.insight-card:hover,
+.monthly-summary:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(0, 255, 90, 0.06);
+  border-color: rgba(0, 255, 90, 0.15);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+}
+
+[data-theme="light"] .balance-card:hover,
+[data-theme="light"] .card-chart:hover,
+[data-theme="light"] .insight-card:hover,
+[data-theme="light"] .monthly-summary:hover {
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(212, 175, 55, 0.08);
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+/* ============================
+   SKELETON LOADING
+   ============================ */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--bg-hover) 0%,
+    var(--bg-surface) 40%,
+    var(--bg-hover) 80%
+  );
+  background-size: 200px 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-sm {
+  height: 14px;
+  width: 120px;
+  margin-bottom: 8px;
+}
+
+.skeleton-md {
+  height: 36px;
+  width: 200px;
+  margin-bottom: 12px;
+}
+
+.skeleton-lg {
+  height: 120px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.skeleton-block {
+  height: 48px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.skeleton-chart {
+  height: 250px;
+  width: 100%;
+  border-radius: var(--radius);
+}
+
+/* ============================
+   SCROLL-IN ANIMATION
+   ============================ */
+.scroll-in {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.scroll-in--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================
+   PAGE TRANSITION
+   ============================ */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.main-content {
+  animation: page-enter 0.35s ease-out;
+}
+
+/* ============================
    BUTTON BOUNCE ON CLICK
    ============================ */
 .btn:active,
