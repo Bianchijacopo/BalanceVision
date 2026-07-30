@@ -116,14 +116,23 @@ router.post('/forgot-send-otp', validate(schemas.forgotSendOtp), async (req, res
   const user = await get('SELECT id, email, name FROM users WHERE email = ?', [email]);
 
   if (user) {
+    if (!isEmailConfigured()) {
+      const otp = String(Math.floor(100000 + Math.random() * 900000));
+      const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+      const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      await run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, user.id]);
+      return res.json({ otp, message: 'DEBUG: email non configurata, usa OTP: ' + otp });
+    }
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
     const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     await run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, user.id]);
     try {
       const { text, html } = buildOtpEmail(user.name || 'Utente', otp, 'recupero');
-      sendEmail(email, buildSubject('recupero'), text, html).catch(() => {});
-    } catch (e) {}
+      await sendEmail(email, buildSubject('recupero'), text, html);
+    } catch (e) {
+      return res.status(500).json({ error: 'Errore invio email. Riprova.' });
+    }
   }
 
   res.json({ message: 'Se l\'email esiste, riceverai un codice per il recupero password' });
@@ -194,13 +203,16 @@ router.post('/send-otp', authMiddleware, async (req, res) => {
   const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   await run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, req.userId]);
 
+  if (!isEmailConfigured()) {
+    return res.status(503).json({ error: 'Servizio email non configurato. Contatta l\'amministratore.' });
+  }
   try {
     const { text, html } = buildOtpEmail(user.name || 'Utente', otp, purpose);
-    sendEmail(user.email, buildSubject(purpose), text, html).catch(() => {});
+    await sendEmail(user.email, buildSubject(purpose), text, html);
     res.json({ message: 'Codice inviato alla tua email' });
   } catch (err) {
     console.error('Errore invio email OTP:', err);
-    res.json({ message: 'Email non configurata. Contatta l\'amministratore.' });
+    res.status(500).json({ error: 'Errore invio email. Riprova.' });
   }
 });
 
@@ -234,15 +246,16 @@ router.put('/avatar', authMiddleware, verifiedMiddleware, validate(schemas.avata
 });
 
 router.delete('/account', authMiddleware, verifiedMiddleware, async (req, res) => {
-  const otp = req.query.otp;
-  if (!otp || otp.length !== 6) return res.status(400).json({ error: 'Codice OTP richiesto (6 cifre)' });
-
-  const user = await get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
-  if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Richiedi prima un OTP' });
-  if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'OTP scaduto' });
-  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-  if (!crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otpHash))) {
-    return res.status(400).json({ error: 'Codice OTP errato' });
+  if (isEmailConfigured()) {
+    const otp = req.query.otp;
+    if (!otp || otp.length !== 6) return res.status(400).json({ error: 'Codice OTP richiesto (6 cifre)' });
+    const user = await get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
+    if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Richiedi prima un OTP' });
+    if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'OTP scaduto' });
+    const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+    if (!crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otpHash))) {
+      return res.status(400).json({ error: 'Codice OTP errato' });
+    }
   }
 
   audit(req.userId, 'account_deleted', req.ip);
