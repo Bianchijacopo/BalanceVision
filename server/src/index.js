@@ -88,8 +88,16 @@ app.use((req, res, next) => {
 });
 app.set('trust proxy', 1);
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3001';
+const allowedOrigins = corsOrigin.split(',').map(s => s.trim());
 app.use(cors({
-  origin: corsOrigin.split(',').map(s => s.trim()),
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('https://balance-vision') || origin.startsWith('http://localhost')) {
+      cb(null, true);
+    } else {
+      console.warn('[CORS] blocked origin:', origin);
+      cb(null, false);
+    }
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '5mb' }));
