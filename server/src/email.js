@@ -8,7 +8,10 @@ function getTransporter() {
   if (!GMAIL_USER || !GMAIL_APP_PASSWORD) return null;
   transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD }
+    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 8000
   });
   return transporter;
 }
