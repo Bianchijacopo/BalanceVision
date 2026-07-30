@@ -22,6 +22,14 @@ import Recurring from './pages/Recurring';
 import Categories from './pages/Categories';
 import ImportCsv from './pages/ImportCsv';
 
+function LoadingScreen() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0a0a0a' }}>
+      <div style={{ color: '#D4AF37', fontSize: 18, fontWeight: 600 }}>BalanceVision</div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children, requireVerified }) {
   const { token, justRegistered } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
@@ -48,15 +56,11 @@ function GuestRoute({ children }) {
   return children;
 }
 
-export default function App() {
+function AppContent() {
+  const { verifying } = useAuth();
+  if (verifying) return <LoadingScreen />;
   return (
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <ToastProvider>
-          <LanguageProvider>
-          <CurrencyProvider>
-          <Routes>
+    <Routes>
             <Route path="/" element={<GuestRoute><SplashScreen /></GuestRoute>} />
             <Route path="/login" element={<GuestRoute><SplashScreen /></GuestRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
@@ -77,6 +81,18 @@ export default function App() {
             <Route path="/profile/change-password" element={<VerifiedRoute><ChangePassword /></VerifiedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+          <LanguageProvider>
+          <CurrencyProvider>
+            <AppContent />
           </CurrencyProvider>
           </LanguageProvider>
           </ToastProvider>

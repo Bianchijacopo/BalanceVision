@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken'));
   const [justRegistered, setJustRegistered] = useState(false);
+  const [verifying, setVerifying] = useState(!!token);
 
   useEffect(() => {
     if (token) localStorage.setItem('token', token);
@@ -19,6 +20,23 @@ export function AuthProvider({ children }) {
     if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
     else localStorage.removeItem('refreshToken');
   }, [refreshToken]);
+
+  // Verify stored token on mount
+  useEffect(() => {
+    if (!token) { setVerifying(false); return; }
+    fetch(apiUrl('/auth/profile'), {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(u => { setUser(u); setVerifying(false); })
+      .catch(() => {
+        setToken(null);
+        setRefreshToken(null);
+        setUser(null);
+        setJustRegistered(false);
+        setVerifying(false);
+      });
+  }, []);
 
   const doRefresh = useCallback(async () => {
     const stored = localStorage.getItem('refreshToken');
@@ -112,7 +130,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, setUser, justRegistered, setJustRegistered, doRefresh }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, setUser, justRegistered, setJustRegistered, doRefresh, verifying }}>
       {children}
     </AuthContext.Provider>
   );
