@@ -53,13 +53,15 @@ router.post('/register', validate(schemas.register), async (req, res) => {
   try {
     const fullName = [name, surname].filter(Boolean).join(' ') || 'Utente';
     const { text, html } = buildOtpEmail(fullName, otp, 'verifica');
-    await sendEmail(email, buildSubject('verifica'), text, html);
+    sendEmail(email, buildSubject('verifica'), text, html).catch(err => {
+      console.error('Errore invio email di verifica:', err);
+    });
   } catch (err) {
     console.error('Errore invio email di verifica:', err);
   }
 
   audit(result.lastInsertRowid, 'register', req.ip);
-  const userData = getUser(result.lastInsertRowid);
+  const userData = await getUser(result.lastInsertRowid);
   res.status(201).json({
     token, refreshToken,
     user: userData,
