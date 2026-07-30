@@ -40,25 +40,10 @@ router.post('/register', validate(schemas.register), async (req, res) => {
   }
 
   const password_hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
-  const result = await run('INSERT INTO users (email, password_hash, name, surname, created_at) VALUES (?, ?, ?, ?, ?)', [email, password_hash, name || '', surname || '', localNow()]);
+  const result = await run('INSERT INTO users (email, password_hash, name, surname, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?)', [email, password_hash, name || '', surname || '', localNow(), true]);
 
   const token = generateToken(result.lastInsertRowid);
   const refreshToken = await generateRefreshToken(result.lastInsertRowid);
-
-  const otp = String(Math.floor(100000 + Math.random() * 900000)).padStart(6, '0');
-  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-  const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-  await run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, result.lastInsertRowid]);
-
-  try {
-    const fullName = [name, surname].filter(Boolean).join(' ') || 'Utente';
-    const { text, html } = buildOtpEmail(fullName, otp, 'verifica');
-    sendEmail(email, buildSubject('verifica'), text, html).catch(err => {
-      console.error('Errore invio email di verifica:', err);
-    });
-  } catch (err) {
-    console.error('Errore invio email di verifica:', err);
-  }
 
   audit(result.lastInsertRowid, 'register', req.ip);
   const userData = await getUser(result.lastInsertRowid);
