@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { get, run, localNow } from '../db/database.js';
 import { generateToken, authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
-import { sendEmail, buildOtpEmail } from '../email.js';
+import { sendEmail, buildOtpEmail, buildSubject } from '../email.js';
 import { validate, schemas } from '../utils/validate.js';
 import { sanitize } from '../utils/sanitize.js';
 
@@ -54,8 +54,8 @@ router.post('/register', validate(schemas.register), async (req, res) => {
 
   try {
     const fullName = [name, surname].filter(Boolean).join(' ') || 'Utente';
-    const { text, html } = buildOtpEmail(fullName, otp);
-    await sendEmail(email, 'Codice di verifica BalanceVision', text, html);
+    const { text, html } = buildOtpEmail(fullName, otp, 'verifica');
+    await sendEmail(email, buildSubject('verifica'), text, html);
   } catch (err) {
     console.error('Errore invio email di verifica:', err);
   }
@@ -136,8 +136,8 @@ router.post('/forgot-send-otp', validate(schemas.forgotSendOtp), (req, res) => {
     const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, user.id]);
     try {
-      const { text, html } = buildOtpEmail(user.name || 'Utente', otp);
-      sendEmail(email, 'Recupero password BalanceVision', text, html).catch(() => {});
+      const { text, html } = buildOtpEmail(user.name || 'Utente', otp, 'recupero');
+      sendEmail(email, buildSubject('recupero'), text, html).catch(() => {});
     } catch (e) {}
   }
 
@@ -201,16 +201,17 @@ router.post('/change-password', authMiddleware, verifiedMiddleware, validate(sch
   res.json({ message: 'Password cambiata con successo' });
 });
 
-router.post('/send-otp', authMiddleware, async (req, res) => {
+router.post('/send-otp', authMiddleware, (req, res) => {
   const user = get('SELECT email, name FROM users WHERE id = ?', [req.userId]);
+  const purpose = req.body?.purpose || 'verifica';
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
   const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, req.userId]);
 
   try {
-    const { text, html } = buildOtpEmail(user.name || 'Utente', otp);
-    await sendEmail(user.email, 'Codice di verifica BalanceVision', text, html);
+    const { text, html } = buildOtpEmail(user.name || 'Utente', otp, purpose);
+    sendEmail(user.email, buildSubject(purpose), text, html).catch(() => {});
     res.json({ message: 'Codice inviato alla tua email' });
   } catch (err) {
     console.error('Errore invio email OTP:', err);
@@ -247,8 +248,9 @@ router.put('/avatar', authMiddleware, verifiedMiddleware, validate(schemas.avata
   res.json({ message: 'Avatar aggiornato', avatar });
 });
 
-router.delete('/account', authMiddleware, verifiedMiddleware, validate(schemas.deleteAccount), (req, res) => {
-  const { otp } = req.body;
+router.delete('/account', authMiddleware, verifiedMiddleware, (req, res) => {
+  const otp = req.query.otp;
+  if (!otp || otp.length !== 6) return res.status(400).json({ error: 'Codice OTP richiesto (6 cifre)' });
 
   const user = get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
   if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Richiedi prima un OTP' });

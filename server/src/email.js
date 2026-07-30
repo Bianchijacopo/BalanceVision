@@ -32,19 +32,41 @@ export async function sendEmail(to, subject, text, html) {
   });
 }
 
-export function buildOtpEmail(name, otp) {
+const PURPOSE_TEXT = {
+  verifica: 'Per completare la verifica del tuo account BalanceVision, e necessario confermare il tuo indirizzo email.',
+  recupero: 'Per reimpostare la password del tuo account BalanceVision, utilizza il codice qui sotto.',
+  eliminazione: 'Per eliminare il tuo account BalanceVision, conferma utilizzando il codice qui sotto.',
+};
+const PURPOSE_SUBJECT = {
+  verifica: 'Codice di verifica BalanceVision',
+  recupero: 'Recupero password BalanceVision',
+  eliminazione: 'Eliminazione account BalanceVision',
+};
+const PURPOSE_FOOTER = {
+  verifica: 'BalanceVision \u2013 Servizio di Verifica Account',
+  recupero: 'BalanceVision \u2013 Recupero Password',
+  eliminazione: 'BalanceVision \u2013 Eliminazione Account',
+};
+
+export function buildOtpEmail(name, otp, purpose) {
+  purpose = purpose || 'verifica';
+  const intro = PURPOSE_TEXT[purpose] || PURPOSE_TEXT.verifica;
+  const footer = PURPOSE_FOOTER[purpose] || PURPOSE_FOOTER.verifica;
+
   const text = [
-    'Codice di verifica BalanceVision',
+    PURPOSE_SUBJECT[purpose] || PURPOSE_SUBJECT.verifica,
     '',
-    'Per completare la registrazione del tuo account BalanceVision, e necessario confermare il tuo indirizzo email.',
+    'Ciao ' + name + ',',
+    '',
+    intro,
     '',
     'Il tuo codice di verifica e: ' + otp,
     '',
     'Questo codice e valido per 10 minuti.',
-    'Se non hai richiesto questa verifica, puoi ignorare questo messaggio.',
+    'Se non hai richiesto questa operazione, puoi ignorare questo messaggio.',
     '',
     'Cordiali saluti,',
-    'BalanceVision - Servizio di Verifica Account'
+    footer
   ].join('\n');
 
   const html = `<!DOCTYPE html>
@@ -73,16 +95,16 @@ export function buildOtpEmail(name, otp) {
     <div class="card">
       <div class="logo">BalanceVision</div>
       <h1 class="title">Codice di verifica</h1>
-      <p class="intro">Per completare la registrazione del tuo account BalanceVision, e necessario confermare il tuo indirizzo email.</p>
+      <p class="intro">${intro}</p>
       <div class="code-box">
         <div class="code-label">Codice di verifica</div>
         <div class="code">${otp}</div>
       </div>
       <p class="note">Questo codice e valido per 10 minuti.</p>
-      <p class="note">Se non hai richiesto questa verifica, puoi ignorare questo messaggio.</p>
+      <p class="note">Se non hai richiesto questa operazione, puoi ignorare questo messaggio.</p>
       <div class="footer">
         <p>Cordiali saluti,</p>
-        <p>BalanceVision &ndash; Servizio di Verifica Account</p>
+        <p>${footer}</p>
       </div>
     </div>
   </div>
@@ -90,4 +112,8 @@ export function buildOtpEmail(name, otp) {
 </html>`;
 
   return { text, html };
+}
+
+export function buildSubject(purpose) {
+  return PURPOSE_SUBJECT[purpose] || PURPOSE_SUBJECT.verifica;
 }

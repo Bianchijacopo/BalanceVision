@@ -69,7 +69,7 @@ export default function Profile() {
 
   async function handleDeleteRequest() {
     try {
-      const data = await apiPost('/auth/send-otp', {}, token);
+      const data = await apiPost('/auth/send-otp', { purpose: 'eliminazione' }, token);
       setDeleteStep('otp');
       if (data.otp) alert('OTP di test: ' + data.otp);
     } catch (err) {
