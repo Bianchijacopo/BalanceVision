@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { get, run, localNow } from '../db/database.js';
 import { generateToken, authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
-import { sendEmail, buildOtpEmail, buildSubject } from '../email.js';
+import { sendEmail, buildOtpEmail, buildSubject, isEmailConfigured } from '../email.js';
 import { validate, schemas } from '../utils/validate.js';
 import { sanitize } from '../utils/sanitize.js';
 
@@ -266,6 +266,26 @@ router.delete('/account', authMiddleware, verifiedMiddleware, async (req, res) =
   await run('DELETE FROM initial_balance WHERE user_id = ?', [req.userId]);
   await run('DELETE FROM users WHERE id = ?', [req.userId]);
   res.json({ message: 'Account eliminato con successo' });
+});
+
+// Diagnostic endpoint — test email config (remove in production)
+router.get('/debug-email', (req, res) => {
+  const configured = isEmailConfigured();
+  res.json({
+    configured,
+    user: configured ? process.env.GMAIL_USER.substring(0, 4) + '***' : null,
+    warning: configured ? null : 'Imposta GMAIL_USER e GMAIL_APP_PASSWORD su Render'
+  });
+});
+
+router.post('/debug-test-email', async (req, res) => {
+  try {
+    const { text, html } = buildOtpEmail('Test', '123456', 'verifica');
+    await sendEmail(req.body.to || 'test@test.com', buildSubject('verifica'), text, html);
+    res.json({ ok: true, message: 'Email inviata (se configurata)' });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 export default router;

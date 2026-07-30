@@ -117,3 +117,7 @@ export function buildOtpEmail(name, otp, purpose) {
 export function buildSubject(purpose) {
   return PURPOSE_SUBJECT[purpose] || PURPOSE_SUBJECT.verifica;
 }
+
+export function isEmailConfigured() {
+  return !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+}
