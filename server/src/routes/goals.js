@@ -7,15 +7,15 @@ const router = Router();
 router.use(authMiddleware);
 router.use(verifiedMiddleware);
 
-router.get('/', (req, res) => {
-  const goals = all(
+router.get('/', async (req, res) => {
+  const goals = await all(
     'SELECT * FROM goals WHERE user_id = ? ORDER BY target_amount - current_amount ASC',
     [req.userId]
   );
 
-  const initial = get('SELECT amount FROM initial_balance WHERE user_id = ?', [req.userId]);
+  const initial = await get('SELECT amount FROM initial_balance WHERE user_id = ?', [req.userId]);
   const initialAmount = initial ? initial.amount : 0;
-  const totals = get(`
+  const totals = await get(`
     SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expenses
     FROM transactions WHERE user_id = ?
@@ -32,20 +32,20 @@ router.get('/', (req, res) => {
   });
 });
 
-router.post('/', validate(schemas.goal), (req, res) => {
+router.post('/', validate(schemas.goal), async (req, res) => {
   const { name, target_amount, current_amount, deadline, category } = req.body;
 
-  const result = run(
+  const result = await run(
     'INSERT INTO goals (user_id, name, target_amount, current_amount, deadline, category, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     [req.userId, name, target_amount, current_amount || 0, deadline || '', category || '', localNow()]
   );
 
-  const goal = get('SELECT * FROM goals WHERE id = ?', [result.lastInsertRowid]);
+  const goal = await get('SELECT * FROM goals WHERE id = ?', [result.lastInsertRowid]);
   res.status(201).json(goal);
 });
 
-router.put('/:id', (req, res) => {
-  const g = get('SELECT * FROM goals WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
+router.put('/:id', async (req, res) => {
+  const g = await get('SELECT * FROM goals WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
   if (!g) return res.status(404).json({ error: 'Obiettivo non trovato' });
 
   const { name, target_amount, current_amount, deadline, category } = req.body;
@@ -56,19 +56,19 @@ router.put('/:id', (req, res) => {
     return res.status(400).json({ error: 'target_amount deve essere positivo' });
   }
 
-  run(
+  await run(
     `UPDATE goals SET name = ?, target_amount = ?, current_amount = ?, deadline = ?, category = ? WHERE id = ? AND user_id = ?`,
     [name, target_amount, current_amount ?? g.current_amount, deadline ?? g.deadline, category ?? g.category, req.params.id, req.userId]
   );
 
-  const updated = get('SELECT * FROM goals WHERE id = ?', [req.params.id]);
+  const updated = await get('SELECT * FROM goals WHERE id = ?', [req.params.id]);
   res.json(updated);
 });
 
-router.delete('/:id', (req, res) => {
-  const g = get('SELECT * FROM goals WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
+router.delete('/:id', async (req, res) => {
+  const g = await get('SELECT * FROM goals WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
   if (!g) return res.status(404).json({ error: 'Obiettivo non trovato' });
-  run('DELETE FROM goals WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
+  await run('DELETE FROM goals WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
   res.json({ message: 'Obiettivo eliminato' });
 });
 

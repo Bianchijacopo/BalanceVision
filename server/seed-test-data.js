@@ -40,23 +40,23 @@ const ALL_CATS = Object.keys(EXPENSE_TITLES_BY_CAT);
 async function seedTestData() {
   await getDb();
 
-  const user = get('SELECT id FROM users WHERE email = ?', ['admin@gmail.com']);
+  const user = await get('SELECT id FROM users WHERE email = ?', ['admin@gmail.com']);
   if (!user) {
     console.log('Account admin non trovato. Esegui prima npm run seed.');
-    close();
+    await close();
     process.exit(1);
   }
 
   const userId = user.id;
-  const existing = get('SELECT COUNT(*) as c FROM transactions WHERE user_id = ?', [userId]);
+  const existing = await get('SELECT COUNT(*) as c FROM transactions WHERE user_id = ?', [userId]);
   if (existing.c > 0) {
     console.log('Sono gia presenti %d transazioni. Le cancello prima di inserire i dati di test...', existing.c);
-    run('DELETE FROM transactions WHERE user_id = ?', [userId]);
+    await run('DELETE FROM transactions WHERE user_id = ?', [userId]);
   }
 
-  const initialBalance = get('SELECT amount FROM initial_balance WHERE user_id = ?', [userId]);
+  const initialBalance = await get('SELECT amount FROM initial_balance WHERE user_id = ?', [userId]);
   if (!initialBalance) {
-    run('INSERT INTO initial_balance (user_id, amount, created_at) VALUES (?, ?, ?)', [userId, 5000, localNow()]);
+    await run('INSERT INTO initial_balance (user_id, amount, created_at) VALUES (?, ?, ?)', [userId, 5000, localNow()]);
     console.log('Saldo iniziale impostato a €5.000,00');
   }
 
@@ -67,7 +67,7 @@ async function seedTestData() {
       const date = randomDate(md.month);
       const title = pick(INCOME_TITLES);
       const amount = rand(800, 3500);
-      run(
+      await run(
         'INSERT INTO transactions (user_id, type, title, amount, category, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [userId, 'income', title, amount, 'Stipendi', date, localNow()]
       );
@@ -79,7 +79,7 @@ async function seedTestData() {
       const cat = pick(ALL_CATS);
       const title = pick(EXPENSE_TITLES_BY_CAT[cat]);
       const amount = rand(10, 400);
-      run(
+      await run(
         'INSERT INTO transactions (user_id, type, title, amount, category, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [userId, 'expense', title, amount, cat, date, localNow()]
       );
@@ -88,7 +88,7 @@ async function seedTestData() {
   }
 
   console.log('Inserite %d transazioni di test da gennaio a giugno 2026.', total);
-  close();
+  await close();
 }
 
 seedTestData().catch(err => {

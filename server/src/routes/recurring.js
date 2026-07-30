@@ -7,13 +7,13 @@ const router = Router();
 router.use(authMiddleware);
 router.use(verifiedMiddleware);
 
-function processRecurring(userId) {
+async function processRecurring(userId) {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const currentMonth = today.slice(0, 7);
 
-  const items = all(`SELECT * FROM recurring_transactions
-    WHERE user_id = ? AND active = 1
+  const items = await all(`SELECT * FROM recurring_transactions
+    WHERE user_id = ? AND active = true
     AND (end_date IS NULL OR end_date >= ?)
     AND start_date <= ?`, [userId, today, today]);
 
@@ -46,11 +46,11 @@ function processRecurring(userId) {
       const txDate = `${txMonth}-${txDay}`;
       const cat = (item.category || '').trim() || 'Altro';
 
-      run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date, created_at)
+      await run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [userId, item.type, item.title, item.amount, cat, item.note || '', txDate, localNow()]);
 
-      run(`UPDATE recurring_transactions SET last_generated = ? WHERE id = ?`,
+      await run(`UPDATE recurring_transactions SET last_generated = ? WHERE id = ?`,
         [genDate, item.id]);
 
       created++;
@@ -59,37 +59,37 @@ function processRecurring(userId) {
   return created;
 }
 
-router.get('/', (req, res) => {
-  try { processRecurring(req.userId); } catch (e) { console.error('[recurring process error]', e); }
-  const items = all(`SELECT * FROM recurring_transactions
+router.get('/', async (req, res) => {
+  try { await processRecurring(req.userId); } catch (e) { console.error('[recurring process error]', e); }
+  const items = await all(`SELECT * FROM recurring_transactions
     WHERE user_id = ? ORDER BY created_at DESC`, [req.userId]);
   res.json(items);
 });
 
-router.post('/', validate(schemas.recurring), (req, res) => {
+router.post('/', validate(schemas.recurring), async (req, res) => {
   const { type, title, amount, category, note, frequency, start_date, end_date } = req.body;
   const lang = req.query.lang || 'it';
 
   const cat = (category || '').trim() || 'Altro';
 
-  const result = run(`INSERT INTO recurring_transactions
+  const result = await run(`INSERT INTO recurring_transactions
     (user_id, type, title, amount, category, note, frequency, start_date, end_date, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [req.userId, type, title, amount, cat, note || '', frequency || 'monthly', start_date, end_date || null, localNow()]);
 
-  const created = get(`SELECT * FROM recurring_transactions WHERE id = ?`, [result.lastInsertRowid]);
+  const created = await get(`SELECT * FROM recurring_transactions WHERE id = ?`, [result.lastInsertRowid]);
   res.status(201).json(created);
 });
 
-router.put('/:id', (req, res) => {
-  const existing = get(`SELECT * FROM recurring_transactions WHERE id = ? AND user_id = ?`,
+router.put('/:id', async (req, res) => {
+  const existing = await get(`SELECT * FROM recurring_transactions WHERE id = ? AND user_id = ?`,
     [req.params.id, req.userId]);
   const lang = req.query.lang || 'it';
   if (!existing) return res.status(404).json({ error: lang === 'en' ? 'Not found' : 'Non trovato' });
 
   const { type, title, amount, category, note, frequency, start_date, end_date, active } = req.body;
 
-  run(`UPDATE recurring_transactions SET
+  await run(`UPDATE recurring_transactions SET
     type = ?, title = ?, amount = ?, category = ?, note = ?,
     frequency = ?, start_date = ?, end_date = ?, active = ?
     WHERE id = ?`,
@@ -102,25 +102,25 @@ router.put('/:id', (req, res) => {
       frequency || existing.frequency,
       start_date || existing.start_date,
       end_date !== undefined ? end_date : existing.end_date,
-      active !== undefined ? (active ? 1 : 0) : existing.active,
+      active !== undefined ? active : existing.active,
       req.params.id
     ]);
 
-  const updated = get(`SELECT * FROM recurring_transactions WHERE id = ?`, [req.params.id]);
+  const updated = await get(`SELECT * FROM recurring_transactions WHERE id = ?`, [req.params.id]);
   res.json(updated);
 });
 
-router.delete('/:id', (req, res) => {
-  const existing = get(`SELECT * FROM recurring_transactions WHERE id = ? AND user_id = ?`,
+router.delete('/:id', async (req, res) => {
+  const existing = await get(`SELECT * FROM recurring_transactions WHERE id = ? AND user_id = ?`,
     [req.params.id, req.userId]);
   if (!existing) return res.status(404).json({ error: req.query.lang === 'en' ? 'Not found' : 'Non trovato' });
 
-  run(`DELETE FROM recurring_transactions WHERE id = ? AND user_id = ?`, [req.params.id, req.userId]);
+  await run(`DELETE FROM recurring_transactions WHERE id = ? AND user_id = ?`, [req.params.id, req.userId]);
   res.json({ success: true });
 });
 
-router.post('/process', (req, res) => {
-  const count = processRecurring(req.userId);
+router.post('/process', async (req, res) => {
+  const count = await processRecurring(req.userId);
   res.json({ created: count });
 });
 

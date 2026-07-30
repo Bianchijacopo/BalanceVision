@@ -14,10 +14,10 @@ const OLLAMA_URL = 'http://localhost:11434/api/generate';
 router.get('/', async (req, res) => {
   try {
     const lang = req.query.lang || 'it';
-    const initial = get('SELECT amount FROM initial_balance WHERE user_id = ?', [req.userId]);
+    const initial = await get('SELECT amount FROM initial_balance WHERE user_id = ?', [req.userId]);
     const initialAmount = initial ? initial.amount : 0;
 
-    const totals = get(`
+    const totals = await get(`
       SELECT
         COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
         COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expenses
@@ -26,14 +26,14 @@ router.get('/', async (req, res) => {
 
     const balance = initialAmount + totals.total_income - totals.total_expenses;
 
-    const categoryBreakdown = all(`
+    const categoryBreakdown = await all(`
       SELECT category, SUM(amount) as total
       FROM transactions WHERE user_id = ? AND type = 'expense'
       GROUP BY category ORDER BY total DESC
     `, [req.userId]);
 
-    const monthlySpending = all(`
-      SELECT substr(date, 1, 7) as month, SUM(amount) as total
+    const monthlySpending = await all(`
+      SELECT TO_CHAR(date, 'YYYY-MM') as month, SUM(amount) as total
       FROM transactions WHERE user_id = ? AND type = 'expense'
       GROUP BY month ORDER BY month DESC LIMIT 3
     `, [req.userId]);
@@ -165,10 +165,10 @@ router.post('/chat', async (req, res) => {
   }
 
   try {
-    const initial = get('SELECT amount FROM initial_balance WHERE user_id = ?', [req.userId]);
+    const initial = await get('SELECT amount FROM initial_balance WHERE user_id = ?', [req.userId]);
     const initialAmount = initial ? initial.amount : 0;
 
-    const totals = get(`
+    const totals = await get(`
       SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
              COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expenses
       FROM transactions WHERE user_id = ?
@@ -176,13 +176,13 @@ router.post('/chat', async (req, res) => {
 
     const balance = initialAmount + totals.total_income - totals.total_expenses;
 
-    const categoryBreakdown = all(`
+    const categoryBreakdown = await all(`
       SELECT category, SUM(amount) as total
       FROM transactions WHERE user_id = ? AND type = 'expense'
       GROUP BY category ORDER BY total DESC LIMIT 10
     `, [req.userId]);
 
-    const recentTx = all(`
+    const recentTx = await all(`
       SELECT date, type, title, amount, category FROM transactions
       WHERE user_id = ? ORDER BY date DESC LIMIT 15
     `, [req.userId]);

@@ -16,11 +16,11 @@ function getMonthName(m, lang) {
   return lang === 'en' ? MONTHS_EN[idx] : MONTHS_IT[idx];
 }
 
-function buildReportEmail(userId, lang) {
-  const user = get('SELECT email, name FROM users WHERE id = ?', [userId]);
+async function buildReportEmail(userId, lang) {
+  const user = await get('SELECT email, name FROM users WHERE id = ?', [userId]);
   if (!user) return null;
 
-  const settings = get('SELECT currency FROM user_settings WHERE user_id = ?', [userId]);
+  const settings = await get('SELECT currency FROM user_settings WHERE user_id = ?', [userId]);
   const currency = settings?.currency || 'EUR';
 
   const fmt = (v) => new Intl.NumberFormat('en-US', {
@@ -30,25 +30,29 @@ function buildReportEmail(userId, lang) {
 
   const now = new Date();
   const curMonth = now.toISOString().slice(0, 7);
+  const monthStart = curMonth + '-01';
+  const nextMonth = now.getMonth() === 11
+    ? (now.getFullYear() + 1) + '-01-01'
+    : curMonth.slice(0, 5) + String(now.getMonth() + 2).padStart(2, '0') + '-01';
 
-  const initial = get('SELECT amount FROM initial_balance WHERE user_id = ?', [userId]);
+  const initial = await get('SELECT amount FROM initial_balance WHERE user_id = ?', [userId]);
   const initialAmount = initial ? initial.amount : 0;
 
-  const totals = get(`
+  const totals = await get(`
     SELECT
       COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as income,
       COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as expenses
-    FROM transactions WHERE user_id = ? AND date LIKE ? || '%'
-  `, [userId, curMonth]);
+    FROM transactions WHERE user_id = ? AND date >= ? AND date < ?
+  `, [userId, monthStart, nextMonth]);
 
   const balance = initialAmount + totals.income - totals.expenses;
   const savings = totals.income - totals.expenses;
 
-  const topCats = all(`
+  const topCats = await all(`
     SELECT category, SUM(amount) as total
-    FROM transactions WHERE user_id = ? AND type = 'expense' AND date LIKE ? || '%'
+    FROM transactions WHERE user_id = ? AND type = 'expense' AND date >= ? AND date < ?
     GROUP BY category ORDER BY total DESC LIMIT 5
-  `, [userId, curMonth]);
+  `, [userId, monthStart, nextMonth]);
 
   const monthDisplay = getMonthName(curMonth, lang);
   const name = user.name || user.email;
@@ -133,15 +137,15 @@ function buildReportEmail(userId, lang) {
 router.post('/send', async (req, res) => {
   try {
     const lang = req.query.lang || 'it';
-    const email = buildReportEmail(req.userId, lang);
+    const email = await buildReportEmail(req.userId, lang);
     if (!email) {
       return res.status(400).json({ error: lang === 'en' ? 'User not found' : 'Utente non trovato' });
     }
     await sendEmail(email.to, email.subject, email.text, email.html);
     const now = new Date().toISOString().slice(0, 10);
-    const existing = get('SELECT id FROM user_settings WHERE user_id = ?', [req.userId]);
+    const existing = await get('SELECT id FROM user_settings WHERE user_id = ?', [req.userId]);
     if (existing) {
-      run('UPDATE user_settings SET last_report_sent = ? WHERE user_id = ?', [now, req.userId]);
+      await run('UPDATE user_settings SET last_report_sent = ? WHERE user_id = ?', [now, req.userId]);
     }
     res.json({ success: true, message: lang === 'en' ? 'Report sent' : 'Report inviato' });
   } catch (e) {
@@ -150,11 +154,11 @@ router.post('/send', async (req, res) => {
   }
 });
 
-router.get('/settings', (req, res) => {
-  let settings = get('SELECT * FROM user_settings WHERE user_id = ?', [req.userId]);
+router.get('/settings', async (req, res) => {
+  let settings = await get('SELECT * FROM user_settings WHERE user_id = ?', [req.userId]);
   if (!settings) {
-    run('INSERT INTO user_settings (user_id) VALUES (?)', [req.userId]);
-    settings = get('SELECT * FROM user_settings WHERE user_id = ?', [req.userId]);
+    await run('INSERT INTO user_settings (user_id) VALUES (?)', [req.userId]);
+    settings = await get('SELECT * FROM user_settings WHERE user_id = ?', [req.userId]);
   }
   res.json({
     report_enabled: !!settings.report_enabled,
@@ -163,33 +167,38 @@ router.get('/settings', (req, res) => {
   });
 });
 
-router.put('/settings', validate(schemas.reportSettings), (req, res) => {
+router.put('/settings', validate(schemas.reportSettings), async (req, res) => {
   const { report_enabled, report_day } = req.body;
-  const existing = get('SELECT id FROM user_settings WHERE user_id = ?', [req.userId]);
+  const existing = await get('SELECT id FROM user_settings WHERE user_id = ?', [req.userId]);
   if (existing) {
-    run('UPDATE user_settings SET report_enabled = ?, report_day = ? WHERE user_id = ?',
-      [report_enabled ? 1 : 0, report_day || 1, req.userId]);
+    await run('UPDATE user_settings SET report_enabled = ?, report_day = ? WHERE user_id = ?',
+      [report_enabled, report_day || 1, req.userId]);
   } else {
-    run('INSERT INTO user_settings (user_id, report_enabled, report_day) VALUES (?, ?, ?)',
-      [req.userId, report_enabled ? 1 : 0, report_day || 1]);
+    await run('INSERT INTO user_settings (user_id, report_enabled, report_day) VALUES (?, ?, ?)',
+      [req.userId, report_enabled, report_day || 1]);
   }
   res.json({ success: true });
 });
 
-function checkAutoReports() {
+async function checkAutoReports() {
   try {
     const today = new Date().toISOString().slice(0, 10);
     const day = new Date().getDate();
-    const users = all(`SELECT u.id, u.email, u.name, s.report_day, s.last_report_sent
+    const users = await all(`SELECT u.id, u.email, u.name, s.report_day, s.last_report_sent
       FROM user_settings s JOIN users u ON u.id = s.user_id
-      WHERE s.report_enabled = 1 AND s.report_day = ?`, [day]);
+      WHERE s.report_enabled = true AND s.report_day = ?`, [day]);
     for (const user of users) {
-      if (user.last_report_sent && user.last_report_sent === today) continue;
+      if (user.last_report_sent) {
+        const sentDate = typeof user.last_report_sent === 'string'
+          ? user.last_report_sent.slice(0, 10)
+          : new Date(user.last_report_sent).toISOString().slice(0, 10);
+        if (sentDate === today) continue;
+      }
       const lang = 'it';
-      const email = buildReportEmail(user.id, lang);
+      const email = await buildReportEmail(user.id, lang);
       if (email) {
         sendEmail(email.to, email.subject, email.text, email.html).catch(() => {});
-        run('UPDATE user_settings SET last_report_sent = ? WHERE user_id = ?', [today, user.id]);
+        await run('UPDATE user_settings SET last_report_sent = ? WHERE user_id = ?', [today, user.id]);
       }
     }
   } catch (e) {

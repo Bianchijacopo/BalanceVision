@@ -7,7 +7,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/currency', async (req, res) => {
-  const settings = get('SELECT currency FROM user_settings WHERE user_id = ?', [req.userId]);
+  const settings = await get('SELECT currency FROM user_settings WHERE user_id = ?', [req.userId]);
   const currency = settings?.currency || 'EUR';
   let usdRate = 1;
   try {
@@ -23,11 +23,11 @@ router.put('/currency', async (req, res) => {
   if (!currency || !SUPPORTED.includes(currency)) {
     return res.status(400).json({ error: 'Valuta non supportata' });
   }
-  const existing = get('SELECT id FROM user_settings WHERE user_id = ?', [req.userId]);
+  const existing = await get('SELECT id FROM user_settings WHERE user_id = ?', [req.userId]);
   if (existing) {
-    run('UPDATE user_settings SET currency = ? WHERE user_id = ?', [currency, req.userId]);
+    await run('UPDATE user_settings SET currency = ? WHERE user_id = ?', [currency, req.userId]);
   } else {
-    run('INSERT INTO user_settings (user_id, currency) VALUES (?, ?)', [req.userId, currency]);
+    await run('INSERT INTO user_settings (user_id, currency) VALUES (?, ?)', [req.userId, currency]);
   }
   let rate = 1, usdRate = 1;
   try {
@@ -51,7 +51,7 @@ router.get('/rate', async (req, res) => {
 });
 
 router.get('/ticker', async (req, res) => {
-  const settings = get('SELECT currency FROM user_settings WHERE user_id = ?', [req.userId]);
+  const settings = await get('SELECT currency FROM user_settings WHERE user_id = ?', [req.userId]);
   const currency = settings?.currency || 'EUR';
   if (currency === 'USD') return res.json({ rate: 1, change: 0, changePct: 0 });
   try {

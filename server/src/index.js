@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -42,9 +43,10 @@ if (!process.env.GROQ_API_KEY) {
 if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
   console.log('AVVISO: GMAIL_USER/GMAIL_APP_PASSWORD non impostate — email disabilitate');
 }
-console.log('AVVISO: Il database SQLite non e cifrato. Per dati sensibili in produzione,');
-console.log('        utilizza la cifratura a livello di disco (BitLocker/LUKS) o un');
-console.log('        database con cifratura nativa (SQLCipher).');
+if (!process.env.DATABASE_URL) {
+  console.error('ERRORE FATALE: DATABASE_URL non impostata');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;

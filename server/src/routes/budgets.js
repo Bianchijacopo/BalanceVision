@@ -7,8 +7,8 @@ const router = Router();
 router.use(authMiddleware);
 router.use(verifiedMiddleware);
 
-router.get('/', (req, res) => {
-  const budgets = all(
+router.get('/', async (req, res) => {
+  const budgets = await all(
     'SELECT * FROM budgets WHERE user_id = ? ORDER BY category',
     [req.userId]
   );
@@ -22,7 +22,7 @@ router.get('/', (req, res) => {
   const firstDay = monthParam + '-01';
   const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
 
-  const spending = all(
+  const spending = await all(
     `SELECT category, SUM(amount) as total FROM transactions
      WHERE user_id = ? AND type = 'expense' AND date >= ? AND date <= ?
      GROUP BY category`,
@@ -44,36 +44,36 @@ router.get('/', (req, res) => {
   res.json({ budgets: result, month: monthParam, totalBudget: budgets.reduce((s, b) => s + b.amount, 0) });
 });
 
-router.post('/', validate(schemas.budget), (req, res) => {
+router.post('/', validate(schemas.budget), async (req, res) => {
   const { category, month, amount } = req.body;
 
-  const existing = get(
+  const existing = await get(
     'SELECT * FROM budgets WHERE user_id = ? AND category = ? AND month = ?',
     [req.userId, category, month]
   );
 
   if (existing) {
-    run(
+    await run(
       'UPDATE budgets SET amount = ?, updated_at = ? WHERE id = ?',
       [amount, localNow(), existing.id]
     );
-    const updated = get('SELECT * FROM budgets WHERE id = ?', [existing.id]);
+    const updated = await get('SELECT * FROM budgets WHERE id = ?', [existing.id]);
     return res.json(updated);
   }
 
-  const result = run(
+  const result = await run(
     'INSERT INTO budgets (user_id, category, month, amount, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
     [req.userId, category, month, amount, localNow(), localNow()]
   );
 
-  const budget = get('SELECT * FROM budgets WHERE id = ?', [result.lastInsertRowid]);
+  const budget = await get('SELECT * FROM budgets WHERE id = ?', [result.lastInsertRowid]);
   res.status(201).json(budget);
 });
 
-router.delete('/:id', (req, res) => {
-  const b = get('SELECT * FROM budgets WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
+router.delete('/:id', async (req, res) => {
+  const b = await get('SELECT * FROM budgets WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
   if (!b) return res.status(404).json({ error: 'Budget non trovato' });
-  run('DELETE FROM budgets WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
+  await run('DELETE FROM budgets WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
   res.json({ message: 'Budget eliminato' });
 });
 

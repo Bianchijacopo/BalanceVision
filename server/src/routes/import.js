@@ -64,7 +64,7 @@ function guessColumn(aliases, headers) {
 
 const MAX_CSV_ROWS = 10000;
 
-router.post('/csv', (req, res) => {
+router.post('/csv', async (req, res) => {
   try {
     const { csv } = req.body;
     if (!csv || csv.trim().length === 0) {
@@ -138,7 +138,7 @@ router.post('/csv', (req, res) => {
       }
 
       try {
-        run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date, created_at)
+        await run(`INSERT INTO transactions (user_id, type, title, amount, category, note, date, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [req.userId, type, title, Math.abs(amount), category, note, date, localNow()]);
         created++;
