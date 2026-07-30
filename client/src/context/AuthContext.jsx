@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
+import { apiUrl } from './ApiContext';
+
 const AuthContext = createContext(null);
-const API = 'http://localhost:3001/api';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -23,7 +24,7 @@ export function AuthProvider({ children }) {
     const stored = localStorage.getItem('refreshToken');
     if (!stored) return false;
     try {
-      const res = await fetch(`${API}/auth/refresh`, {
+      const res = await fetch(apiUrl('/auth/refresh'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: stored })
@@ -65,7 +66,7 @@ export function AuthProvider({ children }) {
   }, [doRefresh, token, refreshToken]);
 
   async function login(email, password) {
-    const res = await fetch(`${API}/auth/login`, {
+    const res = await fetch(apiUrl('/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -80,7 +81,7 @@ export function AuthProvider({ children }) {
   }
 
   async function register(email, password, name, surname) {
-    const res = await fetch(`${API}/auth/register`, {
+    const res = await fetch(apiUrl('/auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name, surname })
@@ -98,7 +99,7 @@ export function AuthProvider({ children }) {
     const t = localStorage.getItem('token');
     if (t) {
       try {
-        await fetch(`${API}/auth/logout`, {
+        await fetch(apiUrl('/auth/logout'), {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + t }
         });

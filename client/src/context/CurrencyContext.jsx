@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { apiUrl } from './ApiContext';
 
 const CurrencyContext = createContext();
 
@@ -13,7 +14,7 @@ export function CurrencyProvider({ children }) {
 
   useEffect(() => {
     if (!token) return;
-    fetch('http://localhost:3001/api/settings/currency', {
+    fetch(apiUrl('/settings/currency'), {
       headers: { 'Authorization': 'Bearer ' + token }
     })
       .then(r => r.json())
@@ -28,7 +29,7 @@ export function CurrencyProvider({ children }) {
 
   useEffect(() => {
     if (!token || currency === 'EUR') { setRate(1); return; }
-    fetch('http://localhost:3001/api/settings/rate?to=' + currency, {
+    fetch(apiUrl('/settings/rate?to=' + currency), {
       headers: { 'Authorization': 'Bearer ' + token }
     })
       .then(r => r.json())
@@ -37,7 +38,7 @@ export function CurrencyProvider({ children }) {
   }, [token, currency]);
 
   const changeCurrency = useCallback(async (newCurrency) => {
-    const res = await fetch('http://localhost:3001/api/settings/currency', {
+    const res = await fetch(apiUrl('/settings/currency'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ currency: newCurrency }),

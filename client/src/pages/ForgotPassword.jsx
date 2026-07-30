@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { apiUrl } from '../context/ApiContext';
 
 export default function ForgotPassword() {
   const { t } = useLanguage();
@@ -17,7 +18,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     setError(''); setMsg('');
     try {
-      const res = await fetch('http://localhost:3001/api/auth/forgot-send-otp', {
+      const res = await fetch(apiUrl('/auth/forgot-send-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -35,7 +36,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     setError(''); setMsg('');
     try {
-      const res = await fetch('http://localhost:3001/api/auth/reset-password', {
+      const res = await fetch(apiUrl('/auth/reset-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp, newPassword: password }),

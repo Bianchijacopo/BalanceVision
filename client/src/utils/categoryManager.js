@@ -1,3 +1,5 @@
+import { apiUrl } from '../context/ApiContext';
+
 const STORAGE_KEY = 'bv_custom_categories';
 const TRANS_CACHE_KEY = 'bv_cat_trans_cache';
 
@@ -74,7 +76,7 @@ export function getUntranslatedCategories(lang) {
 
 export async function fetchCategoryTranslation(text, from, to, token) {
   try {
-    const res = await fetch('http://localhost:3001/api/translate', {
+    const res = await fetch(apiUrl('/translate'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ text, from, to }),
