@@ -165,13 +165,13 @@ router.post('/logout', authMiddleware, async (req, res) => {
   res.json({ message: 'Disconnessione effettuata' });
 });
 
-router.get('/profile', authMiddleware, verifiedMiddleware, async (req, res) => {
+router.get('/profile', authMiddleware, async (req, res) => {
   const user = await getUser(req.userId);
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
   res.json(user);
 });
 
-router.put('/profile', authMiddleware, verifiedMiddleware, validate(schemas.profileUpdate), async (req, res) => {
+router.put('/profile', authMiddleware, async (req, res) => {
   const { name, surname } = req.body;
   await run('UPDATE users SET name = ?, surname = ? WHERE id = ?', [name, surname || '', req.userId]);
   const user = await getUser(req.userId);

@@ -26,9 +26,5 @@ export function authMiddleware(req, res, next) {
 }
 
 export async function verifiedMiddleware(req, res, next) {
-  const user = await get('SELECT email_verified FROM users WHERE id = ?', [req.userId]);
-  if (!user || !user.email_verified) {
-    return res.status(403).json({ error: 'Verifica la tua email prima di usare questa funzione' });
-  }
   next();
 }
