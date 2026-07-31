@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
+import Disclaimer from './pages/Disclaimer';
 import Dashboard from './pages/Dashboard';
 import TransactionForm from './pages/TransactionForm';
 import AnalisiAvanzata from './pages/AnalisiAvanzata';
@@ -65,6 +66,7 @@ function AppContent() {
             <Route path="/login" element={<GuestRoute><SplashScreen /></GuestRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/disclaimer" element={<Disclaimer />} />
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
             <Route path="/dashboard" element={<VerifiedRoute><Dashboard /></VerifiedRoute>} />
             <Route path="/transactions/new" element={<VerifiedRoute><TransactionForm /></VerifiedRoute>} />

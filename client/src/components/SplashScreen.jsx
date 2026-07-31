@@ -2,10 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
-
 export default function SplashScreen() {
   const [visible, setVisible] = useState(false);
-  const { t } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -42,6 +41,15 @@ export default function SplashScreen() {
   return (
     <div className="splash-root">
       <div className="splash-bg-glow" />
+
+      <button
+        onClick={() => setLang(lang === 'it' ? 'en' : 'it')}
+        className="theme-toggle lang-switch-top"
+        title={lang === 'it' ? 'Switch to English' : 'Passa all\'italiano'}
+        style={{ fontWeight: 700, fontSize: 13, letterSpacing: 0.5 }}
+      >
+        {lang === 'it' ? 'EN' : 'IT'}
+      </button>
 
       <div className={`splash-top ${visible ? 'splash-top--compact' : ''}`}>
         <h1 className="splash-name splash-name--enter">
@@ -111,6 +119,27 @@ export default function SplashScreen() {
             <span className="text-secondary">{t('login.noAccount')}</span>
             <Link to="/register" className="link">{t('login.register')}</Link>
           </div>
+        </div>
+
+        <div style={{
+          marginTop: 16,
+          maxWidth: 420,
+          width: '100%',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          padding: '12px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          fontSize: 12,
+          color: 'var(--text-secondary)',
+        }}>
+          <span>{t('login.cookieNotice')}</span>
+          <Link to="/disclaimer" className="link" style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
+            {t('login.cookieRead')}
+          </Link>
         </div>
       </div>
     </div>

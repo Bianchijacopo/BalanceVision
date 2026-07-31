@@ -2511,6 +2511,13 @@ textarea.form-input {
   overflow: hidden;
 }
 
+.lang-switch-top {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1100;
+}
+
 .splash-bg-glow {
   position: absolute;
   top: 30%;
