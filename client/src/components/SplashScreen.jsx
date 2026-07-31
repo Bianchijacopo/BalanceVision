@@ -127,6 +127,12 @@ export default function SplashScreen() {
             {t('login.cookieRead')}
           </Link>
         </div>
+
+        <div className="guide-entry">
+          <Link to="/guida" className="link guide-entry-link">
+            {t('login.readGuide')}
+          </Link>
+        </div>
       </div>
     </div>
   );

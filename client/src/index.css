@@ -3051,3 +3051,262 @@ textarea.form-input {
     font-size: 16px;
   }
 }
+
+/* ============================
+   GUIDE — LINK NEL LOGIN
+   ============================ */
+.guide-entry {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+.guide-entry-link {
+  font-weight: 600;
+}
+
+/* ============================
+   GUIDE — PAGINA MANUALE
+   ============================ */
+.guide-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+  position: relative;
+}
+
+.guide-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.guide-title {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.guide-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.guide-back {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.guide-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.guide-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.guide-card h2 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.guide-card p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.guide-card-accent {
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+
+.guide-card-accent p {
+  color: var(--text-primary);
+}
+
+.guide-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 40px 0 16px;
+  letter-spacing: -0.3px;
+}
+
+.guide-shot {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+.guide-shot-img {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-surface);
+  line-height: 0;
+}
+
+.guide-shot-img img {
+  width: 100%;
+  display: block;
+}
+
+.guide-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--btn-primary-text);
+  font-size: 11px;
+  font-weight: 800;
+  font-family: var(--font-family);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.guide-shot-body {
+  padding: 4px 0;
+}
+
+.guide-shot-intro {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.guide-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.guide-legend-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--btn-primary-text);
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.guide-pages-intro {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.guide-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.guide-page-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-page-img {
+  line-height: 0;
+}
+
+.guide-page-img img {
+  width: 100%;
+  display: block;
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-page-body {
+  padding: 16px;
+}
+
+.guide-page-body h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.guide-page-body p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.guide-footer {
+  text-align: center;
+  margin-top: 40px;
+}
+
+@media (max-width: 768px) {
+  .guide-page {
+    padding: 32px 14px 48px;
+  }
+
+  .guide-title {
+    font-size: 26px;
+  }
+
+  .guide-shot {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-section-title {
+    font-size: 17px;
+    margin: 32px 0 12px;
+  }
+
+  .guide-pages {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-marker {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+}

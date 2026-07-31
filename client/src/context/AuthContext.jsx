@@ -109,6 +109,7 @@ export function AuthProvider({ children }) {
     setToken(data.token);
     setRefreshToken(data.refreshToken);
     setUser(data.user);
+    setJustRegistered(true);
     return data;
   }
 
