@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { get, run, localNow } from '../db/database.js';
 import { generateToken, authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
-import { sendEmail, buildOtpEmail, buildSubject, isEmailConfigured } from '../email.js';
 import { validate, schemas } from '../utils/validate.js';
 import { sanitize } from '../utils/sanitize.js';
 
@@ -31,6 +30,22 @@ async function getUser(id) {
   return await get('SELECT id, email, name, surname, email_verified, avatar, created_at FROM users WHERE id = ?', [id]);
 }
 
+async function generateAndStoreOtp(userId) {
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+  const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  await run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, userId]);
+  return otp;
+}
+
+function checkOtp(user, otp) {
+  if (!user || !user.otp || !user.otp_expiry) return 'Nessun OTP richiesto. Richiedine uno nuovo.';
+  if (new Date(user.otp_expiry) < new Date()) return 'OTP scaduto. Richiedine uno nuovo.';
+  const otpHash = crypto.createHash('sha256').update(String(otp)).digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otpHash))) return 'Codice OTP errato';
+  return null;
+}
+
 router.post('/register', validate(schemas.register), async (req, res) => {
   const { email, password, name, surname } = req.body;
 
@@ -40,15 +55,16 @@ router.post('/register', validate(schemas.register), async (req, res) => {
   }
 
   const password_hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
-  const result = await run('INSERT INTO users (email, password_hash, name, surname, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?)', [email, password_hash, name || '', surname || '', localNow(), true]);
+  const result = await run('INSERT INTO users (email, password_hash, name, surname, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?)', [email, password_hash, name || '', surname || '', localNow(), false]);
 
+  const otp = await generateAndStoreOtp(result.lastInsertRowid);
   const token = generateToken(result.lastInsertRowid);
   const refreshToken = await generateRefreshToken(result.lastInsertRowid);
 
   audit(result.lastInsertRowid, 'register', req.ip);
   const userData = await getUser(result.lastInsertRowid);
   res.status(201).json({
-    token, refreshToken,
+    token, refreshToken, otp,
     user: userData,
   });
 });
@@ -113,22 +129,11 @@ router.post('/refresh', validate(schemas.refresh), async (req, res) => {
 router.post('/forgot-send-otp', validate(schemas.forgotSendOtp), async (req, res) => {
   const { email } = req.body;
 
-  const user = await get('SELECT id, email, name FROM users WHERE email = ?', [email]);
+  const user = await get('SELECT id FROM users WHERE email = ?', [email]);
 
   if (user) {
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
-    const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-    const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    await run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, user.id]);
-    if (!isEmailConfigured()) {
-      return res.json({ otp, message: 'DEBUG: email non configurata, usa OTP: ' + otp });
-    }
-    try {
-      const { text, html } = buildOtpEmail(user.name || 'Utente', otp, 'recupero');
-      await sendEmail(email, buildSubject('recupero'), text, html);
-    } catch (e) {
-      return res.json({ otp, message: 'Email temporaneamente non disponibile, usa OTP: ' + otp });
-    }
+    const otp = await generateAndStoreOtp(user.id);
+    return res.json({ otp, message: 'Inserisci il codice mostrato a schermo' });
   }
 
   res.json({ message: 'Se l\'email esiste, riceverai un codice per il recupero password' });
@@ -138,14 +143,8 @@ router.post('/reset-password', validate(schemas.resetPassword), async (req, res)
   const { email, otp, newPassword } = req.body;
 
   const user = await get('SELECT id, otp, otp_expiry FROM users WHERE email = ?', [email]);
-  if (!user || !user.otp || !user.otp_expiry) {
-    return res.status(400).json({ error: 'Nessuna richiesta di reset valida per questa email' });
-  }
-  if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'Codice scaduto' });
-  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-  if (!crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otpHash))) {
-    return res.status(400).json({ error: 'Codice errato' });
-  }
+  const otpError = checkOtp(user, otp);
+  if (otpError) return res.status(400).json({ error: otpError });
 
   const hash = bcrypt.hashSync(newPassword, BCRYPT_ROUNDS);
   await run('UPDATE users SET password_hash = ?, otp = NULL, otp_expiry = NULL WHERE id = ?', [hash, user.id]);
@@ -175,16 +174,19 @@ router.put('/profile', authMiddleware, async (req, res) => {
   res.json({ message: 'Profilo aggiornato', user });
 });
 
-router.post('/change-password', authMiddleware, verifiedMiddleware, validate(schemas.changePassword), async (req, res) => {
-  const { oldPassword, newPassword } = req.body;
+router.post('/change-password', authMiddleware, validate(schemas.changePassword), async (req, res) => {
+  const { oldPassword, newPassword, otp } = req.body;
 
-  const user = await get('SELECT password_hash FROM users WHERE id = ?', [req.userId]);
+  const user = await get('SELECT password_hash, otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
   if (!bcrypt.compareSync(oldPassword, user.password_hash)) {
     return res.status(400).json({ error: 'Password attuale errata' });
   }
 
+  const otpError = checkOtp(user, otp);
+  if (otpError) return res.status(400).json({ error: otpError });
+
   const hash = bcrypt.hashSync(newPassword, BCRYPT_ROUNDS);
-  await run('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.userId]);
+  await run('UPDATE users SET password_hash = ?, otp = NULL, otp_expiry = NULL WHERE id = ?', [hash, req.userId]);
   await run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.userId]);
 
   audit(req.userId, 'change_password', req.ip);
@@ -192,36 +194,16 @@ router.post('/change-password', authMiddleware, verifiedMiddleware, validate(sch
 });
 
 router.post('/send-otp', authMiddleware, async (req, res) => {
-  const user = await get('SELECT email, name FROM users WHERE id = ?', [req.userId]);
-  const purpose = req.body?.purpose || 'verifica';
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-  const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-  await run('UPDATE users SET otp = ?, otp_expiry = ? WHERE id = ?', [otpHash, expiry, req.userId]);
-
-  if (!isEmailConfigured()) {
-    return res.json({ otp, message: 'Email non configurata, usa OTP: ' + otp });
-  }
-  try {
-    const { text, html } = buildOtpEmail(user.name || 'Utente', otp, purpose);
-    await sendEmail(user.email, buildSubject(purpose), text, html);
-    res.json({ message: 'Codice inviato alla tua email' });
-  } catch (err) {
-    console.error('Errore invio email OTP:', err);
-    res.json({ otp, message: 'Email temporaneamente non disponibile, usa OTP: ' + otp });
-  }
+  const otp = await generateAndStoreOtp(req.userId);
+  res.json({ otp, message: 'Inserisci il codice mostrato a schermo' });
 });
 
 router.post('/verify-otp', authMiddleware, validate(schemas.verifyOtp), async (req, res) => {
   const { otp, newEmail } = req.body;
 
   const user = await get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
-  if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Nessun OTP richiesto. Richiedine uno nuovo.' });
-  if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'OTP scaduto. Richiedine uno nuovo.' });
-  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-  if (!crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otpHash))) {
-    return res.status(400).json({ error: 'Codice OTP errato' });
-  }
+  const otpError = checkOtp(user, otp);
+  if (otpError) return res.status(400).json({ error: otpError });
 
   if (newEmail) {
     await run('UPDATE users SET email = ?, email_verified = true, otp = NULL, otp_expiry = NULL WHERE id = ?', [newEmail, req.userId]);
@@ -241,18 +223,12 @@ router.put('/avatar', authMiddleware, verifiedMiddleware, validate(schemas.avata
   res.json({ message: 'Avatar aggiornato', avatar });
 });
 
-router.delete('/account', authMiddleware, verifiedMiddleware, async (req, res) => {
-  if (isEmailConfigured()) {
-    const otp = req.query.otp;
-    if (!otp || otp.length !== 6) return res.status(400).json({ error: 'Codice OTP richiesto (6 cifre)' });
-    const user = await get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
-    if (!user.otp || !user.otp_expiry) return res.status(400).json({ error: 'Richiedi prima un OTP' });
-    if (new Date(user.otp_expiry) < new Date()) return res.status(400).json({ error: 'OTP scaduto' });
-    const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-    if (!crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otpHash))) {
-      return res.status(400).json({ error: 'Codice OTP errato' });
-    }
-  }
+router.delete('/account', authMiddleware, async (req, res) => {
+  const otp = req.query.otp;
+  if (!otp || otp.length !== 6) return res.status(400).json({ error: 'Codice OTP richiesto (6 cifre)' });
+  const user = await get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
+  const otpError = checkOtp(user, otp);
+  if (otpError) return res.status(400).json({ error: otpError });
 
   audit(req.userId, 'account_deleted', req.ip);
   await run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.userId]);
@@ -260,52 +236,6 @@ router.delete('/account', authMiddleware, verifiedMiddleware, async (req, res) =
   await run('DELETE FROM initial_balance WHERE user_id = ?', [req.userId]);
   await run('DELETE FROM users WHERE id = ?', [req.userId]);
   res.json({ message: 'Account eliminato con successo' });
-});
-
-// Diagnostic endpoint — test email config (remove in production)
-router.get('/debug-email', (req, res) => {
-  const configured = isEmailConfigured();
-  res.json({
-    configured,
-    user: configured ? process.env.GMAIL_USER.substring(0, 4) + '***' : null,
-    warning: configured ? null : 'Imposta GMAIL_USER e GMAIL_APP_PASSWORD su Render'
-  });
-});
-
-router.post('/debug-test-email', async (req, res) => {
-  try {
-    const { text, html } = buildOtpEmail('Test', '123456', 'verifica');
-    await sendEmail(req.body.to || 'test@test.com', buildSubject('verifica'), text, html);
-    res.json({ ok: true, message: 'Email inviata (se configurata)' });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
-router.post('/debug-test-gmail', async (req, res) => {
-  const nodemailer = (await import('nodemailer')).default;
-  const t = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD
-    },
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 8000
-  });
-  try {
-    await t.verify();
-    await t.sendMail({
-      from: process.env.GMAIL_USER,
-      to: req.body.to || process.env.GMAIL_USER,
-      subject: 'Test Gmail da Render',
-      text: 'Se ricevi questo, Gmail funziona da Render!'
-    });
-    res.json({ ok: true, message: 'Gmail SMTP funziona da Render' });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.code || err.message });
-  }
 });
 
 export default router;

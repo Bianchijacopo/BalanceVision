@@ -4,10 +4,11 @@ import { useLanguage } from '../context/LanguageContext';
 import { apiGet, apiPost, apiPut } from '../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
+import OtpPopup from '../components/OtpPopup';
 
 export default function EditProfile() {
   const { t } = useLanguage();
-  const { token, user, login } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
@@ -17,9 +18,8 @@ export default function EditProfile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
   const [otp, setOtp] = useState('');
-  const [pendingEmail, setPendingEmail] = useState('');
 
   useEffect(() => {
     apiGet('/auth/profile', token)
@@ -41,11 +41,9 @@ export default function EditProfile() {
     setSaving(true);
     try {
       if (email !== originalEmail) {
-        setPendingEmail(email);
         const res = await apiPost('/auth/send-otp', {}, token);
-        setOtpSent(true);
-        if (res.otp) alert('OTP di test: ' + res.otp);
-        setSaving(false);
+        setOtp(res.otp);
+        setPopupOpen(true);
         return;
       }
 
@@ -59,18 +57,18 @@ export default function EditProfile() {
     }
   }
 
-  async function handleVerifyOtp() {
+  async function handleVerifyOtp(code) {
     setError('');
     setSaving(true);
     try {
-      await apiPost('/auth/verify-otp', { otp, newEmail: pendingEmail }, token);
-
+      await apiPost('/auth/verify-otp', { otp: code, newEmail: email }, token);
       await apiPut('/auth/profile', { name: name.trim(), surname: surname.trim() }, token);
-
-      setSuccess(t('profile.emailVerified'));
+      setPopupOpen(false);
+      setSuccess(t('profile.profileUpdated'));
       setTimeout(() => navigate('/profile'), 1200);
     } catch (err) {
       setError(err.message);
+      setPopupOpen(false);
     } finally {
       setSaving(false);
     }
@@ -96,58 +94,43 @@ export default function EditProfile() {
           {error && <div className="alert-error">{error}</div>}
           {success && <div className="alert-success">{success}</div>}
 
-          {!otpSent ? (
-            <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="name">{t('profile.name')}</label>
-                <input id="name" type="text" className="form-input" value={name} onChange={e => setName(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="surname">{t('profile.surname')}</label>
-                <input id="surname" type="text" className="form-input" value={surname} onChange={e => setSurname(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="email">{t('profile.email')}</label>
-                <input id="email" type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required />
-                {email !== originalEmail && (
-                  <p className="text-secondary" style={{ fontSize: 11, marginTop: 4 }}>
-                    {t('profile.emailChangeOtp')}
-                  </p>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button type="button" onClick={() => navigate('/profile')} className="btn btn-secondary" style={{ flex: 1 }}>
-                    {t('profile.cancel')}
-                  </button>
-                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                    {saving ? t('profile.saving') : t('profile.saveChanges')}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div>
-              <p className="text-secondary" style={{ fontSize: 13, marginBottom: 12, textAlign: 'center' }}>
-                {t('profile.otpSentTo')} <strong>{pendingEmail}</strong>
-              </p>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="_ _ _ _ _ _"
-                value={otp}
-                onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                style={{ textAlign: 'center', letterSpacing: 8, fontSize: 22, fontWeight: 700, fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace" }}
-              />
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                  <button onClick={() => setOtpSent(false)} className="btn btn-secondary" style={{ flex: 1 }}>
-                    {t('profile.back')}
-                  </button>
-                  <button onClick={handleVerifyOtp} className="btn btn-primary" style={{ flex: 1 }}>
-                    {saving ? t('profile.verifying') : t('profile.verifyAndSave')}
-                </button>
-              </div>
+          <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="name">{t('profile.name')}</label>
+              <input id="name" type="text" className="form-input" value={name} onChange={e => setName(e.target.value)} required />
             </div>
-          )}
+            <div className="form-group">
+              <label className="form-label" htmlFor="surname">{t('profile.surname')}</label>
+              <input id="surname" type="text" className="form-input" value={surname} onChange={e => setSurname(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="email">{t('profile.email')}</label>
+              <input id="email" type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required />
+              {email !== originalEmail && (
+                <p className="text-secondary" style={{ fontSize: 11, marginTop: 4 }}>
+                  {t('profile.emailChangeOtp')}
+                </p>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button type="button" onClick={() => navigate('/profile')} className="btn btn-secondary" style={{ flex: 1 }}>
+                {t('profile.cancel')}
+              </button>
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                {saving ? t('profile.saving') : t('profile.saveChanges')}
+              </button>
+            </div>
+          </form>
         </div>
+
+        <OtpPopup
+          open={popupOpen}
+          otp={otp}
+          title={t('profile.editProfileTitle')}
+          onConfirm={handleVerifyOtp}
+          onClose={() => setPopupOpen(false)}
+          loading={saving}
+        />
       </main>
     </div>
   );

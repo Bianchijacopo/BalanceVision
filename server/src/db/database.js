@@ -76,7 +76,7 @@ async function initSchema() {
         password_hash TEXT NOT NULL,
         name TEXT NOT NULL DEFAULT '',
         surname TEXT DEFAULT '',
-        email_verified BOOLEAN DEFAULT true,
+        email_verified BOOLEAN DEFAULT false,
         otp TEXT DEFAULT NULL,
         otp_expiry TIMESTAMPTZ DEFAULT NULL,
         avatar TEXT DEFAULT NULL,
@@ -192,8 +192,7 @@ async function initSchema() {
         value TEXT
       )
     `);
-    // Migrate existing users — auto-verify all
-    await client.query(`UPDATE users SET email_verified = true WHERE email_verified IS NULL OR email_verified = false`);
+    // Existing users remain verified; new registrations verify via on-screen OTP popup
   } finally {
     client.release();
   }

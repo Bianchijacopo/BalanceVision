@@ -44,6 +44,7 @@ export const schemas = {
       .regex(/[A-Z]/, 'Almeno una maiuscola')
       .regex(/[a-z]/, 'Almeno una minuscola')
       .regex(/[0-9]/, 'Almeno un numero'),
+    otp: z.string().length(6, 'OTP deve essere di 6 cifre'),
   }),
 
   sendOtp: z.object({

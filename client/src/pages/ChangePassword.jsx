@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
+import OtpPopup from '../components/OtpPopup';
 
 export default function ChangePassword() {
   const { t } = useLanguage();
@@ -18,6 +19,8 @@ export default function ChangePassword() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [otp, setOtp] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -39,7 +42,22 @@ export default function ChangePassword() {
 
     setSaving(true);
     try {
-      await apiPost('/auth/change-password', { oldPassword, newPassword }, token);
+      const data = await apiPost('/auth/send-otp', {}, token);
+      setOtp(data.otp);
+      setPopupOpen(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirm(code) {
+    setError('');
+    setSaving(true);
+    try {
+      await apiPost('/auth/change-password', { oldPassword, newPassword, otp: code }, token);
+      setPopupOpen(false);
       setSuccess(t('profile.passwordChanged'));
       setOldPassword('');
       setNewPassword('');
@@ -47,6 +65,7 @@ export default function ChangePassword() {
       setTimeout(() => navigate('/profile'), 1200);
     } catch (err) {
       setError(err.message);
+      setPopupOpen(false);
     } finally {
       setSaving(false);
     }
@@ -142,6 +161,15 @@ export default function ChangePassword() {
             </div>
           </form>
         </div>
+
+        <OtpPopup
+          open={popupOpen}
+          otp={otp}
+          title={t('profile.changePasswordTitle')}
+          onConfirm={handleConfirm}
+          onClose={() => setPopupOpen(false)}
+          loading={saving}
+        />
       </main>
     </div>
   );

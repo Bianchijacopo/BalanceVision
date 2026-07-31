@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiUrl } from '../context/ApiContext';
+import OtpPopup from '../components/OtpPopup';
 
 export default function ForgotPassword() {
   const { t } = useLanguage();
@@ -13,10 +14,13 @@ export default function ForgotPassword() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [sending, setSending] = useState(false);
 
   async function sendOtp(e) {
     e.preventDefault();
     setError(''); setMsg('');
+    setSending(true);
     try {
       const res = await fetch(apiUrl('/auth/forgot-send-otp'), {
         method: 'POST',
@@ -25,11 +29,24 @@ export default function ForgotPassword() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      setMsg(t('forgotPassword.codeSent') + ' ' + email + (json.otp ? ' (OTP: ' + json.otp + ')' : ''));
-      setStep(2);
+      if (json.otp) {
+        setOtp(json.otp);
+        setPopupOpen(true);
+      } else {
+        setMsg(t('forgotPassword.codeSent') + ' ' + email);
+        setStep(2);
+      }
     } catch (e) {
       setError(e.message);
+    } finally {
+      setSending(false);
     }
+  }
+
+  function handleConfirm(code) {
+    setPopupOpen(false);
+    setOtp(code);
+    setStep(3);
   }
 
   async function resetPassword(e) {
@@ -72,22 +89,8 @@ export default function ForgotPassword() {
                 placeholder={t('forgotPassword.emailPlaceholder')} value={email}
                 onChange={e => setEmail(e.target.value)} required />
             </div>
-            <button type="submit" className="btn btn-primary btn-full">
-              {t('forgotPassword.sendCode')}
-            </button>
-          </form>
-        )}
-
-        {step === 2 && (
-          <form onSubmit={e => { e.preventDefault(); setStep(3); }}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="otp">{t('forgotPassword.verifyCodeTitle')}</label>
-              <input id="otp" type="text" className="form-input"
-                placeholder={t('forgotPassword.otpPlaceholder')} value={otp}
-                onChange={e => setOtp(e.target.value)} required />
-            </div>
-            <button type="submit" className="btn btn-primary btn-full">
-              {t('forgotPassword.verifyCode')}
+            <button type="submit" className="btn btn-primary btn-full" disabled={sending}>
+              {sending ? t('forgotPassword.sending') : t('forgotPassword.sendCode')}
             </button>
           </form>
         )}
@@ -130,6 +133,14 @@ export default function ForgotPassword() {
           <Link to="/login" className="link">{t('forgotPassword.loginLink')}</Link>
         </div>
       </div>
+
+      <OtpPopup
+        open={popupOpen}
+        otp={otp}
+        title={t('forgotPassword.title2')}
+        onConfirm={handleConfirm}
+        onClose={() => setPopupOpen(false)}
+      />
     </div>
   );
 }

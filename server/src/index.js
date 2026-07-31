@@ -20,7 +20,6 @@ import budgetRoutes from './routes/budgets.js';
 import goalRoutes from './routes/goals.js';
 import recurringRoutes from './routes/recurring.js';
 import importRoutes from './routes/import.js';
-import reportRoutes from './routes/reports.js';
 import translateRoutes from './routes/translate.js';
 import settingsRoutes from './routes/settings.js';
 import suggestCategoryRoutes from './routes/suggestCategory.js';
@@ -152,7 +151,6 @@ const writeLimiter = rateLimit({
 });
 
 app.use('/api/import', writeLimiter);
-app.use('/api/reports/send', writeLimiter);
 app.use('/api/translate', writeLimiter);
 
 app.use('/api/auth', authRoutes);
@@ -163,7 +161,6 @@ app.use('/api/budgets', budgetRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/recurring', recurringRoutes);
 app.use('/api/import', importRoutes);
-app.use('/api/reports', reportRoutes);
 app.use('/api/translate', translateRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/transactions/suggest-category', suggestCategoryRoutes);

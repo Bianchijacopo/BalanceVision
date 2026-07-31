@@ -6,6 +6,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
+import OtpPopup from '../components/OtpPopup';
 
 function DefaultAvatarBig() {
   return (
@@ -21,20 +22,17 @@ export default function Profile() {
   const { t, lang } = useLanguage();
   const { currency, supported, changeCurrency } = useCurrency();
   const locale = lang === 'en' ? 'en-US' : 'it-IT';
-  const { token, user, setUser, logout } = useAuth();
+  const { token, setUser, logout } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const fileRef = useRef(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [deleteOtp, setDeleteOtp] = useState('');
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [otp, setOtp] = useState('');
   const [deleteError, setDeleteError] = useState('');
-  const [deleteStep, setDeleteStep] = useState('confirm');
+  const [deleting, setDeleting] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [reportEnabled, setReportEnabled] = useState(false);
-  const [reportDay, setReportDay] = useState(1);
-  const [lastReport, setLastReport] = useState(null);
-  const [sendingReport, setSendingReport] = useState(false);
 
   useEffect(() => {
     apiGet('/auth/profile', token)
@@ -43,47 +41,29 @@ export default function Profile() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  useEffect(() => {
-    apiGet('/reports/settings', token)
-      .then(s => { setReportEnabled(s.report_enabled); setReportDay(s.report_day); setLastReport(s.last_report_sent); })
-      .catch(() => {});
-  }, [token]);
-
-  async function handleSaveReportSettings() {
-    try {
-      await apiPut('/reports/settings', { report_enabled: reportEnabled, report_day: reportDay }, token);
-      addToast(t('reports.settingsSaved'), 'success');
-    } catch (e) { addToast(e.message, 'error'); }
-  }
-
-  async function handleSendReport() {
-    setSendingReport(true);
-    try {
-      await apiPost('/reports/send?lang=' + lang, {}, token);
-      addToast(t('reports.sent'), 'success');
-      const now = new Date().toISOString().slice(0, 10);
-      setLastReport(now);
-    } catch (e) { addToast(e.message, 'error'); }
-    setSendingReport(false);
-  }
-
   async function handleDeleteRequest() {
+    setDeleteError('');
     try {
-      const data = await apiPost('/auth/send-otp', { purpose: 'eliminazione' }, token);
-      setDeleteStep('otp');
-      if (data.otp) alert('OTP di test: ' + data.otp);
+      const data = await apiPost('/auth/send-otp', {}, token);
+      setOtp(data.otp);
+      setPopupOpen(true);
     } catch (err) {
       setDeleteError(err.message);
     }
   }
 
-  async function handleDeleteConfirm() {
+  async function handleDeleteConfirm(code) {
+    setDeleting(true);
     try {
-      await apiDelete('/auth/account?otp=' + encodeURIComponent(deleteOtp), token);
+      await apiDelete('/auth/account?otp=' + encodeURIComponent(code), token);
+      setPopupOpen(false);
       logout();
       navigate('/login');
     } catch (err) {
       setDeleteError(err.message);
+      setPopupOpen(false);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -193,23 +173,22 @@ export default function Profile() {
         <div className="card" style={{ marginTop: 16 }}>
           <div className="card-header">
             <h3 className="card-title" style={{ fontSize: 15 }}>{t('profile.deleteAccount')}</h3>
+            <p className="card-subtitle" style={{ fontSize: 12 }}>{t('profile.deleteOtpMessage')}</p>
           </div>
-          {deleteStep === 'confirm' ? (
-            <button onClick={handleDeleteRequest} className="btn btn-danger" style={{ width: '100%' }}>
-              {t('profile.deleteAccount')}
-            </button>
-          ) : (
-            <div>
-              <p style={{ fontSize: 13, marginBottom: 8 }}>{t('profile.deleteOtpMessage')}</p>
-              {deleteError && <div className="alert-error">{deleteError}</div>}
-              <input className="form-input" placeholder={t('profile.otpPlaceholder')} value={deleteOtp} onChange={e => setDeleteOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} style={{ textAlign: 'center', letterSpacing: 8, fontSize: 22, fontWeight: 700, fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace" }} />
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <button onClick={() => { setDeleteStep('confirm'); setDeleteOtp(''); setDeleteError(''); }} className="btn btn-secondary" style={{ flex: 1 }}>{t('profile.cancel')}</button>
-                <button onClick={handleDeleteConfirm} className="btn btn-danger" style={{ flex: 1 }}>{t('profile.delete')}</button>
-              </div>
-            </div>
-          )}
+          {deleteError && <div className="alert-error">{deleteError}</div>}
+          <button onClick={handleDeleteRequest} className="btn btn-danger" style={{ width: '100%' }}>
+            {t('profile.deleteAccount')}
+          </button>
         </div>
+
+        <OtpPopup
+          open={popupOpen}
+          otp={otp}
+          title={t('profile.deleteAccount')}
+          onConfirm={handleDeleteConfirm}
+          onClose={() => setPopupOpen(false)}
+          loading={deleting}
+        />
 
       </main>
     </div>

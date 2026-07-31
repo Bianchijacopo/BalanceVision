@@ -3,46 +3,45 @@ import { apiPost } from '../context/ApiContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import OtpPopup from '../components/OtpPopup';
 
 export default function VerifyEmail() {
   const { t } = useLanguage();
-  const { token, user, setUser, setJustRegistered } = useAuth();
+  const { token, setUser } = useAuth();
   const navigate = useNavigate();
+  const [popupOpen, setPopupOpen] = useState(false);
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user?.email_verified) navigate('/dashboard');
-  }, [user]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiPost('/auth/send-otp', {}, token);
+        if (cancelled) return;
+        setOtp(data.otp);
+        setPopupOpen(true);
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token]);
 
-  async function handleVerify() {
+  async function handleConfirm(code) {
     setError('');
-    if (!otp || otp.length < 6) { setError(t('verifyEmail.error')); return; }
     setLoading(true);
     try {
-      const data = await apiPost('/auth/verify-otp', { otp }, token);
-      setSuccess(t('verifyEmail.success'));
+      const data = await apiPost('/auth/verify-otp', { otp: code }, token);
       if (data.user) setUser(data.user);
-      setJustRegistered(false);
-      setTimeout(() => navigate('/dashboard'), 800);
+      setPopupOpen(false);
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
+      setPopupOpen(false);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleResend() {
-    setError('');
-    setOtp('');
-    try {
-      const data = await apiPost('/auth/send-otp', {}, token);
-      if (data.otp) alert('OTP di test: ' + data.otp);
-      setSuccess(t('verifyEmail.codeSent'));
-    } catch (err) {
-      setError(err.message);
     }
   }
 
@@ -51,31 +50,22 @@ export default function VerifyEmail() {
       <div className="card" style={{ maxWidth: 400, width: '100%' }}>
         <div className="card-header">
           <h2 className="card-title gradient-title">{t('verifyEmail.title')}</h2>
-          <p className="card-subtitle">
-            {t('verifyEmail.title')}: <strong>{user?.email}</strong>
-          </p>
+          <p className="card-subtitle">{t('verifyEmail.subtitle')}</p>
         </div>
         {error && <div className="alert-error">{error}</div>}
-        {success && <div className="alert-success">{success}</div>}
-        <div className="form-group">
-          <input
-            type="text"
-            className="form-input"
-            placeholder="_ _ _ _ _ _"
-            value={otp}
-            onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            style={{ textAlign: 'center', letterSpacing: 8, fontSize: 22, fontWeight: 700, fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace" }}
-          />
-        </div>
-        <button onClick={handleVerify} className="btn btn-primary btn-full" disabled={loading || otp.length < 6}>
-          {loading ? t('verifyEmail.verifying') : t('verifyEmail.verifyBtn')}
-        </button>
-        <div className="card-footer" style={{ flexDirection: 'column', gap: 8 }}>
-          <button onClick={handleResend} className="link" style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer', fontSize: 13 }}>
-            {t('verifyEmail.resend')}
-          </button>
-        </div>
+        <p className="text-secondary" style={{ fontSize: 13, textAlign: 'center' }}>
+          {t('verifyEmail.popupHint')}
+        </p>
       </div>
+
+      <OtpPopup
+        open={popupOpen}
+        otp={otp}
+        title={t('verifyEmail.title')}
+        onConfirm={handleConfirm}
+        onClose={() => setPopupOpen(false)}
+        loading={loading}
+      />
     </div>
   );
 }
