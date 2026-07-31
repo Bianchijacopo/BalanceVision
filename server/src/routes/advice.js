@@ -230,6 +230,22 @@ TRANSAZIONI RECENTI: ${(recentTx || []).map(t => t.date + ' ' + t.title + ' ' + 
 
 Usa sempre **grassetto** per evidenziare numeri e importi. Non usare markdown oltre al grassetto e agli elenchi puntati.`;
 
+    if (!GROQ_API_KEY) {
+      const sRate = totals.total_income > 0 ? Math.round(((totals.total_income - totals.total_expenses) / totals.total_income) * 100) : 0;
+      const topCat = (categoryBreakdown || [])[0];
+      let reply = isEn
+        ? `Your current balance is **${balance.toFixed(0)}€**, with income of **${totals.total_income.toFixed(0)}€** and expenses of **${totals.total_expenses.toFixed(0)}€** (savings rate **${sRate}%**).`
+        : `Il tuo saldo attuale e **${balance.toFixed(0)}€**, con entrate di **${totals.total_income.toFixed(0)}€** e spese di **${totals.total_expenses.toFixed(0)}€** (tasso di risparmio **${sRate}%**).`;
+      if (topCat) {
+        reply += isEn
+          ? `\n\nThe biggest expense category is **${topCat.category}** (${topCat.total.toFixed(0)}€).`
+          : `\n\nLa categoria di spesa maggiore e **${topCat.category}** (${topCat.total.toFixed(0)}€).`;
+      }
+      reply += isEn
+        ? `\n\nTips:\n- Review recurring subscriptions to cut unnecessary costs\n- Set a monthly budget per category\n- Build an emergency fund of 3-6 months of expenses`
+        : `\n\nConsigli:\n- Rivedi gli abbonamenti ricorrenti per tagliare costi inutili\n- Imposta un budget mensile per categoria\n- Crea un fondo di emergenza pari a 3-6 mesi di spese`;
+      return res.json({ reply });
+    }
     const reply = await groqChat(systemPrompt, message);
     res.json({ reply });
   } catch (e) {

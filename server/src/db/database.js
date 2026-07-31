@@ -2,6 +2,9 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
+// Parse NUMERIC (OID 1700) as JS number instead of string
+pg.types.setTypeParser(1700, (val) => (val === null ? null : parseFloat(val)));
+
 let pool = null;
 
 export async function getDb() {
