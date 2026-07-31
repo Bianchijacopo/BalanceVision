@@ -40,8 +40,8 @@ for (const key of REQUIRED_ENV) {
 if (!process.env.GROQ_API_KEY) {
   console.log('AVVISO: GROQ_API_KEY non impostata — funzionalità AI disabilitate');
 }
-if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-  console.log('AVVISO: GMAIL_USER/GMAIL_APP_PASSWORD non impostate — email disabilitate');
+if (!process.env.RESEND_API_KEY && (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD)) {
+  console.log('AVVISO: RESEND_API_KEY / GMAIL non impostati — email disabilitate (uso mock/fallback OTP)');
 }
 if (!process.env.DATABASE_URL) {
   console.error('ERRORE FATALE: DATABASE_URL non impostata');

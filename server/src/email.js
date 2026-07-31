@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
 
+const RESEND_URL = 'https://api.resend.com/emails';
+const RESEND_FROM = process.env.RESEND_FROM || 'BalanceVision <onboarding@resend.dev>';
+
 let transporter = null;
 
 function getTransporter() {
@@ -16,7 +19,35 @@ function getTransporter() {
   return transporter;
 }
 
+export function isEmailConfigured() {
+  return !!(process.env.RESEND_API_KEY || (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD));
+}
+
 export async function sendEmail(to, subject, text, html) {
+  // Prefer Resend (works from cloud) — falls back to Gmail SMTP
+  if (process.env.RESEND_API_KEY) {
+    const resp = await fetch(RESEND_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + process.env.RESEND_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: RESEND_FROM,
+        to: [to],
+        subject,
+        text,
+        html: html || text,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      throw new Error('Resend ' + resp.status + ': ' + body);
+    }
+    return;
+  }
+
   const t = getTransporter();
   if (!t) {
     console.log('\n=== EMAIL (mock) ===');
@@ -119,8 +150,4 @@ export function buildOtpEmail(name, otp, purpose) {
 
 export function buildSubject(purpose) {
   return PURPOSE_SUBJECT[purpose] || PURPOSE_SUBJECT.verifica;
-}
-
-export function isEmailConfigured() {
-  return !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
 }
