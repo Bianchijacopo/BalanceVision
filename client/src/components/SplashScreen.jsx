@@ -121,23 +121,9 @@ export default function SplashScreen() {
           </div>
         </div>
 
-        <div style={{
-          marginTop: 16,
-          maxWidth: 420,
-          width: '100%',
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          fontSize: 12,
-          color: 'var(--text-secondary)',
-        }}>
+        <div className="cookie-banner">
           <span>{t('login.cookieNotice')}</span>
-          <Link to="/disclaimer" className="link" style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
+          <Link to="/disclaimer" className="link cookie-banner-link">
             {t('login.cookieRead')}
           </Link>
         </div>
