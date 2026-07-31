@@ -32,8 +32,8 @@ function AnnotatedShot({ img, alt, markers, legend, intro }) {
 }
 
 export default function Guide() {
-  const { t, lang, setLang } = useLanguage();
-  const g = t('guide');
+  const { t, lang, setLang, dict } = useLanguage();
+  const g = dict.guide;
 
   const loginMarkers = [
     { n: 1, left: 97.3, top: 4.1 },
