@@ -282,4 +282,30 @@ router.post('/debug-test-email', async (req, res) => {
   }
 });
 
+router.post('/debug-test-gmail', async (req, res) => {
+  const nodemailer = (await import('nodemailer')).default;
+  const t = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD
+    },
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 8000
+  });
+  try {
+    await t.verify();
+    await t.sendMail({
+      from: process.env.GMAIL_USER,
+      to: req.body.to || process.env.GMAIL_USER,
+      subject: 'Test Gmail da Render',
+      text: 'Se ricevi questo, Gmail funziona da Render!'
+    });
+    res.json({ ok: true, message: 'Gmail SMTP funziona da Render' });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.code || err.message });
+  }
+});
+
 export default router;
