@@ -448,6 +448,12 @@ const en = {
       'Add a new transaction (income or expense)',
       'Download a PDF report',
     ],
+    txShotLegend: [
+      'Search transactions by title, category or amount',
+      'Filter by period, type and category',
+      'The full list of transactions with category and amount',
+      'Download a PDF report',
+    ],
     menuShotTitle: '3. The circular menu',
     menuShotIntro: 'Pressing ☰ Menu opens the circular navigation. Each item leads to a section:',
     menuShotLegend: [

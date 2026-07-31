@@ -37,13 +37,13 @@ export default function Guide() {
 
   const loginMarkers = [
     { n: 1, left: 97.3, top: 4.1 },
-    { n: 2, left: 50, top: 42.1 },
-    { n: 3, left: 50, top: 51.7 },
-    { n: 4, left: 50, top: 58.3 },
-    { n: 5, left: 50, top: 63.5 },
-    { n: 6, left: 55.4, top: 68.5 },
-    { n: 7, left: 60.2, top: 78.7 },
-    { n: 8, left: 40.7, top: 83.9 },
+    { n: 2, left: 50, top: 40.1 },
+    { n: 3, left: 50, top: 49.7 },
+    { n: 4, left: 50, top: 56.2 },
+    { n: 5, left: 50, top: 61.5 },
+    { n: 6, left: 55.4, top: 66.5 },
+    { n: 7, left: 60.3, top: 76.6 },
+    { n: 8, left: 50, top: 83.2 },
   ];
 
   const dashMarkers = [
@@ -110,19 +110,15 @@ export default function Guide() {
       <AnnotatedShot img="01-login" alt="Login" markers={loginMarkers} legend={g.loginShotLegend} />
 
       <h2 className="guide-section-title">{g.dashShotTitle}</h2>
-      <AnnotatedShot img="03-dashboard" alt="Dashboard" markers={dashMarkers} legend={g.dashShotLegend.slice(0, 7)} />
+      <AnnotatedShot
+        img="03-dashboard"
+        alt="Dashboard"
+        markers={dashMarkers}
+        legend={[0, 1, 2, 3, 4, 5, 7].map(i => g.dashShotLegend[i])}
+      />
 
       <h2 className="guide-section-title">2b. {lang === 'it' ? 'Le transazioni' : 'Transactions'}</h2>
-      <AnnotatedShot
-        img="03b-dashboard-transactions"
-        alt="Transazioni"
-        markers={txMarkers}
-        legend={[
-          ...g.dashShotLegend.slice(7, 9),
-          lang === 'it' ? 'La lista di tutte le transazioni, con categorie e importi' : 'The list of all transactions, with categories and amounts',
-          lang === 'it' ? 'Scarica un report in PDF' : 'Download a PDF report',
-        ]}
-      />
+      <AnnotatedShot img="03b-dashboard-transactions" alt="Transazioni" markers={txMarkers} legend={g.txShotLegend} />
 
       <h2 className="guide-section-title">{g.menuShotTitle}</h2>
       <AnnotatedShot img="04-menu-circolare" alt="Menu" markers={menuMarkers} legend={g.menuShotLegend} intro={g.menuShotIntro} />

@@ -448,6 +448,12 @@ const it = {
       'Aggiungi una nuova transazione (entrata o spesa)',
       'Scarica un report in PDF',
     ],
+    txShotLegend: [
+      'Cerca le transazioni per titolo, categoria o importo',
+      'Filtra per periodo, tipo e categoria',
+      'L\'elenco completo delle transazioni con categoria e importo',
+      'Scarica un report in PDF',
+    ],
     menuShotTitle: '3. Il menu circolare',
     menuShotIntro: 'Premendo ☰ Menu si apre la navigazione circolare. Ogni voce ti porta in una sezione:',
     menuShotLegend: [
