@@ -10,7 +10,6 @@ export default function VerifyEmail() {
   const { token, setUser } = useAuth();
   const navigate = useNavigate();
   const [popupOpen, setPopupOpen] = useState(false);
-  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,9 +17,8 @@ export default function VerifyEmail() {
     let cancelled = false;
     (async () => {
       try {
-        const data = await apiPost('/auth/send-otp', {}, token);
+        await apiPost('/auth/send-otp', {}, token);
         if (cancelled) return;
-        setOtp(data.otp);
         setPopupOpen(true);
       } catch (err) {
         if (!cancelled) setError(err.message);
@@ -60,7 +58,6 @@ export default function VerifyEmail() {
 
       <OtpPopup
         open={popupOpen}
-        otp={otp}
         title={t('verifyEmail.title')}
         onConfirm={handleConfirm}
         onClose={() => setPopupOpen(false)}

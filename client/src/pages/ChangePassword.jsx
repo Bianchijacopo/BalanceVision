@@ -20,7 +20,6 @@ export default function ChangePassword() {
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [otp, setOtp] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -42,8 +41,7 @@ export default function ChangePassword() {
 
     setSaving(true);
     try {
-      const data = await apiPost('/auth/send-otp', {}, token);
-      setOtp(data.otp);
+      await apiPost('/auth/send-otp', {}, token);
       setPopupOpen(true);
     } catch (err) {
       setError(err.message);
@@ -164,7 +162,6 @@ export default function ChangePassword() {
 
         <OtpPopup
           open={popupOpen}
-          otp={otp}
           title={t('profile.changePasswordTitle')}
           onConfirm={handleConfirm}
           onClose={() => setPopupOpen(false)}

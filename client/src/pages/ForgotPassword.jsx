@@ -29,13 +29,8 @@ export default function ForgotPassword() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      if (json.otp) {
-        setOtp(json.otp);
-        setPopupOpen(true);
-      } else {
-        setMsg(t('forgotPassword.codeSent') + ' ' + email);
-        setStep(2);
-      }
+      setMsg(t('forgotPassword.codeSent') + ' ' + email);
+      setPopupOpen(true);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -136,7 +131,6 @@ export default function ForgotPassword() {
 
       <OtpPopup
         open={popupOpen}
-        otp={otp}
         title={t('forgotPassword.title2')}
         onConfirm={handleConfirm}
         onClose={() => setPopupOpen(false)}

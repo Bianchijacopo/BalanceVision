@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function OtpPopup({ open, otp, title, onConfirm, onClose, loading }) {
+export default function OtpPopup({ open, title, onConfirm, onClose, loading }) {
   const { t } = useLanguage();
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
@@ -13,17 +13,17 @@ export default function OtpPopup({ open, otp, title, onConfirm, onClose, loading
       setError('');
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [open, otp]);
+  }, [open]);
 
-  if (!open || !otp) return null;
+  if (!open) return null;
 
   function handleConfirm(e) {
     e.preventDefault();
-    if (input !== otp) {
+    if (input.length < 6) {
       setError(t('otpPopup.mismatch'));
       return;
     }
-    onConfirm(otp);
+    onConfirm(input);
   }
 
   return (
@@ -36,26 +36,6 @@ export default function OtpPopup({ open, otp, title, onConfirm, onClose, loading
 
         <p className="text-secondary" style={{ fontSize: 13, margin: '0 0 16px 0', lineHeight: 1.5 }}>
           {t('otpPopup.message')}
-        </p>
-
-        <div style={{
-          textAlign: 'center',
-          padding: '18px 12px',
-          borderRadius: 10,
-          background: 'var(--bg-secondary)',
-          border: '1px dashed var(--border)',
-          marginBottom: 16,
-          letterSpacing: 10,
-          fontSize: 30,
-          fontWeight: 700,
-          fontFamily: "'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace",
-          color: 'var(--text-primary)',
-        }}>
-          {otp}
-        </div>
-
-        <p className="text-secondary" style={{ fontSize: 12, margin: '0 0 8px 0' }}>
-          {t('otpPopup.typeToConfirm')}
         </p>
 
         {error && <div className="alert-error" style={{ marginBottom: 8 }}>{error}</div>}

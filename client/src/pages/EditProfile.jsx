@@ -19,7 +19,6 @@ export default function EditProfile() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [popupOpen, setPopupOpen] = useState(false);
-  const [otp, setOtp] = useState('');
 
   useEffect(() => {
     apiGet('/auth/profile', token)
@@ -41,8 +40,7 @@ export default function EditProfile() {
     setSaving(true);
     try {
       if (email !== originalEmail) {
-        const res = await apiPost('/auth/send-otp', {}, token);
-        setOtp(res.otp);
+        await apiPost('/auth/send-otp', {}, token);
         setPopupOpen(true);
         return;
       }
@@ -125,7 +123,6 @@ export default function EditProfile() {
 
         <OtpPopup
           open={popupOpen}
-          otp={otp}
           title={t('profile.editProfileTitle')}
           onConfirm={handleVerifyOtp}
           onClose={() => setPopupOpen(false)}

@@ -5,6 +5,7 @@ import { get, run, localNow } from '../db/database.js';
 import { generateToken, authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 import { validate, schemas } from '../utils/validate.js';
 import { sanitize } from '../utils/sanitize.js';
+import { sendEmail, buildOtpEmail, buildSubject } from '../email.js';
 
 const router = Router();
 const PASSWORD_MIN = 8;
@@ -38,6 +39,12 @@ async function generateAndStoreOtp(userId) {
   return otp;
 }
 
+async function sendOtpEmail(user, otp, purpose) {
+  const name = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.email;
+  const { text, html } = buildOtpEmail(name, otp, purpose);
+  await sendEmail(user.email, buildSubject(purpose), text, html);
+}
+
 function checkOtp(user, otp) {
   if (!user || !user.otp || !user.otp_expiry) return 'Nessun OTP richiesto. Richiedine uno nuovo.';
   if (new Date(user.otp_expiry) < new Date()) return 'OTP scaduto. Richiedine uno nuovo.';
@@ -57,14 +64,21 @@ router.post('/register', validate(schemas.register), async (req, res) => {
   const password_hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
   const result = await run('INSERT INTO users (email, password_hash, name, surname, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?)', [email, password_hash, name || '', surname || '', localNow(), false]);
 
-  const otp = await generateAndStoreOtp(result.lastInsertRowid);
-  const token = generateToken(result.lastInsertRowid);
-  const refreshToken = await generateRefreshToken(result.lastInsertRowid);
+  const userId = result.lastInsertRowid;
+  const otp = await generateAndStoreOtp(userId);
+  const token = generateToken(userId);
+  const refreshToken = await generateRefreshToken(userId);
 
-  audit(result.lastInsertRowid, 'register', req.ip);
-  const userData = await getUser(result.lastInsertRowid);
+  try {
+    await sendOtpEmail({ email, name, surname }, otp, 'verifica');
+  } catch (e) {
+    console.error('OTP email non inviata:', e.message);
+  }
+
+  audit(userId, 'register', req.ip);
+  const userData = await getUser(userId);
   res.status(201).json({
-    token, refreshToken, otp,
+    token, refreshToken,
     user: userData,
   });
 });
@@ -129,11 +143,15 @@ router.post('/refresh', validate(schemas.refresh), async (req, res) => {
 router.post('/forgot-send-otp', validate(schemas.forgotSendOtp), async (req, res) => {
   const { email } = req.body;
 
-  const user = await get('SELECT id FROM users WHERE email = ?', [email]);
+  const user = await get('SELECT id, email, name, surname FROM users WHERE email = ?', [email]);
 
   if (user) {
     const otp = await generateAndStoreOtp(user.id);
-    return res.json({ otp, message: 'Inserisci il codice mostrato a schermo' });
+    try {
+      await sendOtpEmail(user, otp, 'recupero');
+    } catch (e) {
+      console.error('OTP recupero non inviata:', e.message);
+    }
   }
 
   res.json({ message: 'Se l\'email esiste, riceverai un codice per il recupero password' });
@@ -194,8 +212,14 @@ router.post('/change-password', authMiddleware, validate(schemas.changePassword)
 });
 
 router.post('/send-otp', authMiddleware, async (req, res) => {
+  const user = await get('SELECT id, email, name, surname FROM users WHERE id = ?', [req.userId]);
   const otp = await generateAndStoreOtp(req.userId);
-  res.json({ otp, message: 'Inserisci il codice mostrato a schermo' });
+  try {
+    await sendOtpEmail(user, otp, 'verifica');
+  } catch (e) {
+    console.error('OTP non inviata:', e.message);
+  }
+  res.json({ message: 'Codice inviato via email' });
 });
 
 router.post('/verify-otp', authMiddleware, validate(schemas.verifyOtp), async (req, res) => {

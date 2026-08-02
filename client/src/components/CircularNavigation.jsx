@@ -75,6 +75,7 @@ export default function CircularNavigation({ isOpen, onClose, onLogout }) {
                   key={item.name}
                   className="circular-item-wrap"
                   style={{
+                    '--angle': angle,
                     transform: `rotate(${angle}deg) translate(140px) rotate(-${angle}deg)`,
                   }}
                 >
