@@ -254,21 +254,26 @@ router.put('/avatar', authMiddleware, verifiedMiddleware, validate(schemas.avata
 });
 
 router.delete('/account', authMiddleware, async (req, res) => {
-  const otp = req.query.otp;
-  if (!otp || otp.length !== 6) return res.status(400).json({ error: 'Codice OTP richiesto (6 cifre)' });
-  const user = await get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
-  const otpError = checkOtp(user, otp);
-  if (otpError) return res.status(400).json({ error: otpError });
+  try {
+    const otp = req.query.otp;
+    if (!otp || otp.length !== 6) return res.status(400).json({ error: 'Codice OTP richiesto (6 cifre)' });
+    const user = await get('SELECT otp, otp_expiry FROM users WHERE id = ?', [req.userId]);
+    const otpError = checkOtp(user, otp);
+    if (otpError) return res.status(400).json({ error: otpError });
 
-  audit(req.userId, 'account_deleted', req.ip);
-  await run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.userId]);
-  await run('DELETE FROM transactions WHERE user_id = ?', [req.userId]);
-  await run('DELETE FROM budgets WHERE user_id = ?', [req.userId]);
-  await run('DELETE FROM goals WHERE user_id = ?', [req.userId]);
-  await run('DELETE FROM recurring WHERE user_id = ?', [req.userId]);
-  await run('DELETE FROM initial_balance WHERE user_id = ?', [req.userId]);
-  await run('DELETE FROM users WHERE id = ?', [req.userId]);
-  res.json({ message: 'Account eliminato con successo' });
+    audit(req.userId, 'account_deleted', req.ip);
+    await run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.userId]);
+    await run('DELETE FROM transactions WHERE user_id = ?', [req.userId]);
+    await run('DELETE FROM budgets WHERE user_id = ?', [req.userId]);
+    await run('DELETE FROM goals WHERE user_id = ?', [req.userId]);
+    await run('DELETE FROM recurring_transactions WHERE user_id = ?', [req.userId]);
+    await run('DELETE FROM initial_balance WHERE user_id = ?', [req.userId]);
+    await run('DELETE FROM users WHERE id = ?', [req.userId]);
+    res.json({ message: 'Account eliminato con successo' });
+  } catch (e) {
+    console.error('[delete-account error]', e.message);
+    res.status(500).json({ error: 'Errore interno del server' });
+  }
 });
 
 export default router;
