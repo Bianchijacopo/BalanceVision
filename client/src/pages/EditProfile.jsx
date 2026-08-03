@@ -17,6 +17,7 @@ export default function EditProfile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [success, setSuccess] = useState('');
   const [popupOpen, setPopupOpen] = useState(false);
 
@@ -41,6 +42,7 @@ export default function EditProfile() {
     try {
       if (email !== originalEmail) {
         await apiPost('/auth/send-otp', { purpose: 'cambio_email' }, token);
+        setOtpError('');
         setPopupOpen(true);
         return;
       }
@@ -65,8 +67,7 @@ export default function EditProfile() {
       setSuccess(t('profile.profileUpdated'));
       setTimeout(() => navigate('/profile'), 1200);
     } catch (err) {
-      setError(err.message);
-      setPopupOpen(false);
+      setOtpError(err.message);
     } finally {
       setSaving(false);
     }
@@ -127,6 +128,7 @@ export default function EditProfile() {
           onConfirm={handleVerifyOtp}
           onClose={() => setPopupOpen(false)}
           loading={saving}
+          error={otpError}
         />
       </main>
     </div>

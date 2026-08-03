@@ -17,6 +17,7 @@ export default function ChangePassword() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -42,6 +43,7 @@ export default function ChangePassword() {
     setSaving(true);
     try {
       await apiPost('/auth/send-otp', { purpose: 'cambio_password' }, token);
+      setOtpError('');
       setPopupOpen(true);
     } catch (err) {
       setError(err.message);
@@ -62,8 +64,7 @@ export default function ChangePassword() {
       setConfirmPassword('');
       setTimeout(() => navigate('/profile'), 1200);
     } catch (err) {
-      setError(err.message);
-      setPopupOpen(false);
+      setOtpError(err.message);
     } finally {
       setSaving(false);
     }
@@ -166,6 +167,7 @@ export default function ChangePassword() {
           onConfirm={handleConfirm}
           onClose={() => setPopupOpen(false)}
           loading={saving}
+          error={otpError}
         />
       </main>
     </div>

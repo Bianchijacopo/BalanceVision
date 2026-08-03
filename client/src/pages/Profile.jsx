@@ -30,6 +30,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [popupOpen, setPopupOpen] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -44,6 +45,7 @@ export default function Profile() {
     setDeleteError('');
     try {
       await apiPost('/auth/send-otp', { purpose: 'eliminazione' }, token);
+      setOtpError('');
       setPopupOpen(true);
     } catch (err) {
       setDeleteError(err.message);
@@ -58,8 +60,7 @@ export default function Profile() {
       logout();
       navigate('/login');
     } catch (err) {
-      setDeleteError(err.message);
-      setPopupOpen(false);
+      setOtpError(err.message);
     } finally {
       setDeleting(false);
     }
@@ -183,8 +184,9 @@ export default function Profile() {
           open={popupOpen}
           title={t('profile.deleteAccount')}
           onConfirm={handleDeleteConfirm}
-          onClose={() => setPopupOpen(false)}
+          onClose={() => { setPopupOpen(false); setOtpError(''); }}
           loading={deleting}
+          error={otpError}
         />
 
       </main>

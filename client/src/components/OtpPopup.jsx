@@ -1,16 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function OtpPopup({ open, title, onConfirm, onClose, loading }) {
+export default function OtpPopup({ open, title, onConfirm, onClose, loading, error }) {
   const { t } = useLanguage();
   const [input, setInput] = useState('');
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (open) {
       setInput('');
-      setError('');
+      setLocalError('');
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
@@ -20,7 +20,7 @@ export default function OtpPopup({ open, title, onConfirm, onClose, loading }) {
   function handleConfirm(e) {
     e.preventDefault();
     if (input.length < 6) {
-      setError(t('otpPopup.mismatch'));
+      setLocalError(t('otpPopup.mismatch'));
       return;
     }
     onConfirm(input);
@@ -38,7 +38,7 @@ export default function OtpPopup({ open, title, onConfirm, onClose, loading }) {
           {t('otpPopup.message')}
         </p>
 
-        {error && <div className="alert-error" style={{ marginBottom: 8 }}>{error}</div>}
+        {(error || (input.length < 6 && input.length > 0)) && <div className="alert-error" style={{ marginBottom: 8 }}>{error || t('otpPopup.mismatch')}</div>}
 
         <form onSubmit={handleConfirm}>
           <input

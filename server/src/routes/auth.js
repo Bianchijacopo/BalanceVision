@@ -39,10 +39,25 @@ async function generateAndStoreOtp(userId) {
   return otp;
 }
 
+async function hasValidOtp(userId) {
+  const row = await get('SELECT otp_expiry FROM users WHERE id = ?', [userId]);
+  return !!(row && row.otp_expiry && new Date(row.otp_expiry) > new Date());
+}
+
 async function sendOtpEmail(user, otp, purpose) {
   const name = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.email;
   const { text, html } = buildOtpEmail(name, otp, purpose);
   await sendEmail(user.email, buildSubject(purpose), text, html);
+}
+
+async function sendOtpIfNeeded(user, purpose) {
+  if (await hasValidOtp(user.id)) return;
+  const otp = await generateAndStoreOtp(user.id);
+  try {
+    await sendOtpEmail(user, otp, purpose);
+  } catch (e) {
+    console.error('OTP non inviata (' + purpose + '):', e.message);
+  }
 }
 
 function checkOtp(user, otp) {
@@ -146,12 +161,7 @@ router.post('/forgot-send-otp', validate(schemas.forgotSendOtp), async (req, res
   const user = await get('SELECT id, email, name, surname FROM users WHERE email = ?', [email]);
 
   if (user) {
-    const otp = await generateAndStoreOtp(user.id);
-    try {
-      await sendOtpEmail(user, otp, 'recupero');
-    } catch (e) {
-      console.error('OTP recupero non inviata:', e.message);
-    }
+    await sendOtpIfNeeded(user, 'recupero');
   }
 
   res.json({ message: 'Se l\'email esiste, riceverai un codice per il recupero password' });
@@ -214,12 +224,7 @@ router.post('/change-password', authMiddleware, validate(schemas.changePassword)
 router.post('/send-otp', authMiddleware, async (req, res) => {
   const user = await get('SELECT id, email, name, surname FROM users WHERE id = ?', [req.userId]);
   const purpose = ['cambio_password', 'cambio_email', 'eliminazione'].includes(req.body.purpose) ? req.body.purpose : 'verifica';
-  const otp = await generateAndStoreOtp(req.userId);
-  try {
-    await sendOtpEmail(user, otp, purpose);
-  } catch (e) {
-    console.error('OTP non inviata (' + purpose + '):', e.message);
-  }
+  await sendOtpIfNeeded(user, purpose);
   res.json({ message: 'Codice inviato via email' });
 });
 

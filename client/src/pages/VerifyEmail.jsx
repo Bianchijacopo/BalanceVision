@@ -11,6 +11,7 @@ export default function VerifyEmail() {
   const navigate = useNavigate();
   const [popupOpen, setPopupOpen] = useState(false);
   const [error, setError] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export default function VerifyEmail() {
       try {
         await apiPost('/auth/send-otp', {}, token);
         if (cancelled) return;
+        setOtpError('');
         setPopupOpen(true);
       } catch (err) {
         if (!cancelled) setError(err.message);
@@ -36,8 +38,7 @@ export default function VerifyEmail() {
       setPopupOpen(false);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
-      setPopupOpen(false);
+      setOtpError(err.message);
     } finally {
       setLoading(false);
     }
@@ -62,6 +63,7 @@ export default function VerifyEmail() {
         onConfirm={handleConfirm}
         onClose={() => setPopupOpen(false)}
         loading={loading}
+        error={otpError}
       />
     </div>
   );
