@@ -21,20 +21,44 @@ export function AuthProvider({ children }) {
     else localStorage.removeItem('refreshToken');
   }, [refreshToken]);
 
-  // Verify stored token on mount
+  // Proactive refresh: rinnova il JWT prima che scada (13 minuti)
   useEffect(() => {
-    if (!token) { setVerifying(false); return; }
+    if (!token) return;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expiresAt = payload.exp * 1000;
+      const now = Date.now();
+      const msUntilRefresh = Math.max(expiresAt - now - 120 * 1000, 5000);
+      const timer = setTimeout(() => { doRefresh(); }, msUntilRefresh);
+      return () => clearTimeout(timer);
+    } catch {}
+  }, [token, doRefresh]);
+
+  // Verify stored token on mount — try refresh first if expired
+  useEffect(() => {
+    if (!token) {
+      if (refreshToken) {
+        doRefresh();
+      } else {
+        setVerifying(false);
+      }
+      return;
+    }
     fetch(apiUrl('/auth/profile'), {
       headers: { 'Authorization': 'Bearer ' + token }
     })
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(u => { setUser(u); setVerifying(false); })
       .catch(() => {
-        setToken(null);
-        setRefreshToken(null);
-        setUser(null);
-        setJustRegistered(false);
-        setVerifying(false);
+        if (refreshToken) {
+          doRefresh().then(ok => setVerifying(false));
+        } else {
+          setToken(null);
+          setRefreshToken(null);
+          setUser(null);
+          setJustRegistered(false);
+          setVerifying(false);
+        }
       });
   }, []);
 

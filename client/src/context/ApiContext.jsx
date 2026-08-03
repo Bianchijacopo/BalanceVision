@@ -12,32 +12,40 @@ function authHeaders(token) {
   };
 }
 
+let refreshPromise = null;
+
 async function tryRefresh() {
   const refreshToken = localStorage.getItem('refreshToken');
   if (!refreshToken) return false;
-  try {
-    const res = await fetch(`${API}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
-    });
-    if (!res.ok) {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
+      if (!res.ok) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        window.dispatchEvent(new CustomEvent('auth-expired'));
+        return false;
+      }
+      const data = await res.json();
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      window.dispatchEvent(new CustomEvent('auth-refresh', { detail: { token: data.token, refreshToken: data.refreshToken } }));
+      return true;
+    } catch {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       window.dispatchEvent(new CustomEvent('auth-expired'));
       return false;
     }
-    const data = await res.json();
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('refreshToken', data.refreshToken);
-    window.dispatchEvent(new CustomEvent('auth-refresh', { detail: { token: data.token, refreshToken: data.refreshToken } }));
-    return true;
-  } catch {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    window.dispatchEvent(new CustomEvent('auth-expired'));
-    return false;
-  }
+  })();
+  const result = await refreshPromise;
+  refreshPromise = null;
+  return result;
 }
 
 async function request(method, path, body, token) {
