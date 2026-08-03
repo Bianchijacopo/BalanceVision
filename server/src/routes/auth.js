@@ -263,6 +263,9 @@ router.delete('/account', authMiddleware, async (req, res) => {
   audit(req.userId, 'account_deleted', req.ip);
   await run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.userId]);
   await run('DELETE FROM transactions WHERE user_id = ?', [req.userId]);
+  await run('DELETE FROM budgets WHERE user_id = ?', [req.userId]);
+  await run('DELETE FROM goals WHERE user_id = ?', [req.userId]);
+  await run('DELETE FROM recurring WHERE user_id = ?', [req.userId]);
   await run('DELETE FROM initial_balance WHERE user_id = ?', [req.userId]);
   await run('DELETE FROM users WHERE id = ?', [req.userId]);
   res.json({ message: 'Account eliminato con successo' });
