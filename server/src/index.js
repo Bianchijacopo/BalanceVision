@@ -90,7 +90,7 @@ const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3001';
 const allowedOrigins = corsOrigin.split(',').map(s => s.trim());
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('https://balance-vision') || origin.startsWith('http://localhost')) {
+    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('https://balance-vision') || origin.startsWith('https://balancevision.it') || origin.startsWith('https://www.balancevision.it') || origin.startsWith('http://localhost')) {
       cb(null, true);
     } else {
       console.warn('[CORS] blocked origin:', origin);
