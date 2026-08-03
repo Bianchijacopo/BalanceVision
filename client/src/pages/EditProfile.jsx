@@ -40,7 +40,7 @@ export default function EditProfile() {
     setSaving(true);
     try {
       if (email !== originalEmail) {
-        await apiPost('/auth/send-otp', {}, token);
+        await apiPost('/auth/send-otp', { purpose: 'cambio_email' }, token);
         setPopupOpen(true);
         return;
       }

@@ -67,18 +67,24 @@ export async function sendEmail(to, subject, text, html) {
 }
 
 const PURPOSE_TEXT = {
-  verifica: 'Per completare la verifica del tuo account BalanceVision, e necessario confermare il tuo indirizzo email.',
-  recupero: 'Per reimpostare la password del tuo account BalanceVision, utilizza il codice qui sotto.',
-  eliminazione: 'Per eliminare il tuo account BalanceVision, conferma utilizzando il codice qui sotto.',
+  verifica: 'Per completare la verifica del tuo account BalanceVision, conferma il tuo indirizzo email inserendo il codice di sicurezza qui sotto.',
+  recupero: 'Hai richiesto di reimpostare la password del tuo account BalanceVision. Inserisci il codice qui sotto per procedere.',
+  cambio_password: 'Hai richiesto di cambiare la password del tuo account BalanceVision. Inserisci il codice qui sotto per confermare la modifica.',
+  cambio_email: 'Hai richiesto di modificare il tuo indirizzo email. Inserisci il codice qui sotto per confermare la modifica.',
+  eliminazione: 'Hai richiesto di eliminare definitivamente il tuo account BalanceVision. Inserisci il codice qui sotto per confermare la cancellazione.',
 };
 const PURPOSE_SUBJECT = {
   verifica: 'Codice di verifica BalanceVision',
   recupero: 'Recupero password BalanceVision',
+  cambio_password: 'Modifica password BalanceVision',
+  cambio_email: 'Modifica email BalanceVision',
   eliminazione: 'Eliminazione account BalanceVision',
 };
 const PURPOSE_FOOTER = {
-  verifica: 'BalanceVision \u2013 Servizio di Verifica Account',
+  verifica: 'BalanceVision \u2013 Verifica Account',
   recupero: 'BalanceVision \u2013 Recupero Password',
+  cambio_password: 'BalanceVision \u2013 Modifica Password',
+  cambio_email: 'BalanceVision \u2013 Modifica Email',
   eliminazione: 'BalanceVision \u2013 Eliminazione Account',
 };
 

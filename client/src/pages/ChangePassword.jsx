@@ -41,7 +41,7 @@ export default function ChangePassword() {
 
     setSaving(true);
     try {
-      await apiPost('/auth/send-otp', {}, token);
+      await apiPost('/auth/send-otp', { purpose: 'cambio_password' }, token);
       setPopupOpen(true);
     } catch (err) {
       setError(err.message);

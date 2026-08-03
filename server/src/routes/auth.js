@@ -213,11 +213,12 @@ router.post('/change-password', authMiddleware, validate(schemas.changePassword)
 
 router.post('/send-otp', authMiddleware, async (req, res) => {
   const user = await get('SELECT id, email, name, surname FROM users WHERE id = ?', [req.userId]);
+  const purpose = ['cambio_password', 'cambio_email', 'eliminazione'].includes(req.body.purpose) ? req.body.purpose : 'verifica';
   const otp = await generateAndStoreOtp(req.userId);
   try {
-    await sendOtpEmail(user, otp, 'verifica');
+    await sendOtpEmail(user, otp, purpose);
   } catch (e) {
-    console.error('OTP non inviata:', e.message);
+    console.error('OTP non inviata (' + purpose + '):', e.message);
   }
   res.json({ message: 'Codice inviato via email' });
 });
