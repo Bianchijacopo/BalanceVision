@@ -10,6 +10,20 @@
 
 ---
 
+## 🌐 App pubblica e dominio
+
+BalanceVision è online ed è raggiungibile al dominio **`https://balancevision.it`** (anche tramite `www.balancevision.it`).
+
+**Link diretti:**
+- **App pubblica:** https://balancevision.it
+- **Guida all'uso dell'app:** https://balancevision.it/guida
+- **Frontend (Vercel):** https://balance-vision.vercel.app
+- **Backend / API:** https://balancevisionapi.onrender.com/api
+
+> **Sicurezza e privacy dei dati.** La verifica dell'account (registrazione, recupero password, cambio password/email ed eliminazione account) avviene tramite un codice di sicurezza a 6 cifre inviato via email (Resend) dal mittente verificato `no-reply@balancevision.it`. Il codice non viene mai mostrato a schermo né restituito dalle API. Il traffico è esclusivamente HTTPS/TLS, la sessione è gestita tramite token, e i dati personali (nome, email, transazioni, impostazioni) sono conservati su un database protetto (Supabase Postgres) e non sono mai venduti, ceduti o condivisi con terze parti. Non vengono utilizzati cookie di profilazione o pubblicitari (solo `localStorage` per sessione, lingua, valuta e tema). Nessun dato personale viene esposto pubblicamente: l'uso dell'app richiede un account autenticato.
+
+---
+
 ## 📋 Funzionalità Complete
 
 ### Dashboard Principale
