@@ -21,7 +21,27 @@ export function AuthProvider({ children }) {
     else localStorage.removeItem('refreshToken');
   }, [refreshToken]);
 
-  // Proactive refresh: rinnova il JWT prima che scada (13 minuti)
+  const doRefresh = useCallback(async () => {
+    const stored = localStorage.getItem('refreshToken');
+    if (!stored) return false;
+    try {
+      const res = await fetch(apiUrl('/auth/refresh'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: stored })
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setToken(data.token);
+      setRefreshToken(data.refreshToken);
+      setUser(data.user);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Proactive refresh: rinnova il JWT prima che scada (2 minuti prima)
   useEffect(() => {
     if (!token) return;
     try {
@@ -60,26 +80,6 @@ export function AuthProvider({ children }) {
           setVerifying(false);
         }
       });
-  }, []);
-
-  const doRefresh = useCallback(async () => {
-    const stored = localStorage.getItem('refreshToken');
-    if (!stored) return false;
-    try {
-      const res = await fetch(apiUrl('/auth/refresh'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: stored })
-      });
-      if (!res.ok) return false;
-      const data = await res.json();
-      setToken(data.token);
-      setRefreshToken(data.refreshToken);
-      setUser(data.user);
-      return true;
-    } catch {
-      return false;
-    }
   }, []);
 
   useEffect(() => {
