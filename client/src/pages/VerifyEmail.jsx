@@ -7,7 +7,7 @@ import OtpPopup from '../components/OtpPopup';
 
 export default function VerifyEmail() {
   const { t } = useLanguage();
-  const { token, setUser } = useAuth();
+  const { token, setUser, setJustRegistered } = useAuth();
   const navigate = useNavigate();
   const [popupOpen, setPopupOpen] = useState(false);
   const [error, setError] = useState('');
@@ -35,6 +35,7 @@ export default function VerifyEmail() {
     try {
       const data = await apiPost('/auth/verify-otp', { otp: code }, token);
       if (data.user) setUser(data.user);
+      setJustRegistered(false);
       setPopupOpen(false);
       navigate('/dashboard');
     } catch (err) {
