@@ -1880,7 +1880,7 @@ textarea.form-input {
    ============================ */
 .insights-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -2959,7 +2959,7 @@ textarea.form-input {
   }
 
   .insights-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .insight-card {
