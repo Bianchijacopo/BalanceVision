@@ -443,10 +443,14 @@ select.form-input {
 
 [data-theme="dark"] select.form-input {
   color-scheme: dark;
+  background-color: var(--brand);
+  color: #000;
+  font-weight: 600;
 }
 
 [data-theme="light"] select.form-input {
   color-scheme: light;
+  color: #000;
 }
 
 [data-theme="light"] select.form-input {
@@ -2043,10 +2047,25 @@ textarea.form-input {
 
 [data-theme="dark"] .tx-filters select {
   color-scheme: dark;
+  background: var(--brand);
+  color: #000;
+  border-color: var(--brand);
+  font-weight: 600;
 }
 
 [data-theme="light"] .tx-filters select {
   color-scheme: light;
+  color: #000;
+}
+
+[data-theme="light"] .tx-filters select option {
+  background: #fff;
+  color: #000;
+}
+
+[data-theme="dark"] .tx-filters select option {
+  background: #1a1a1a;
+  color: #fff;
 }
 
 .tx-filters select:focus {
