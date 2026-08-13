@@ -1,6 +1,6 @@
 # BalanceVision
 
-**App per la gestione delle finanze personali** — dashboard interattiva, transazioni, budget, obiettivi, analisi avanzata, consigli AI, multi-lingua IT/EN, tema scuro/chiaro, import CSV, report email, esportazione PDF, app desktop Electron.
+**App per la gestione delle finanze personali** — dashboard interattiva, transazioni, budget, obiettivi, analisi avanzata, consigli AI, multi-lingua IT/EN, tema scuro/chiaro, import CSV, report email, esportazione PDF.
 
 <p align="center">
   <a href="#installazione-e-setup" style="display: inline-block; padding: 12px 32px; background: #00b45a; color: #fff; font-size: 18px; font-weight: 700; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 8px rgba(0,180,90,0.3);">
@@ -204,12 +204,13 @@ Il backend AI usa **Groq** (cloud, gratuito, senza bisogno di carta di credito):
 - La scelta viene ricordata anche dopo aver chiuso l'app
 
 ### App Desktop (Electron)
-- Funziona come programa standalone (non serve tener aperto il browser)
+- Funziona come programma standalone (non serve tener aperto il browser)
 - Usa **Electron** per creare una finestra nativa
 - Il server Express viene avviato in background con `fork()`
 - Porta: `http://localhost:3001`
 - **Collegamento sul desktop**: crea un file `.lnk` che clicchi e parte subito
 - Lo script `launch.bat` kill automaticamente la vecchia porta 3001 prima di avviarsi (evita `EADDRINUSE`)
+- **Nota**: l'app è ora disponibile anche online su `https://balancevision.it` — l'Electron è opzionale
 
 ### Email Transazionali
 - **OTP**: per recupero password (codice monouso via email)
@@ -219,23 +220,23 @@ Il backend AI usa **Groq** (cloud, gratuito, senza bisogno di carta di credito):
 
 ### Sicurezza
 - Le password sono **hashate con bcrypt**
-- **JWT token**: token di accesso scade dopo 15 minuti, refresh token dopo 7 giorni
+- **JWT token**: token di accesso scade dopo 15 minuti (rinnovo proattivo), refresh token dopo 7 giorni
 - Le email OTP scadono dopo 10 minuti
-- Le chiavi segrete (JWT, Gmail, Groq) stanno in `server/.env` che **non** è su GitHub
-- I dati finanziari restano sul tuo computer (database SQLite locale)
-- Il file `.env`, il database `.db`, `launch.bat`, `icon.ico` sono tutti esclusi da git
+- Le chiavi segrete (JWT, Resend, Groq) stanno in `server/.env` che **non** è su GitHub
+- I dati sono conservati su database cloud (Supabase Postgres), non localmente
+- Il file `.env`, `launch.bat`, `icon.ico` sono tutti esclusi da git
 
 ### Database
-- **SQLite** (tramite `sql.js` in Node.js)
-- Unico file: `server/data/balance.db` (si crea automaticamente alla prima apertura)
+- **PostgreSQL** su Supabase (cloud)
 - Tabelle:
-  - `users` — email, password hash, email verificata
+  - `users` — email, password hash, email verificata, nome, cognome, avatar
   - `transactions` — data, tipo, categoria, importo, titolo, nota, user_id
-  - `recurring_transactions` — titolo, importo, tipo, categoria, frequenza, date, attiva
+  - `recurring_transactions` — titolo, importo, tipo, categoria, frequenza, date, attiva, user_id
   - `budgets` — categoria, importo, mese, user_id
   - `goals` — nome, importo target, importo corrente, scadenza, user_id
-  - `otp_codes` — email, codice, scadenza
-  - `user_settings` — report attivo, giorno report, data ultimo invio
+  - `otp_codes` — email, codice, scadenza, purpose
+  - `user_settings` — report attivo, giorno report, data ultimo invio, valuta, lingua
+  - `refresh_tokens` — token di refresh per sessioni persistenti
 
 ---
 
@@ -348,6 +349,8 @@ JWT_SECRET=mia-chiave-segreta-cambiame-12345
 GMAIL_USER=
 GMAIL_APP_PASSWORD=
 GROQ_API_KEY=
+RESEND_API_KEY=
+RESEND_FROM=
 ```
 
 3. Salva il file con nome **`.env`** dentro la cartella `server/`
@@ -361,6 +364,8 @@ GROQ_API_KEY=
 | `GMAIL_USER` | ❌ No | Il tuo indirizzo Gmail per inviare email (OTP e report mensili). Lascia vuoto se non ti servono email. |
 | `GMAIL_APP_PASSWORD` | ❌ No | Password per app di Gmail (non la tua password normale!). Vedi sotto per come crearne una. Lascia vuoto se non ti servono email. |
 | `GROQ_API_KEY` | ❌ No | Chiave per l'AI Groq (gratis). Se vuota, l'app funziona senza AI (consigli fissi, niente traduzione categorie). |
+| `RESEND_API_KEY` | ❌ No | Chiave API Resend per inviare email OTP. Se vuota, usa Gmail SMTP come fallback. |
+| `RESEND_FROM` | ❌ No | Mittente email Resend verificato (es. `BalanceVision <no-reply@tuo-dominio.it>`). |
 
 **Come ottenere la GMAIL_APP_PASSWORD:**
 1. Vai su [myaccount.google.com/security](https://myaccount.google.com/security)
@@ -531,7 +536,7 @@ BalanceVision/
 │   └── index.html                   # HTML base
 │
 ├── server/                          # Backend Express
-│   ├── data/                        # Database SQLite (si crea da solo)
+│   ├── data/                        # Database (Supabase Postgres via connection string)
 │   ├── src/
 │   │   ├── routes/                  # API routes
 │   │   │   ├── auth.js              # Login, registrazione, OTP, reset password
@@ -545,7 +550,7 @@ BalanceVision/
 │   │   │   ├── reports.js           # Report email mensili
 │   │   │   └── translate.js         # Traduzione AI categorie
 │   │   ├── db/
-│   │   │   └── database.js          # Inizializzazione SQLite, schema, query
+│   │   │   └── database.js          # Inizializzazione Postgres, schema, query
 │   │   ├── middleware/
 │   │   │   └── auth.js              # Middleware JWT
 │   │   ├── email.js                 # Invio email (Gmail SMTP)
@@ -566,7 +571,7 @@ BalanceVision/
 
 ## Note Tecniche
 
-- **Database**: SQLite locale tramite `sql.js` (un file `server/data/balance.db`)
+- **Database**: PostgreSQL su Supabase (cloud, via connection string)
 - **Categorie personalizzate**: salvate nel browser (`localStorage`), non nel database
 - **Traduzioni UI**: file JSON in `client/src/i18n/` (it.js / en.js)
 - **Traduzioni AI categorie**: chiamata a Groq quando cambi lingua, risultato cachato in `localStorage`
