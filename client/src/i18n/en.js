@@ -16,7 +16,7 @@ const en = {
     surnamePlaceholder: 'Doe',
     emailPlaceholder: 'john@example.com', passwordHint: 'Minimum 8 characters' },
   dashboard: { balance: 'Current balance', income: 'Income', expenses: 'Expenses',
-    monthBalance: 'Month balance', noTx: 'No transactions', noFilter: 'No transactions match filters', viewAll: 'View all', showLess: 'Show less',
+    monthBalance: 'Month balance', noTx: 'No transactions', noFilter: 'No transactions match filters', viewAll: 'View all', showLess: 'Show less', sortDateDesc: 'Date: newest first', sortDateAsc: 'Date: oldest first', sortAmountDesc: 'Amount: highest first', sortAmountAsc: 'Amount: lowest first',
     search: 'Search transactions...', allCategories: 'All categories', allTypes: 'All',
     incomes: 'Income', expensesLabel: 'Expenses', clearFilters: 'Clear filters',
     categories: 'Categories', newTx: 'New Transaction', advFilters: 'Advanced filters',

@@ -16,7 +16,7 @@ const it = {
     surnamePlaceholder: 'Rossi',
     emailPlaceholder: 'mario@esempio.it', passwordHint: 'Minimo 8 caratteri' },
   dashboard: { balance: 'Saldo corrente', income: 'Entrate', expenses: 'Spese',
-    monthBalance: 'Saldo mese', noTx: 'Nessuna transazione', noFilter: 'Nessuna transazione corrisponde ai filtri', viewAll: 'Visualizza tutte', showLess: 'Mostra meno',
+    monthBalance: 'Saldo mese', noTx: 'Nessuna transazione', noFilter: 'Nessuna transazione corrisponde ai filtri', viewAll: 'Visualizza tutte', showLess: 'Mostra meno', sortDateDesc: 'Data: più recente', sortDateAsc: 'Data: meno recente', sortAmountDesc: 'Importo: decrescente', sortAmountAsc: 'Importo: crescente',
     search: 'Cerca transazioni...', allCategories: 'Tutte le categorie', allTypes: 'Tutti',
     incomes: 'Entrate', expensesLabel: 'Spese', clearFilters: 'Cancella filtri',
     categories: 'Categorie', newTx: 'Nuova Transazione', advFilters: 'Filtri avanzati',

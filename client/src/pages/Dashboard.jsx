@@ -108,6 +108,7 @@ export default function Dashboard() {
   const [showAdvFilters, setShowAdvFilters] = useState(false);
   const [manageCats, setManageCats] = useState(false);
   const [showAllTx, setShowAllTx] = useState(false);
+  const [sortBy, setSortBy] = useState('date-desc');
   const [clock, setClock] = useState(new Date());
   useEffect(() => { const id = setInterval(() => setClock(new Date()), 1000); return () => clearInterval(id); }, []);
   const chartRef = useRef(null);
@@ -295,6 +296,16 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     if (filterAmountMin && t.amount < parseFloat(filterAmountMin)) return false;
     if (filterAmountMax && t.amount > parseFloat(filterAmountMax)) return false;
     return true;
+  });
+
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    switch (sortBy) {
+      case 'date-desc': return new Date(b.date) - new Date(a.date);
+      case 'date-asc': return new Date(a.date) - new Date(b.date);
+      case 'amount-desc': return b.amount - a.amount;
+      case 'amount-asc': return a.amount - b.amount;
+      default: return new Date(b.date) - new Date(a.date);
+    }
   });
 
   useEffect(() => {
@@ -867,6 +878,12 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               <option value="income">{t('dashboard.incomes')}</option>
               <option value="expense">{t('dashboard.expensesLabel')}</option>
             </select>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="date-desc">{t('dashboard.sortDateDesc')}</option>
+              <option value="date-asc">{t('dashboard.sortDateAsc')}</option>
+              <option value="amount-desc">{t('dashboard.sortAmountDesc')}</option>
+              <option value="amount-asc">{t('dashboard.sortAmountAsc')}</option>
+            </select>
             <button className="btn-tx-ghost" onClick={() => setShowAdvFilters(!showAdvFilters)}
               style={{ background: showAdvFilters ? 'var(--brand)' : '', color: showAdvFilters ? 'var(--btn-primary-text)' : '' }}>
               {showAdvFilters ? t('dashboard.basicFilters') : t('dashboard.advFilters')}
@@ -874,7 +891,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             {(searchQuery || filterCategory || filterType || filterDateFrom || filterDateTo || filterAmountMin || filterAmountMax) && (
               <button className="btn-tx-clear"
                 onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterType('');
-                  setFilterDateFrom(''); setFilterDateTo(''); setFilterAmountMin(''); setFilterAmountMax(''); }}>
+                  setFilterDateFrom(''); setFilterDateTo(''); setFilterAmountMin(''); setFilterAmountMax(''); setSortBy('date-desc'); }}>
                 {t('dashboard.clearFilters')}
               </button>
             )}
@@ -925,7 +942,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           )}
 
           <div className="tx-list">
-            {(showAllTx ? filteredTransactions : filteredTransactions.slice(0, 5)).map(tx => (
+            {(showAllTx ? sortedTransactions : sortedTransactions.slice(0, 5)).map(tx => (
               <div key={tx.id} className="tx-card scroll-in">
                 <span className="tx-card-date">{tx.date}</span>
                 <div className="tx-card-body">
@@ -949,20 +966,20 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             )}
           </div>
 
-          {filteredTransactions.length > 5 && !showAllTx && (
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <button className="btn btn-secondary" onClick={() => setShowAllTx(true)}>
-                {t('dashboard.viewAll') || 'Visualizza tutte'}
-              </button>
-            </div>
-          )}
-          {showAllTx && filteredTransactions.length > 5 && (
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <button className="btn btn-secondary" onClick={() => setShowAllTx(false)}>
-                {t('dashboard.showLess') || 'Mostra meno'}
-              </button>
-            </div>
-          )}
+            {filteredTransactions.length > 5 && !showAllTx && (
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                <button className="btn btn-secondary" onClick={() => setShowAllTx(true)}>
+                  {t('dashboard.viewAll') || 'Visualizza tutte'}
+                </button>
+              </div>
+            )}
+            {showAllTx && filteredTransactions.length > 5 && (
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                <button className="btn btn-secondary" onClick={() => setShowAllTx(false)}>
+                  {t('dashboard.showLess') || 'Mostra meno'}
+                </button>
+              </div>
+            )}
         </div>
 
         <div className="section" style={{ textAlign: 'center' }}>
