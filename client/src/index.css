@@ -2709,6 +2709,21 @@ textarea.form-input {
     inset -1px -1px 1px rgba(0, 0, 0, 0.03);
 }
 
+[data-theme="light"] .circular-item-btn {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+[data-theme="light"] .circular-item-label {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+[data-theme="light"] .circular-item-icon {
+  color: #fff;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+
 .circular-close {
   position: absolute;
   width: 44px;

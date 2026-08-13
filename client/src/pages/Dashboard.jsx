@@ -107,6 +107,7 @@ export default function Dashboard() {
   const [filterAmountMax, setFilterAmountMax] = useState('');
   const [showAdvFilters, setShowAdvFilters] = useState(false);
   const [manageCats, setManageCats] = useState(false);
+  const [showAllTx, setShowAllTx] = useState(false);
   const [clock, setClock] = useState(new Date());
   useEffect(() => { const id = setInterval(() => setClock(new Date()), 1000); return () => clearInterval(id); }, []);
   const chartRef = useRef(null);
@@ -845,6 +846,12 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             <span className="tx-header-count">{transactions.length} {t('dashboard.total')}</span>
           </div>
 
+          <div className="tx-new-btn-wrap" style={{ margin: '0 0 12px' }}>
+            <button className="tx-new-btn" onClick={() => navigate('/transactions/new')}>
+              {t('dashboard.newTx')}
+            </button>
+          </div>
+
           <div className="tx-search-wrap">
             <input className="tx-search-input" placeholder={t('dashboard.search')}
               value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
@@ -918,7 +925,7 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
           )}
 
           <div className="tx-list">
-            {filteredTransactions.map(tx => (
+            {(showAllTx ? filteredTransactions : filteredTransactions.slice(0, 5)).map(tx => (
               <div key={tx.id} className="tx-card scroll-in">
                 <span className="tx-card-date">{tx.date}</span>
                 <div className="tx-card-body">
@@ -942,11 +949,20 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
             )}
           </div>
 
-          <div className="tx-new-btn-wrap">
-            <button className="tx-new-btn" onClick={() => navigate('/transactions/new')}>
-              {t('dashboard.newTx')}
-            </button>
-          </div>
+          {filteredTransactions.length > 5 && !showAllTx && (
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <button className="btn btn-secondary" onClick={() => setShowAllTx(true)}>
+                {t('dashboard.viewAll') || 'Visualizza tutte'}
+              </button>
+            </div>
+          )}
+          {showAllTx && filteredTransactions.length > 5 && (
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <button className="btn btn-secondary" onClick={() => setShowAllTx(false)}>
+                {t('dashboard.showLess') || 'Mostra meno'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="section" style={{ textAlign: 'center' }}>
