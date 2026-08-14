@@ -29,6 +29,15 @@ function MoonIcon() {
   );
 }
 
+function AutoIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
 function DefaultAvatar() {
   return (
     <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -40,7 +49,7 @@ function DefaultAvatar() {
 }
 
 export default function Topbar({ title }) {
-  const { theme, toggle } = useTheme();
+  const { theme, mode, toggle } = useTheme();
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useLanguage();
   const navigate = useNavigate();
@@ -73,8 +82,8 @@ export default function Topbar({ title }) {
           style={{ fontWeight: 700, fontSize: 13, letterSpacing: 0.5 }}>
           {lang === 'it' ? 'EN' : 'IT'}
         </button>
-        <button onClick={toggle} className="theme-toggle" title={theme === 'light' ? 'Dark theme' : 'Light theme'}>
-          {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+        <button onClick={toggle} className="theme-toggle" title={mode === 'dark' ? 'Light theme' : mode === 'light' ? 'Auto theme' : 'Dark theme'}>
+          {mode === 'dark' ? <MoonIcon /> : mode === 'light' ? <SunIcon /> : <AutoIcon />}
         </button>
         <button onClick={() => navigate('/profile')} className="avatar-btn" title={t('nav.profile')}>
           <div className="avatar">

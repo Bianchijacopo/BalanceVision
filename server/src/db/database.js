@@ -192,6 +192,35 @@ async function initSchema() {
         value TEXT
       )
     `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS family_groups (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS family_members (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER NOT NULL REFERENCES family_groups(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role TEXT NOT NULL DEFAULT 'member',
+        joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(group_id, user_id)
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS family_invites (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER NOT NULL REFERENCES family_groups(id) ON DELETE CASCADE,
+        inviter_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        invitee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(group_id, invitee_id)
+      )
+    `);
     // Existing users remain verified; new registrations verify via on-screen OTP popup
   } finally {
     client.release();

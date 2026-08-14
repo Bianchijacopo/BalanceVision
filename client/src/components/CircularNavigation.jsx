@@ -3,15 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import {
-  BarChart3,
-  Wallet,
-  Target,
-  Repeat,
-  Lightbulb,
-  FolderTree,
-  Upload,
-  LogOut,
-  X,
+  X, BarChart3, Wallet, Target, Repeat, Lightbulb, FolderTree, Upload, LogOut, Users
 } from 'lucide-react';
 
 export default function CircularNavigation({ isOpen, onClose, onLogout }) {
@@ -26,6 +18,7 @@ export default function CircularNavigation({ isOpen, onClose, onLogout }) {
     { name: t('nav.recurring'), icon: Repeat, path: '/recurring' },
     { name: t('nav.advice'), icon: Lightbulb, path: '/advice' },
     { name: t('nav.categories'), icon: FolderTree, path: '/categories' },
+    { name: t('nav.family') || 'Famiglia', icon: Users, path: '/family' },
     { name: t('nav.import'), icon: Upload, path: '/import' },
     { name: t('nav.logout'), icon: LogOut, path: 'logout' },
   ];

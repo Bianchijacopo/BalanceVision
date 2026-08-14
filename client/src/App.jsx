@@ -16,6 +16,7 @@ import TransactionForm from './pages/TransactionForm';
 import AnalisiAvanzata from './pages/AnalisiAvanzata';
 import Budget from './pages/Budget';
 import Goals from './pages/Goals';
+import Family from './pages/Family';
 import Advice from './pages/Advice';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
@@ -76,6 +77,7 @@ function AppContent() {
             <Route path="/analytics" element={<VerifiedRoute><AnalisiAvanzata /></VerifiedRoute>} />
             <Route path="/budgets" element={<VerifiedRoute><Budget /></VerifiedRoute>} />
             <Route path="/goals" element={<VerifiedRoute><Goals /></VerifiedRoute>} />
+            <Route path="/family" element={<VerifiedRoute><Family /></VerifiedRoute>} />
             <Route path="/recurring" element={<VerifiedRoute><Recurring /></VerifiedRoute>} />
             <Route path="/advice" element={<VerifiedRoute><Advice /></VerifiedRoute>} />
             <Route path="/categories" element={<VerifiedRoute><Categories /></VerifiedRoute>} />
