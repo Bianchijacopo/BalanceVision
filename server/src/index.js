@@ -24,7 +24,6 @@ import translateRoutes from './routes/translate.js';
 import settingsRoutes from './routes/settings.js';
 import suggestCategoryRoutes from './routes/suggestCategory.js';
 import familyRoutes from './routes/family.js';
-import pushRoutes from './routes/push.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -167,7 +166,6 @@ app.use('/api/translate', translateRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/transactions/suggest-category', suggestCategoryRoutes);
 app.use('/api/family', familyRoutes);
-app.use('/api/push', pushRoutes);
 
 // Error handling
 app.use('/api', errorHandler);
