@@ -33,11 +33,11 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', validate(schemas.goal), async (req, res) => {
-  const { name, target_amount, current_amount, deadline, category } = req.body;
+  const { name, target_amount, current_amount, deadline, category, auto_contribute_percent } = req.body;
 
   const result = await run(
-    'INSERT INTO goals (user_id, name, target_amount, current_amount, deadline, category, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [req.userId, name, target_amount, current_amount || 0, deadline || '', category || '', localNow()]
+    'INSERT INTO goals (user_id, name, target_amount, current_amount, deadline, category, auto_contribute_percent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [req.userId, name, target_amount, current_amount || 0, deadline || '', category || '', auto_contribute_percent || 0, localNow()]
   );
 
   const goal = await get('SELECT * FROM goals WHERE id = ?', [result.lastInsertRowid]);
@@ -48,7 +48,7 @@ router.put('/:id', async (req, res) => {
   const g = await get('SELECT * FROM goals WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
   if (!g) return res.status(404).json({ error: 'Obiettivo non trovato' });
 
-  const { name, target_amount, current_amount, deadline, category } = req.body;
+  const { name, target_amount, current_amount, deadline, category, auto_contribute_percent } = req.body;
   if (!name || !target_amount) {
     return res.status(400).json({ error: 'Campi obbligatori: name, target_amount' });
   }
@@ -57,8 +57,8 @@ router.put('/:id', async (req, res) => {
   }
 
   await run(
-    `UPDATE goals SET name = ?, target_amount = ?, current_amount = ?, deadline = ?, category = ? WHERE id = ? AND user_id = ?`,
-    [name, target_amount, current_amount ?? g.current_amount, deadline ?? g.deadline, category ?? g.category, req.params.id, req.userId]
+    `UPDATE goals SET name = ?, target_amount = ?, current_amount = ?, deadline = ?, category = ?, auto_contribute_percent = ? WHERE id = ? AND user_id = ?`,
+    [name, target_amount, current_amount ?? g.current_amount, deadline ?? g.deadline, category ?? g.category, auto_contribute_percent ?? g.auto_contribute_percent ?? 0, req.params.id, req.userId]
   );
 
   const updated = await get('SELECT * FROM goals WHERE id = ?', [req.params.id]);
@@ -70,6 +70,27 @@ router.delete('/:id', async (req, res) => {
   if (!g) return res.status(404).json({ error: 'Obiettivo non trovato' });
   await run('DELETE FROM goals WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
   res.json({ message: 'Obiettivo eliminato' });
+});
+
+router.post('/auto-contribute', async (req, res) => {
+  const { income_amount } = req.body;
+  if (!income_amount || income_amount <= 0) return res.json({ contributed: 0 });
+
+  const goals = await all(
+    'SELECT * FROM goals WHERE user_id = ? AND auto_contribute_percent > 0',
+    [req.userId]
+  );
+
+  let totalContributed = 0;
+  for (const goal of goals) {
+    const contribution = Math.round((income_amount * goal.auto_contribute_percent / 100) * 100) / 100;
+    if (contribution <= 0) continue;
+    const newAmount = Math.min(goal.current_amount + contribution, goal.target_amount);
+    await run('UPDATE goals SET current_amount = ? WHERE id = ?', [newAmount, goal.id]);
+    totalContributed += contribution;
+  }
+
+  res.json({ contributed: totalContributed, goals_updated: goals.length });
 });
 
 export default router;

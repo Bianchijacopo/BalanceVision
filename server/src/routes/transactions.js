@@ -45,6 +45,19 @@ router.post('/', validate(schemas.transaction), async (req, res) => {
   );
 
   const transaction = await get('SELECT * FROM transactions WHERE id = ?', [result.lastInsertRowid]);
+
+  if (type === 'income' && amount > 0) {
+    try {
+      const goals = await all('SELECT * FROM goals WHERE user_id = ? AND auto_contribute_percent > 0', [req.userId]);
+      for (const goal of goals) {
+        const contribution = Math.round((amount * goal.auto_contribute_percent / 100) * 100) / 100;
+        if (contribution <= 0) continue;
+        const newAmount = Math.min(goal.current_amount + contribution, goal.target_amount);
+        await run('UPDATE goals SET current_amount = ? WHERE id = ?', [newAmount, goal.id]);
+      }
+    } catch (e) { console.error('[auto-contribute error]', e); }
+  }
+
   res.status(201).json(transaction);
 });
 

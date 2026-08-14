@@ -117,6 +117,7 @@ export default function Dashboard() {
   const prevBalanceRef = useRef(null);
   const [animClass, setAnimClass] = useState('');
   const [ticker, setTicker] = useState(null);
+  const [deletedTx, setDeletedTx] = useState([]);
 
   useEffect(() => {
     if (!token) return;
@@ -203,6 +204,12 @@ export default function Dashboard() {
   const hasMonthlyIncome = monthlyTransactions.some(t => t.type === 'income');
   const hasMonthlyExpense = monthlyTransactions.some(t => t.type === 'expense');
 
+  const prevDate = new Date(targetDate.getFullYear(), targetDate.getMonth() - 1, 1);
+  const prevMonth = prevDate.getFullYear() + '-' + String(prevDate.getMonth() + 1).padStart(2, '0');
+  const prevTransactions = transactions.filter(t => t.date.startsWith(prevMonth));
+  const prevIncome = prevTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const prevExpenses = prevTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
   const monthlyExpenseByCategory = monthlyTransactions
     .filter(t => t.type === 'expense')
     .reduce((acc, t) => {
@@ -267,11 +274,13 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
   function handleDeleteWithToast(id) {
     const tx = transactions.find(t => t.id === id);
     deleteTransaction(id);
+    setDeletedTx(prev => [tx, ...prev].slice(0, 20));
     addToast(t('dashboard.txDeleted'), 'success', 5000, {
       label: t('dashboard.undo'),
       onClick: async () => {
         try {
           await apiPost('/transactions', tx, token);
+          setDeletedTx(prev => prev.filter(d => d.id !== id));
           apiGet('/transactions', token).then(setTransactions).catch(console.error);
           apiGet('/balance', token).then(setBalance).catch(console.error);
         } catch (e) {
@@ -279,6 +288,18 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
         }
       }
     });
+  }
+
+  async function restoreDeleted(tx) {
+    try {
+      await apiPost('/transactions', { ...tx, id: undefined }, token);
+      setDeletedTx(prev => prev.filter(d => d !== tx));
+      apiGet('/transactions', token).then(setTransactions).catch(console.error);
+      apiGet('/balance', token).then(setBalance).catch(console.error);
+      addToast(t('dashboard.txRestored'), 'success');
+    } catch (e) {
+      addToast(e.message, 'error');
+    }
   }
 
   const allCategories = getAllCategories();
@@ -528,6 +549,37 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
     addToast(t('dashboard.pdfSuccess'), 'success');
   }
 
+  function downloadCSV() {
+    const fmtAmount = (v) => v.toFixed(2).replace('.', ',');
+    const header = [t('dashboard.pdfTableDate'), t('dashboard.pdfTableDesc'), t('dashboard.pdfTableCategory'), t('dashboard.pdfTableAmount'), t('dashboard.type')].join(';');
+    const rows = filteredTransactions.map(tx => [
+      tx.date,
+      tx.title.replace(/;/g, ','),
+      tx.category,
+      fmtAmount(Math.abs(tx.amount)),
+      tx.type === 'income' ? t('dashboard.incomes') : t('dashboard.expensesLabel')
+    ].join(';'));
+    const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const totalExpenses = filteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const summaryRows = [
+      '',
+      t('dashboard.summary'),
+      t('dashboard.pdfInitialBalance') + ';' + fmtAmount(monthStartBalance),
+      t('dashboard.pdfMonthlyIncome') + ';+' + fmtAmount(totalIncome),
+      t('dashboard.pdfMonthlyExpenses') + ';-' + fmtAmount(totalExpenses),
+      t('dashboard.pdfFinalBalance') + ';' + fmtAmount(monthStartBalance + totalIncome - totalExpenses),
+    ];
+    const csv = '\uFEFF' + [header, ...rows, ...summaryRows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'BalanceVision_' + displayMonth + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast(t('dashboard.csvSuccess'), 'success');
+  }
+
   if (initialLoading) return (
     <div className="layout">
       <Topbar title={t('nav.dashboard')} />
@@ -609,6 +661,27 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
               <div className="insight-card">
                 <div className="insight-label">{t('dashboard.projection')}</div>
                 <div className="insight-value">{fmt(projectedEndBalance)}</div>
+              </div>
+              <div className="insight-card">
+                <div className="insight-label">{t('dashboard.vsLastMonth')}</div>
+                <div className="insight-value">
+                  {(() => {
+                    const incomeDiff = monthlyIncome - prevIncome;
+                    const expenseDiff = monthlyExpenses - prevExpenses;
+                    const incomePct = prevIncome > 0 ? ((incomeDiff / prevIncome) * 100).toFixed(0) : null;
+                    const expensePct = prevExpenses > 0 ? ((expenseDiff / prevExpenses) * 100).toFixed(0) : null;
+                    return (
+                      <>
+                        <div style={{ fontSize: 13, color: incomePct !== null ? (incomeDiff >= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-secondary)' }}>
+                          {t('dashboard.incomes')}: {incomePct !== null ? (incomeDiff >= 0 ? '+' : '') + incomePct + '%' : '-'}
+                        </div>
+                        <div style={{ fontSize: 13, color: expensePct !== null ? (expenseDiff <= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-secondary)' }}>
+                          {t('dashboard.expensesLabel')}: {expensePct !== null ? (expenseDiff <= 0 ? '' : '+') + expensePct + '%' : '-'}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
               </>
             )}
@@ -1001,6 +1074,10 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
       &#8595;
     </button>
 
+    <button className="focus-toggle" style={{ left: 110, right: 'auto', background: '#16a34a', color: '#fff', borderColor: '#16a34a' }} onClick={downloadCSV} title={t('dashboard.downloadCsv')}>
+      CSV
+    </button>
+
     {categoryModal && (
       <div className="modal-overlay" onClick={() => setCategoryModal(null)}>
         <div className="modal-panel modal-panel-chart" onClick={e => e.stopPropagation()}>
@@ -1039,6 +1116,28 @@ const monthlyTopExpenses = [...monthlyExpenseByCategory].sort((a, b) => b.value 
         balanceStats={balanceStats}
         projStats={projStats}
       />
+    )}
+    {deletedTx.length > 0 && (
+      <div className="card-chart" style={{ marginTop: 24 }}>
+        <div className="section-header">
+          <h3 className="chart-title" style={{ margin: 0 }}>{t('dashboard.trash')} ({deletedTx.length})</h3>
+          <button className="btn btn-secondary btn-sm" onClick={() => setDeletedTx([])}>{t('dashboard.clearTrash')}</button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {deletedTx.slice(0, 10).map(tx => (
+            <div key={tx.id} className="modal-entry" style={{ justifyContent: 'space-between' }}>
+              <span className="modal-entry-date">{tx.date}</span>
+              <span className="modal-entry-title">{tx.title}</span>
+              <span className={tx.type === 'income' ? 'text-success' : 'text-danger'}>
+                {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
+              </span>
+              <button className="btn btn-secondary btn-sm" style={{ marginLeft: 8, padding: '2px 8px', fontSize: 11 }} onClick={() => restoreDeleted(tx)}>
+                {t('dashboard.restore')}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     )}
     </>
   );

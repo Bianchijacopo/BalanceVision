@@ -19,6 +19,7 @@ export default function Goals() {
   const [target, setTarget] = useState('');
   const [current, setCurrent] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [autoPercent, setAutoPercent] = useState('');
   const navigate = useNavigate();
 
   async function load() {
@@ -40,6 +41,7 @@ export default function Goals() {
     setCurrent('');
     setDeadline('');
     setCategory('');
+    setAutoPercent('');
   }
 
   async function handleSave(e) {
@@ -51,6 +53,7 @@ export default function Goals() {
         current_amount: parseFloat(current || '0'),
         deadline: deadline || '',
         category: category || '',
+        auto_contribute_percent: parseFloat(autoPercent || '0'),
       };
       if (editId) {
         await apiPut('/goals/' + editId, body, token);
@@ -76,6 +79,7 @@ export default function Goals() {
     setCurrent(String(g.current_amount));
     setDeadline(g.deadline || '');
     setCategory(g.category || '');
+    setAutoPercent(String(g.auto_contribute_percent || ''));
     setShowForm(true);
   }
 
@@ -156,6 +160,7 @@ export default function Goals() {
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{g.name}</div>
                       {g.category && <span className="badge">{g.category}</span>}
+                      {g.auto_contribute_percent > 0 && <span className="badge" style={{ marginLeft: 4, background: 'var(--brand-light)', color: 'var(--brand)' }}>Auto {g.auto_contribute_percent}%</span>}
                       {g.deadline && (
                         <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 8 }}>
                           {t('goals.deadline')} {g.deadline}
@@ -230,6 +235,14 @@ export default function Goals() {
                   <input className="form-input" value={category} onChange={e => setCategory(e.target.value)}
                     placeholder={t('goals.categoryPlaceholder')} />
                 </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">{t('goals.autoContribute')}</label>
+                <input className="form-input" type="number" step="0.1" min="0" max="100" value={autoPercent}
+                  onChange={e => setAutoPercent(e.target.value)} placeholder="0" />
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, display: 'block' }}>
+                  {t('goals.autoContributeHint')}
+                </span>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="submit" className="btn btn-primary">

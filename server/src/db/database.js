@@ -131,10 +131,11 @@ async function initSchema() {
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
-        target_amount NUMERIC(12,2) NOT NULL CHECK(target_amount > 0),
+        target_amount NUMERIC(12,2) NOT NULL,
         current_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
         deadline TEXT DEFAULT '',
         category TEXT DEFAULT '',
+        auto_contribute_percent NUMERIC(5,2) DEFAULT 0,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
@@ -219,6 +220,18 @@ async function initSchema() {
         status TEXT NOT NULL DEFAULT 'pending',
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE(group_id, invitee_id)
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        endpoint TEXT NOT NULL,
+        p256dh TEXT NOT NULL DEFAULT '',
+        auth_key TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(user_id, endpoint)
       )
     `);
     // Existing users remain verified; new registrations verify via on-screen OTP popup

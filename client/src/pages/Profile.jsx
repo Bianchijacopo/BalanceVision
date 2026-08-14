@@ -33,12 +33,15 @@ export default function Profile() {
   const [otpError, setOtpError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
 
   useEffect(() => {
     apiGet('/auth/profile', token)
       .then(p => { setProfile(p); setUser(p); })
       .catch(console.error)
       .finally(() => setLoading(false));
+    apiGet('/push/status', token).then(s => setPushEnabled(s?.subscribed)).catch(() => {});
   }, [token]);
 
   async function handleDeleteRequest() {
@@ -86,6 +89,43 @@ export default function Profile() {
     } finally {
       setUploading(false);
     }
+  }
+
+  async function togglePush() {
+    if (!('Notification' in window)) {
+      addToast(t('profile.pushNotSupported'), 'error');
+      return;
+    }
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        const reg = await navigator.serviceWorker?.ready;
+        const sub = await reg?.pushManager?.getSubscription();
+        if (sub) {
+          await apiDelete('/push/unsubscribe', token, { endpoint: sub.endpoint });
+          await sub.unsubscribe();
+        }
+        setPushEnabled(false);
+        addToast(t('profile.pushDisabled'), 'success');
+      } else {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          addToast(t('profile.pushDenied'), 'error');
+          setPushLoading(false);
+          return;
+        }
+        const reg = await navigator.serviceWorker?.ready;
+        const sub = await reg?.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: undefined });
+        const keys = sub.toJSON().keys;
+        await apiPost('/push/subscribe', { endpoint: sub.endpoint, keys }, token);
+        setPushEnabled(true);
+        addToast(t('profile.pushEnabled'), 'success');
+      }
+    } catch (e) {
+      console.error('Push toggle error:', e);
+      addToast(t('profile.pushError'), 'error');
+    }
+    setPushLoading(false);
   }
 
   if (loading) return (
@@ -167,6 +207,16 @@ export default function Profile() {
               </select>
             </div>
           </div>
+        </div>
+
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-header">
+            <h3 className="card-title" style={{ fontSize: 15 }}>{t('profile.notifications')}</h3>
+            <p className="card-subtitle">{t('profile.notificationsSubtitle')}</p>
+          </div>
+          <button onClick={togglePush} disabled={pushLoading} className={`btn ${pushEnabled ? 'btn-secondary' : 'btn-primary'}`} style={{ width: '100%' }}>
+            {pushLoading ? t('profile.loading') : pushEnabled ? t('profile.pushDisableBtn') : t('profile.pushEnableBtn')}
+          </button>
         </div>
 
         <div className="card" style={{ marginTop: 16 }}>
