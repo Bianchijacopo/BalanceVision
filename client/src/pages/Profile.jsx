@@ -41,7 +41,9 @@ export default function Profile() {
       .then(p => { setProfile(p); setUser(p); })
       .catch(console.error)
       .finally(() => setLoading(false));
-    apiGet('/push/status', token).then(s => setPushEnabled(s?.subscribed)).catch(() => {});
+    if ('Notification' in window) {
+      setPushEnabled(Notification.permission === 'granted');
+    }
   }, [token]);
 
   async function handleDeleteRequest() {
