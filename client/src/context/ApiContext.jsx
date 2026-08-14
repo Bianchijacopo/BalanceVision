@@ -81,6 +81,6 @@ export async function apiPut(path, body, token) {
   return request('PUT', path, body, token);
 }
 
-export async function apiDelete(path, token) {
-  return request('DELETE', path, null, token);
+export async function apiDelete(path, token, body) {
+  return request('DELETE', path, body || null, token);
 }

@@ -3,10 +3,6 @@ import webpush from 'web-push';
 import { pool } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
-const router = Router();
-router.use(authMiddleware);
-router.use(verifiedMiddleware);
-
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BBE768-FfhOMunctyaZygtyoSpGgaNdbEUSfHVjbPe2eueQF-bN2ypCQ_sXePYOwDD4YgZqQ4saTph8QVCd9xE4';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'Me_ojZNgJHhwF9He1ErCSbEjtBWvDJo7qZcZJnpM2N4';
 
@@ -16,11 +12,16 @@ webpush.setVapidDetails(
   VAPID_PRIVATE_KEY
 );
 
-router.get('/vapid-public-key', (req, res) => {
+const publicRouter = Router();
+publicRouter.get('/vapid-public-key', (req, res) => {
   res.json({ publicKey: VAPID_PUBLIC_KEY });
 });
 
-router.post('/subscribe', async (req, res) => {
+const privateRouter = Router();
+privateRouter.use(authMiddleware);
+privateRouter.use(verifiedMiddleware);
+
+privateRouter.post('/subscribe', async (req, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ error: 'Non autorizzato' });
 
@@ -41,7 +42,7 @@ router.post('/subscribe', async (req, res) => {
   }
 });
 
-router.delete('/unsubscribe', async (req, res) => {
+privateRouter.delete('/unsubscribe', async (req, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ error: 'Non autorizzato' });
 
@@ -59,7 +60,7 @@ router.delete('/unsubscribe', async (req, res) => {
   }
 });
 
-router.get('/status', async (req, res) => {
+privateRouter.get('/status', async (req, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ error: 'Non autorizzato' });
 
@@ -70,6 +71,10 @@ router.get('/status', async (req, res) => {
     res.json({ subscribed: false });
   }
 });
+
+const router = Router();
+router.use('/', publicRouter);
+router.use('/', privateRouter);
 
 export async function sendPushNotification(userId, title, body, url = '/') {
   try {
