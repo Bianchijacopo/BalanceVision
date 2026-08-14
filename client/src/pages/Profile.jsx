@@ -3,6 +3,15 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../context/ApiContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
@@ -114,8 +123,10 @@ export default function Profile() {
           setPushLoading(false);
           return;
         }
+        const vapidRes = await apiGet('/push/vapid-public-key', token);
+        const applicationServerKey = urlBase64ToUint8Array(vapidRes.publicKey);
         const reg = await navigator.serviceWorker?.ready;
-        const sub = await reg?.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: undefined });
+        const sub = await reg?.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
         const keys = sub.toJSON().keys;
         await apiPost('/push/subscribe', { endpoint: sub.endpoint, keys }, token);
         setPushEnabled(true);

@@ -13,5 +13,8 @@
     "@electron/packager": "^20.0.4",
     "electron": "^41.7.1",
     "electron-packager": "^17.1.2"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
   }
 }
