@@ -1,14 +1,10 @@
 import { Router } from 'express';
-import { pool } from '../db/database.js';
+import { getDb } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authMiddleware);
 router.use(verifiedMiddleware);
-
-router.get('/vapid-public-key', (req, res) => {
-  res.json({ publicKey: null });
-});
 
 router.post('/subscribe', async (req, res) => {
   const userId = req.user?.id;
@@ -18,6 +14,7 @@ router.post('/subscribe', async (req, res) => {
   if (!endpoint) return res.status(400).json({ error: 'Endpoint mancante' });
 
   try {
+    const pool = await getDb();
     await pool.query(
       `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth_key)
        VALUES ($1, $2, $3, $4)
@@ -37,6 +34,7 @@ router.delete('/unsubscribe', async (req, res) => {
 
   const { endpoint } = req.body;
   try {
+    const pool = await getDb();
     if (endpoint) {
       await pool.query('DELETE FROM push_subscriptions WHERE user_id = $1 AND endpoint = $2', [userId, endpoint]);
     } else {
@@ -54,6 +52,7 @@ router.get('/status', async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Non autorizzato' });
 
   try {
+    const pool = await getDb();
     const result = await pool.query('SELECT COUNT(*) as count FROM push_subscriptions WHERE user_id = $1', [userId]);
     res.json({ subscribed: parseInt(result.rows[0].count) > 0 });
   } catch (e) {
