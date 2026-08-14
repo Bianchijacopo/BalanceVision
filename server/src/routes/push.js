@@ -1,27 +1,16 @@
 import { Router } from 'express';
-import webpush from 'web-push';
 import { pool } from '../db/database.js';
 import { authMiddleware, verifiedMiddleware } from '../middleware/auth.js';
 
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BBE768-FfhOMunctyaZygtyoSpGgaNdbEUSfHVjbPe2eueQF-bN2ypCQ_sXePYOwDD4YgZqQ4saTph8QVCd9xE4';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'Me_ojZNgJHhwF9He1ErCSbEjtBWvDJo7qZcZJnpM2N4';
+const router = Router();
+router.use(authMiddleware);
+router.use(verifiedMiddleware);
 
-webpush.setVapidDetails(
-  'mailto:no-reply@balancevision.it',
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
-
-const publicRouter = Router();
-publicRouter.get('/vapid-public-key', (req, res) => {
-  res.json({ publicKey: VAPID_PUBLIC_KEY });
+router.get('/vapid-public-key', (req, res) => {
+  res.json({ publicKey: null });
 });
 
-const privateRouter = Router();
-privateRouter.use(authMiddleware);
-privateRouter.use(verifiedMiddleware);
-
-privateRouter.post('/subscribe', async (req, res) => {
+router.post('/subscribe', async (req, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ error: 'Non autorizzato' });
 
@@ -42,7 +31,7 @@ privateRouter.post('/subscribe', async (req, res) => {
   }
 });
 
-privateRouter.delete('/unsubscribe', async (req, res) => {
+router.delete('/unsubscribe', async (req, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ error: 'Non autorizzato' });
 
@@ -60,7 +49,7 @@ privateRouter.delete('/unsubscribe', async (req, res) => {
   }
 });
 
-privateRouter.get('/status', async (req, res) => {
+router.get('/status', async (req, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ error: 'Non autorizzato' });
 
@@ -71,32 +60,5 @@ privateRouter.get('/status', async (req, res) => {
     res.json({ subscribed: false });
   }
 });
-
-const router = Router();
-router.use('/', publicRouter);
-router.use('/', privateRouter);
-
-export async function sendPushNotification(userId, title, body, url = '/') {
-  try {
-    const subs = await pool.query(
-      'SELECT endpoint, p256dh, auth_key FROM push_subscriptions WHERE user_id = $1',
-      [userId]
-    );
-    for (const sub of subs.rows) {
-      try {
-        await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth_key } },
-          JSON.stringify({ title, body, url })
-        );
-      } catch (e) {
-        if (e.statusCode === 410 || e.statusCode === 404) {
-          await pool.query('DELETE FROM push_subscriptions WHERE endpoint = $1', [sub.endpoint]);
-        }
-      }
-    }
-  } catch (e) {
-    console.error('[sendPushNotification error]', e);
-  }
-}
 
 export default router;
